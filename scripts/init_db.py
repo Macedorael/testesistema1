@@ -47,8 +47,23 @@ def init_database():
     app = create_app()
     
     with app.app_context():
-        # Remove todas as tabelas existentes
-        db.drop_all()
+        try:
+            # Remove todas as tabelas existentes
+            db.drop_all()
+        except Exception as e:
+            print(f"⚠️ Erro ao dropar tabelas (normal em primeira execução): {e}")
+            # Se falhar, tenta dropar com CASCADE usando SQL direto
+            try:
+                if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+                    # Para PostgreSQL, usa CASCADE
+                    from sqlalchemy import text
+                    db.session.execute(text("DROP SCHEMA public CASCADE;"))
+                    db.session.execute(text("CREATE SCHEMA public;"))
+                    db.session.commit()
+                    print("✅ Schema dropado com CASCADE")
+            except Exception as cascade_error:
+                print(f"⚠️ Erro no CASCADE: {cascade_error}")
+                print("Continuando com criação das tabelas...")
         
         # Cria todas as tabelas
         db.create_all()
