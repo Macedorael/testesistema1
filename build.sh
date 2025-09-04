@@ -6,6 +6,17 @@ set -o errexit
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Verify gunicorn installation
+echo "Checking Gunicorn installation..."
+which gunicorn || echo "Gunicorn not found in PATH"
+pip show gunicorn || echo "Gunicorn not installed"
+
+# Try to install gunicorn explicitly if not found
+if ! command -v gunicorn &> /dev/null; then
+    echo "Installing Gunicorn explicitly..."
+    pip install gunicorn==21.2.0
+fi
+
 # Initialize database
 python -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database initialized successfully')"
 
