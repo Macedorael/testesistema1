@@ -56,13 +56,22 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
             print(f"Paciente não encontrado para o agendamento {id_agendamento}")
             return False
         
-        # Buscar informações do usuário (médico)
-        usuario = User.query.get(agendamento.user_id)
-        if usuario and usuario.email:
-            nome_parte = usuario.email.split('@')[0]
-            nome_doutor = f"Dr. {nome_parte.replace('.', ' ').title()}"
+        # Buscar informações do funcionário (médico)
+        from src.models.funcionario import Funcionario
+        funcionario = None
+        if agendamento.funcionario_id:
+            funcionario = Funcionario.query.get(agendamento.funcionario_id)
+        
+        if funcionario:
+            nome_doutor = f"Dr(a). {funcionario.nome}"
         else:
-            nome_doutor = "Dr. Médico"
+            # Fallback para o usuário se não houver funcionário
+            usuario = User.query.get(agendamento.user_id)
+            if usuario and usuario.email:
+                nome_parte = usuario.email.split('@')[0]
+                nome_doutor = f"Dr. {nome_parte.replace('.', ' ').title()}"
+            else:
+                nome_doutor = "Dr. Médico"
         
         # Usar a função global gerar_link_google_calendar
         
@@ -269,7 +278,7 @@ def enviar_lembrete_sessao(id_sessao):
             funcionario = Funcionario.query.get(agendamento.funcionario_id)
         
         if funcionario:
-            nome_doutor = f"Dr(a). {funcionario.nome_completo}"
+            nome_doutor = f"Dr(a). {funcionario.nome}"
         else:
             # Fallback para o usuário se não houver funcionário
             usuario = User.query.get(agendamento.user_id)
@@ -410,7 +419,7 @@ def enviar_email_atualizacao_agendamento(id_agendamento):
             funcionario = Funcionario.query.get(agendamento.funcionario_id)
         
         if funcionario:
-            nome_doutor = f"Dr(a). {funcionario.nome_completo}"
+            nome_doutor = f"Dr(a). {funcionario.nome}"
         else:
             # Fallback para o usuário se não houver funcionário
             usuario = User.query.get(agendamento.user_id)
@@ -687,7 +696,7 @@ def enviar_email_reagendamento_sessao(id_sessao):
             funcionario = Funcionario.query.get(agendamento.funcionario_id)
         
         if funcionario:
-            nome_doutor = f"Dr(a). {funcionario.nome_completo}"
+            nome_doutor = f"Dr(a). {funcionario.nome}"
         else:
             # Fallback para o usuário se não houver funcionário
             usuario = User.query.get(agendamento.user_id)
