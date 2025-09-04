@@ -40,4 +40,10 @@ python3 -c "from src.main import app, db; app.app_context().push(); db.create_al
 # Run database migrations if needed
 python3 -c "import sys; sys.path.append('.'); from scripts.init_db import init_database; init_database(); print('Database populated successfully')" || echo "Database population skipped (already exists)"
 
+# Create activation script for runtime
+echo '#!/bin/bash' > activate_env.sh
+echo 'export PATH="/opt/render/project/src/.venv/bin:$PATH"' >> activate_env.sh
+echo 'exec "$@"' >> activate_env.sh
+chmod +x activate_env.sh
+
 echo "Build completed successfully!"
