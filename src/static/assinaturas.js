@@ -143,7 +143,6 @@ class SubscriptionManager {
             };
             
             const statusNames = {
-                'active': 'Ativo',
                 'cancelled': 'Cancelado',
                 'expired': 'Expirado'
             };
