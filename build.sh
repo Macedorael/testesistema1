@@ -34,11 +34,14 @@ gunicorn --version || echo "Gunicorn version check failed"
 echo "PATH: $PATH"
 echo "Expected start command: gunicorn --bind 0.0.0.0:\$PORT wsgi:app"
 
-# Initialize database
-python3 -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database initialized successfully')"
+# Initialize database (only create tables if they don't exist - preserves existing data)
+python3 -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database tables created/verified successfully')"
 
-# Run database migrations if needed
-python3 -c "import sys; sys.path.append('.'); from scripts.init_db import init_database; init_database(); print('Database populated successfully')" || echo "Database population skipped (already exists)"
+# Ensure admin user exists (safe - won't duplicate)
+python3 scripts/create_admin_user.py
+
+# Only populate with sample data if database is empty (first deploy)
+python3 -c "import sys; sys.path.append('.'); from src.main import app, db; from src.models.usuario import User; app.app_context().push(); user_count = User.query.count(); print(f'Found {user_count} existing users'); exit(0 if user_count > 0 else 1)" && echo "Database has existing data - skipping sample data population" || python3 -c "import sys; sys.path.append('.'); from scripts.init_db import create_sample_data; create_sample_data(); print('Sample data populated successfully')"
 
 # Create activation script for runtime
 echo '#!/bin/bash' > activate_env.sh
