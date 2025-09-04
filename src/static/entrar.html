@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Consultório Médico</title>
+    <link rel="stylesheet" href="css/entrar.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Partículas flutuantes para efeito visual -->
+    <div class="floating-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="login-container">
+        <h2>Bem-vindo</h2>
+        <p class="login-subtitle">Acesse sua conta para continuar</p>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="Digite seu email">
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required placeholder="Digite sua senha">
+            </div>
+            
+            <button type="submit">Entrar</button>
+            
+            <div class="login-footer">
+                <a href="esqueci-senha.html" class="forgot-password">Esqueci minha senha</a>
+                <a href="cadastro.html" class="register-link">Não tem conta? Cadastre-se aqui</a>
+            <a href="inicial.html" class="back-home-link">← Voltar ao Início</a>
+            </div>
+        </form>
+        
+        <style>
+        /* Footer do login */
+        .login-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .forgot-password,
+        .register-link,
+        .back-home-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover,
+        .register-link:hover,
+        .back-home-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .back-home-link {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+            font-weight: 500;
+        }
+        </style>
+        
+
+        
+        <p id="errorMessage" class="error-message"></p>
+    </div>
+
+    <script src="js/entrar.js"></script>
+    <script>
+        // Efeito de loading no botão será tratado pelo entrar.js principal
+
+        // Efeito de foco nos inputs
+        document.querySelectorAll('.input-group input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.parentElement.classList.remove('focused');
+                }
+            });
+        });
+
+        // Adicionar mais partículas dinamicamente
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.width = particle.style.height = (Math.random() * 10 + 5) + 'px';
+            particle.style.animationDuration = (Math.random() * 5 + 8) + 's';
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            
+            document.querySelector('.floating-particles').appendChild(particle);
+            
+            // Remover partícula após animação
+            setTimeout(() => {
+                particle.remove();
+            }, 12000);
+        }
+
+        // Criar partículas periodicamente
+        setInterval(createParticle, 3000);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esqueci Minha Senha - Consultório Médico</title>
+    <link rel="stylesheet" href="css/entrar.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo">
+                <h1>Consultório Médico</h1>
+            </div>
+            
+            <h2>Esqueci Minha Senha</h2>
+            <p class="subtitle">Digite seu email para receber as instruções de recuperação</p>
+            
+            <form id="forgotPasswordForm">
+                <div class="input-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <button type="submit" id="submitBtn" class="login-btn">
+                    Enviar Email de Recuperação
+                </button>
+            </form>
+            
+            <p id="errorMessage" class="error-message"></p>
+            <p id="successMessage" class="success-message"></p>
+            
+            <div class="links">
+                <a href="entrar.html">← Voltar para o Login</a>
+                <a href="cadastro.html">Não tem conta? Cadastre-se</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/esqueci-senha.js"></script>
+</body>
+</html>

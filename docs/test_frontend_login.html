@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Login Frontend</title>
+</head>
+<body>
+    <h1>Teste de Login Frontend</h1>
+    <form id="testForm">
+        <input type="email" id="email" value="r@teste.com" placeholder="Email">
+        <input type="password" id="password" value="123456" placeholder="Senha">
+        <button type="submit">Testar Login</button>
+    </form>
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('Enviando requisição de login...');
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('Status da resposta:', response.status);
+                const data = await response.json();
+                console.log('Dados da resposta:', data);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<p style="color: green;">✅ Login bem-sucedido!</p><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    resultDiv.innerHTML = '<p style="color: red;">❌ Erro no login (Status: ' + response.status + ')</p><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                resultDiv.innerHTML = '<p style="color: red;">❌ Erro de conexão: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

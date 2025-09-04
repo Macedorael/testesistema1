@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Consultório Médico</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+    <link href="css/inicial.css" rel="stylesheet">
+    
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+        }
+        
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-login {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .stats-section {
+            background-color: #f8f9fa;
+            padding: 80px 0;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-heart-pulse me-2 text-primary"></i>
+                <span class="text-primary">Consultório Médico</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#sobre">Sobre</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#servicos">Serviços</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#planos">Planos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contato">Contato</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="assinaturas.html">Assinar</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-primary ms-2" href="entrar.html">Entrar</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-4">Sistema Completo para Consultórios Médicos</h1>
+                    <p class="lead mb-5">Gerencie pacientes, agendamentos, sessões e pagamentos de forma simples e eficiente. Tudo que você precisa para organizar seu consultório em um só lugar.</p>
+                    <a href="#planos" class="btn btn-login btn-lg text-white">
+                        <i class="bi bi-eye me-2"></i>
+                        Ver Planos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="display-5 fw-bold mb-3">Funcionalidades Principais</h2>
+                    <p class="lead text-muted">Descubra como nosso sistema pode transformar a gestão do seu consultório</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="card-body">
+                            <i class="bi bi-people feature-icon"></i>
+                            <h5 class="card-title fw-bold">Gestão de Pacientes</h5>
+                            <p class="card-text text-muted">Cadastre e gerencie informações completas dos seus pacientes de forma organizada e segura.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="card-body">
+                            <i class="bi bi-calendar-check feature-icon"></i>
+                            <h5 class="card-title fw-bold">Agendamentos</h5>
+                            <p class="card-text text-muted">Controle sua agenda com facilidade, agende sessões e acompanhe o status de cada consulta.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="card-body">
+                            <i class="bi bi-credit-card feature-icon"></i>
+                            <h5 class="card-title fw-bold">Controle Financeiro</h5>
+                            <p class="card-text text-muted">Gerencie pagamentos, acompanhe receitas e mantenha suas finanças sempre organizadas.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="card-body">
+                            <i class="bi bi-graph-up feature-icon"></i>
+                            <h5 class="card-title fw-bold">Relatórios e Dashboards</h5>
+                            <p class="card-text text-muted">Visualize estatísticas detalhadas e relatórios para acompanhar o crescimento do seu consultório.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+        
+        <!-- Sobre -->
+        <section class="about-section py-5" id="sobre">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <h2 class="display-5 fw-bold mb-4">Sobre Nosso Sistema</h2>
+                        <p class="lead mb-4">Desenvolvido especialmente para profissionais da medicina, nosso sistema oferece todas as ferramentas necessárias para uma gestão eficiente do seu consultório.</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-shield-check text-primary fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Segurança Total</h6>
+                                        <small class="text-muted">Dados protegidos e criptografados</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-cloud text-primary fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Na Nuvem</h6>
+                                        <small class="text-muted">Acesse de qualquer lugar</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <img src="https://via.placeholder.com/500x400/e3f2fd/1976d2?text=Sistema+de+Gestão" class="img-fluid rounded shadow" alt="Sistema">
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Serviços -->
+        <section class="services-section py-5 bg-light" id="servicos">
+            <div class="container">
+                <div class="row text-center mb-5">
+                    <div class="col-lg-8 mx-auto">
+                        <h2 class="display-5 fw-bold mb-3">Funcionalidades Principais</h2>
+                        <p class="lead text-muted">Tudo que você precisa para gerenciar seu consultório de forma profissional</p>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-people text-primary fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold mb-3">Gestão de Pacientes</h5>
+                            <p class="text-muted">Cadastro completo, histórico médico e acompanhamento personalizado</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-calendar-check text-primary fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold mb-3">Agendamentos</h5>
+                            <p class="text-muted">Sistema inteligente de agendamento com lembretes automáticos</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-cash-coin text-primary fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold mb-3">Controle Financeiro</h5>
+                            <p class="text-muted">Gestão de pagamentos, relatórios financeiros e controle de receitas</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-graph-up text-primary fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold mb-3">Relatórios</h5>
+                            <p class="text-muted">Análises detalhadas e insights para otimizar seu consultório</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Planos de Assinatura -->
+    <section class="pricing-section py-5" id="planos">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="display-5 fw-bold mb-3">Escolha o Plano Ideal para Você</h2>
+                    <p class="lead text-muted">Planos flexíveis para atender suas necessidades profissionais</p>
+                </div>
+            </div>
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <h3 class="fw-bold mb-3">Mensal</h3>
+                            <div class="mb-4">
+                                <span class="h2 fw-bold text-primary">R$ 29</span>
+                                <span class="text-muted">,90/mês</span>
+                            </div>
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Gestão completa de pacientes</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Agendamento de consultas</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Controle financeiro</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Relatórios básicos</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Suporte por email</li>
+                            </ul>
+                            <a href="assinaturas.html" class="btn btn-outline-primary btn-lg w-100">Começar Agora</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-primary shadow position-relative">
+                        <div class="position-absolute top-0 start-50 translate-middle">
+                            <span class="badge bg-primary px-3 py-2">Mais Popular</span>
+                        </div>
+                        <div class="card-body text-center p-4 pt-5">
+                            <h3 class="fw-bold mb-3">Trimestral</h3>
+                            <div class="mb-2">
+                                <span class="h2 fw-bold text-primary">R$ 79</span>
+                                <span class="text-muted">,90/3 meses</span>
+                            </div>
+                            <div class="text-success mb-4"><small>Economize R$ 9,80</small></div>
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Tudo do plano Mensal</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Relatórios avançados</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Backup automático</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Suporte prioritário</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Integração com calendário</li>
+                            </ul>
+                            <a href="assinaturas.html" class="btn btn-primary btn-lg w-100">Começar Agora</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center p-4">
+                            <h3 class="fw-bold mb-3">Anual</h3>
+                            <div class="mb-2">
+                                <span class="h2 fw-bold text-primary">R$ 279</span>
+                                <span class="text-muted">,90/ano</span>
+                            </div>
+                            <div class="text-success mb-4"><small>Economize R$ 78,90</small></div>
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Tudo do plano Trimestral</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Análises personalizadas</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>API para integrações</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Suporte telefônico</li>
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Consultoria gratuita</li>
+                            </ul>
+                            <a href="assinaturas.html" class="btn btn-outline-primary btn-lg w-100">Começar Agora</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-12 text-center">
+                    <p class="text-muted"><i class="bi bi-shield-check me-2"></i>Pagamento seguro • <i class="bi bi-headset me-2"></i>Suporte especializado • <i class="bi bi-arrow-return-left me-2"></i>Garantia de 7 dias</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section py-5 bg-primary text-white">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-item">
+                        <h2 class="display-4 fw-bold mb-2">500+</h2>
+                        <p class="mb-0">Pacientes Atendidos</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-item">
+                        <h2 class="display-4 fw-bold mb-2">98%</h2>
+                        <p class="mb-0">Satisfação</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-item">
+                        <h2 class="display-4 fw-bold mb-2">24/7</h2>
+                        <p class="mb-0">Suporte</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="stat-item">
+                        <h2 class="display-4 fw-bold mb-2">5+</h2>
+                        <p class="mb-0">Anos de Experiência</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contato -->
+    <section class="contact-section py-5" id="contato">
+        <div class="container">
+            <div class="row text-center mb-5">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="display-5 fw-bold mb-3">Entre em Contato</h2>
+                    <p class="lead text-muted">Tem dúvidas? Nossa equipe está pronta para ajudar você</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="text-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="bi bi-envelope text-primary fs-2"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Email</h5>
+                        <p class="text-muted mb-0">contato@consultorio.com</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="text-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="bi bi-telephone text-primary fs-2"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Telefone</h5>
+                        <p class="text-muted mb-0">(11) 9999-9999</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="text-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="bi bi-chat-dots text-primary fs-2"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Suporte</h5>
+                        <p class="text-muted mb-0">Chat online disponível</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2 class="display-6 fw-bold mb-4">Por que escolher nosso sistema?</h2>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-check-circle-fill text-success me-3 fs-4"></i>
+                                <div>
+                                    <h6 class="fw-bold">Interface Intuitiva</h6>
+                                    <p class="text-muted mb-0">Design moderno e fácil de usar, sem complicações</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-check-circle-fill text-success me-3 fs-4"></i>
+                                <div>
+                                    <h6 class="fw-bold">Dados Seguros</h6>
+                                    <p class="text-muted mb-0">Isolamento completo entre usuários e proteção de dados</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-check-circle-fill text-success me-3 fs-4"></i>
+                                <div>
+                                    <h6 class="fw-bold">Relatórios Detalhados</h6>
+                                    <p class="text-muted mb-0">Acompanhe o desempenho do seu consultório com gráficos e estatísticas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-check-circle-fill text-success me-3 fs-4"></i>
+                                <div>
+                                    <h6 class="fw-bold">Suporte Completo</h6>
+                                    <p class="text-muted mb-0">Sistema desenvolvido especificamente para consultórios médicos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="p-4">
+                        <i class="bi bi-laptop display-1 text-primary mb-3"></i>
+                        <h4 class="fw-bold">Acesse de Qualquer Dispositivo</h4>
+                        <p class="text-muted">Computador, tablet ou smartphone - seu consultório sempre ao seu alcance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5 bg-primary text-white">
+        <div class="container text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="display-6 fw-bold mb-3">Pronto para começar?</h2>
+                    <p class="lead mb-4">Transforme a gestão do seu consultório hoje mesmo. É rápido, fácil e seguro.</p>
+                    <div class="d-flex gap-3 justify-content-center flex-wrap">
+                        <a href="cadastro.html" class="btn btn-light btn-lg">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Criar Conta Gratuita
+                        </a>
+                        <a href="entrar.html" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Já tenho conta
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6">
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-heart-pulse me-2"></i>
+                        Consultório Médico
+                    </h5>
+                    <p class="text-light">Sistema completo para gestão de consultórios médicos. Desenvolvido com foco na segurança e facilidade de uso.</p>
+                </div>
+                <div class="col-lg-3">
+                    <h6 class="fw-bold mb-3">Links Rápidos</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="entrar.html" class="text-light text-decoration-none">Entrar</a></li>
+                        <li><a href="cadastro.html" class="text-light text-decoration-none">Cadastrar</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3">
+                    <h6 class="fw-bold mb-3">Funcionalidades</h6>
+                    <ul class="list-unstyled">
+                        <li class="text-light">Gestão de Pacientes</li>
+                        <li class="text-light">Agendamentos</li>
+                        <li class="text-light">Controle Financeiro</li>
+                        <li class="text-light">Relatórios</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2024 Sistema de Consultório Médico. Todos os direitos reservados.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="text-light">Desenvolvido com <i class="bi bi-heart-fill text-danger"></i> para consultórios médicos</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

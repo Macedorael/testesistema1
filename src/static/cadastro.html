@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Consultório Médico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/cadastro.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+    <!-- Floating particles background -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="register-container">
+        <div class="register-card">
+            <div class="register-header">
+                <h1>Criar Conta</h1>
+                <p>Preencha os dados abaixo para criar sua conta</p>
+            </div>
+
+            <form id="registerForm" class="register-form">
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="username">Nome de Usuário</label>
+                        <input type="text" id="username" name="username" required>
+                        <span class="input-focus"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" required>
+                        <span class="input-focus"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" name="password" required>
+                        <span class="input-focus"></span>
+                        <small class="password-hint">Mínimo de 6 caracteres</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="confirmPassword">Confirmar Senha</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                        <span class="input-focus"></span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-register">
+                        <span class="btn-text">Criar Conta</span>
+                        <div class="btn-loading" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="register-footer">
+                    <p>Já tem uma conta? <a href="entrar.html" class="login-link">Faça login aqui</a></p>
+                    <p><a href="/" class="back-home-link">← Voltar ao Início</a></p>
+                </div>
+            </form>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="js/cadastro.js"></script>
+</body>
+</html>

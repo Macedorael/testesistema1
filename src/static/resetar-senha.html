@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resetar Senha - Consultório Médico</title>
+    <link rel="stylesheet" href="css/entrar.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo">
+                <h1>Consultório Médico</h1>
+            </div>
+            
+            <h2>Criar Nova Senha</h2>
+            <p class="subtitle">Digite sua nova senha abaixo</p>
+            
+            <form id="resetPasswordForm">
+                <input type="hidden" id="token" name="token">
+                
+                <div class="input-group">
+                    <label for="password">Nova Senha:</label>
+                    <input type="password" id="password" name="password" required minlength="6">
+                    <small>Mínimo de 6 caracteres</small>
+                </div>
+                
+                <div class="input-group">
+                    <label for="confirmPassword">Confirmar Nova Senha:</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+                </div>
+                
+                <button type="submit" id="submitBtn" class="login-btn">
+                    Alterar Senha
+                </button>
+            </form>
+            
+            <p id="errorMessage" class="error-message"></p>
+            <p id="successMessage" class="success-message"></p>
+            
+            <div class="links">
+                <a href="entrar.html">← Voltar para o Login</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/resetar-senha.js"></script>
+</body>
+</html>
