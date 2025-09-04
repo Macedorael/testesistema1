@@ -3,7 +3,7 @@ services:
     name: consultorio-psicologia
     env: python
     buildCommand: "./build.sh"
-    startCommand: "./activate_env.sh gunicorn --bind 0.0.0.0:$PORT wsgi:app"
+    startCommand: "bash -c 'export PATH=\"/opt/render/project/src/.venv/bin:$PATH\" && gunicorn --bind 0.0.0.0:$PORT wsgi:app'"
     plan: free
     envVars:
       - key: PYTHON_VERSION
