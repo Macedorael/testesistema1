@@ -104,6 +104,16 @@ def register():
     
     try:
         print("[DEBUG] Iniciando criação do novo usuário")
+        
+        # Verificar conexão com banco de dados
+        print("[DEBUG] Verificando conexão com banco de dados")
+        try:
+            db.session.execute('SELECT 1')
+            print("[DEBUG] Conexão com banco de dados OK")
+        except Exception as db_test_error:
+            print(f"[ERROR] Falha na conexão com banco: {str(db_test_error)}")
+            raise db_test_error
+        
         # Criar novo usuário
         print(f"[DEBUG] Criando objeto User para usuário: {username}")
         user = User(username=username, email=email)
@@ -115,10 +125,23 @@ def register():
         
         print("[DEBUG] Adicionando usuário à sessão do banco")
         db.session.add(user)
+        print("[DEBUG] Usuário adicionado à sessão")
+        
+        print("[DEBUG] Fazendo flush para obter ID temporário")
+        db.session.flush()
+        print(f"[DEBUG] Flush realizado - ID temporário: {user.id}")
         
         print("[DEBUG] Fazendo commit no banco de dados")
         db.session.commit()
-        print(f"[DEBUG] Usuário criado com sucesso - ID: {user.id}")
+        print(f"[DEBUG] Commit realizado com sucesso - ID final: {user.id}")
+        
+        # Verificar se o usuário foi realmente salvo
+        print(f"[DEBUG] Verificando se usuário foi salvo no banco")
+        saved_user = User.query.filter_by(id=user.id).first()
+        if saved_user:
+            print(f"[DEBUG] Usuário confirmado no banco - Username: {saved_user.username}")
+        else:
+            print("[ERROR] Usuário não encontrado após commit")
         
         return jsonify({
             "message": "Usuário cadastrado com sucesso!",
@@ -128,11 +151,34 @@ def register():
                 'email': user.email
             }
         }), 201
+        
     except Exception as e:
         print(f"[ERROR] Erro ao criar usuário: {str(e)}")
         print(f"[ERROR] Tipo do erro: {type(e).__name__}")
-        db.session.rollback()
-        print("[DEBUG] Rollback realizado")
+        
+        # Log detalhado do erro para PostgreSQL
+        import traceback
+        print(f"[ERROR] Traceback completo:")
+        print(traceback.format_exc())
+        
+        # Verificar se é erro específico do PostgreSQL
+        error_str = str(e).lower()
+        if 'connection' in error_str:
+            print("[ERROR] Possível problema de conexão com PostgreSQL")
+        elif 'constraint' in error_str or 'unique' in error_str:
+            print("[ERROR] Possível violação de constraint (duplicata)")
+        elif 'timeout' in error_str:
+            print("[ERROR] Possível timeout na operação")
+        elif 'permission' in error_str or 'denied' in error_str:
+            print("[ERROR] Possível problema de permissão no banco")
+        
+        try:
+            print("[DEBUG] Tentando rollback da transação")
+            db.session.rollback()
+            print("[DEBUG] Rollback realizado com sucesso")
+        except Exception as rollback_error:
+            print(f"[ERROR] Erro no rollback: {str(rollback_error)}")
+        
         return jsonify({"error": "Erro ao cadastrar usuário"}), 500
 
 @user_bp.route("/users", methods=["GET"])

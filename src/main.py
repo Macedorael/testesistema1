@@ -166,6 +166,55 @@ def log_response_info(response):
     
     return response
 
+# Handler de erro personalizado para debugging
+from flask import jsonify
+from werkzeug.exceptions import HTTPException
+import traceback
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handler global para todas as exceções"""
+    # Se for uma exceção HTTP, deixar o Flask lidar com ela
+    if isinstance(e, HTTPException):
+        return e
+    
+    # Para exceções não-HTTP, logar detalhes e retornar erro 500
+    error_id = str(hash(str(e)))[:8]  # ID único para rastreamento
+    
+    print(f"[ERROR] EXCEÇÃO NÃO TRATADA [ID: {error_id}]: {str(e)}")
+    print(f"[ERROR] Tipo da exceção: {type(e).__name__}")
+    print(f"[ERROR] Traceback completo:")
+    print(traceback.format_exc())
+    
+    # Em desenvolvimento, retornar detalhes do erro
+    if os.getenv('FLASK_ENV') != 'production':
+        return jsonify({
+            'error': 'Internal Server Error',
+            'message': str(e),
+            'type': type(e).__name__,
+            'error_id': error_id,
+            'traceback': traceback.format_exc().split('\n')
+        }), 500
+    else:
+        # Em produção, retornar erro genérico mas logar detalhes
+        return jsonify({
+            'error': 'Internal Server Error',
+            'message': 'Ocorreu um erro interno no servidor',
+            'error_id': error_id
+        }), 500
+
+@app.errorhandler(500)
+def handle_500_error(e):
+    """Handler específico para erros 500"""
+    error_id = str(hash(str(e)))[:8]
+    print(f"[ERROR] ERRO 500 [ID: {error_id}]: {str(e)}")
+    
+    return jsonify({
+        'error': 'Internal Server Error',
+        'message': 'Erro interno do servidor',
+        'error_id': error_id
+    }), 500
+
 # Registrar blueprints
 try:
     app.register_blueprint(user_bp, url_prefix='/api')
