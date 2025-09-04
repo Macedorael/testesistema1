@@ -4,6 +4,7 @@ from src.models.assinatura import Subscription
 from src.models.password_reset import PasswordResetToken
 from src.utils.auth import login_required, get_current_user
 from datetime import datetime
+from sqlalchemy import text
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -108,7 +109,7 @@ def register():
         # Verificar conexão com banco de dados
         print("[DEBUG] Verificando conexão com banco de dados")
         try:
-            db.session.execute('SELECT 1')
+            db.session.execute(text('SELECT 1'))
             print("[DEBUG] Conexão com banco de dados OK")
         except Exception as db_test_error:
             print(f"[ERROR] Falha na conexão com banco: {str(db_test_error)}")
