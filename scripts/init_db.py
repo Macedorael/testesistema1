@@ -42,34 +42,44 @@ def create_app():
     db.init_app(app)
     return app
 
-def init_database():
-    """Inicializa o banco de dados criando todas as tabelas"""
+def init_database(force_reset=False):
+    """Inicializa o banco de dados criando todas as tabelas
+    
+    Args:
+        force_reset (bool): Se True, apaga todas as tabelas antes de recriar.
+                           Se False, apenas cria tabelas que não existem (preserva dados).
+    """
     app = create_app()
     
     with app.app_context():
-        try:
-            # Remove todas as tabelas existentes
-            db.drop_all()
-        except Exception as e:
-            print(f"⚠️ Erro ao dropar tabelas (normal em primeira execução): {e}")
-            # Se falhar, tenta dropar com CASCADE usando SQL direto
+        if force_reset:
+            print("⚠️ MODO RESET FORÇADO - TODOS OS DADOS SERÃO PERDIDOS!")
             try:
-                if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
-                    # Para PostgreSQL, usa CASCADE
-                    from sqlalchemy import text
-                    db.session.execute(text("DROP SCHEMA public CASCADE;"))
-                    db.session.execute(text("CREATE SCHEMA public;"))
-                    db.session.commit()
-                    print("✅ Schema dropado com CASCADE")
-            except Exception as cascade_error:
-                print(f"⚠️ Erro no CASCADE: {cascade_error}")
-                print("Continuando com criação das tabelas...")
+                # Remove todas as tabelas existentes
+                db.drop_all()
+                print("✅ Tabelas removidas")
+            except Exception as e:
+                print(f"⚠️ Erro ao dropar tabelas (normal em primeira execução): {e}")
+                # Se falhar, tenta dropar com CASCADE usando SQL direto
+                try:
+                    if 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']:
+                        # Para PostgreSQL, usa CASCADE
+                        from sqlalchemy import text
+                        db.session.execute(text("DROP SCHEMA public CASCADE;"))
+                        db.session.execute(text("CREATE SCHEMA public;"))
+                        db.session.commit()
+                        print("✅ Schema dropado com CASCADE")
+                except Exception as cascade_error:
+                    print(f"⚠️ Erro no CASCADE: {cascade_error}")
+                    print("Continuando com criação das tabelas...")
+        else:
+            print("🔒 MODO SEGURO - Preservando dados existentes")
         
-        # Cria todas as tabelas
+        # Cria todas as tabelas (apenas as que não existem)
         db.create_all()
         
         print("✅ Banco de dados inicializado com sucesso!")
-        print("📊 Tabelas criadas:")
+        print("📊 Tabelas criadas/verificadas:")
         print("   - users")
         print("   - patients")
         print("   - appointments")
@@ -229,19 +239,50 @@ def create_sample_data():
         print("✅ População do banco de dados concluída.")
 
 if __name__ == "__main__":
+    import argparse
+    
+    # Configurar argumentos de linha de comando
+    parser = argparse.ArgumentParser(description='Inicializar banco de dados do consultório')
+    parser.add_argument('--reset', action='store_true', 
+                       help='CUIDADO: Apaga todos os dados existentes antes de recriar')
+    parser.add_argument('--no-sample-data', action='store_true',
+                       help='Não criar dados de exemplo')
+    
+    args = parser.parse_args()
+    
     print("🏥 Inicializando sistema de consultório de psicologia...")
+    
+    if args.reset:
+        print("\n⚠️ ATENÇÃO: Modo RESET ativado - todos os dados serão perdidos!")
+        confirm = input("Digite 'CONFIRMO' para continuar: ")
+        if confirm != 'CONFIRMO':
+            print("❌ Operação cancelada")
+            sys.exit(0)
     
     # Criar diretório do banco SQLite apenas se não estiver usando PostgreSQL
     if not os.getenv('DATABASE_URL'):
         db_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'database')
         os.makedirs(db_dir, exist_ok=True)
     
-    # Inicializar banco
-    init_database()
+    # Inicializar banco (modo seguro por padrão)
+    init_database(force_reset=args.reset)
     
-    # Criar dados de exemplo
-    create_sample_data()
+    # Criar dados de exemplo apenas se solicitado e banco estiver vazio
+    if not args.no_sample_data:
+        app = create_app()
+        with app.app_context():
+            user_count = User.query.count()
+            if user_count == 0 or args.reset:
+                print("\n📝 Criando dados de exemplo...")
+                create_sample_data()
+            else:
+                print(f"\n📊 Banco já possui {user_count} usuários - pulando dados de exemplo")
+                print("💡 Use --reset para recriar tudo ou --no-sample-data para pular dados de exemplo")
     
     print("\n🎉 Sistema pronto para uso!")
+    print("\n📋 Comandos úteis:")
+    print("   python scripts/init_db.py              # Modo seguro (preserva dados)")
+    print("   python scripts/init_db.py --reset      # Reset completo (apaga tudo)")
+    print("   python scripts/init_db.py --no-sample-data  # Sem dados de exemplo")
 
 
