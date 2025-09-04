@@ -6,6 +6,10 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+# Carregar variáveis de ambiente
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.models.usuario import db, User
 from src.models.paciente import Patient
 from src.models.consulta import Appointment, Session, FrequencyType, SessionStatus, PaymentStatus
@@ -16,7 +20,22 @@ from flask import Flask
 def create_app():
     """Cria a aplicação Flask para inicialização do banco"""
     app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
+    
+    # Configuração do banco de dados - mesma lógica do main.py
+    if os.getenv('DATABASE_URL'):
+        # Produção - PostgreSQL
+        database_url = os.getenv('DATABASE_URL')
+        # Corrige URL do PostgreSQL se necessário
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+        print(f"[DEBUG] Usando PostgreSQL: {database_url[:50]}...")
+    else:
+        # Desenvolvimento - SQLite
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'database', 'app.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
+        print(f"[DEBUG] Usando SQLite: {db_path}")
+    
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(app)
     return app
@@ -195,9 +214,10 @@ def create_sample_data():
 if __name__ == "__main__":
     print("🏥 Inicializando sistema de consultório de psicologia...")
     
-    # Criar diretório do banco se não existir
-    db_dir = os.path.join(os.path.dirname(__file__), 'database')
-    os.makedirs(db_dir, exist_ok=True)
+    # Criar diretório do banco SQLite apenas se não estiver usando PostgreSQL
+    if not os.getenv('DATABASE_URL'):
+        db_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'database')
+        os.makedirs(db_dir, exist_ok=True)
     
     # Inicializar banco
     init_database()
