@@ -174,11 +174,7 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
                 </div>
                 
                 <h3 style="color: #2c3e50;">Suas Sessões Agendadas</h3>
-                
-                
-                
-                <p><strong>Ou adicione sessões individuais:</strong></p>
-                
+          
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                     <thead>
                         <tr style="background-color: #3498db; color: white;">
