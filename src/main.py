@@ -282,24 +282,50 @@ except Exception as e:
 if os.getenv('DATABASE_URL'):
     # Produção - PostgreSQL no Render
     database_url = os.getenv('DATABASE_URL')
+    print(f"[DEBUG] DATABASE_URL encontrada: {database_url[:50]}...")
     # Render usa postgres:// mas SQLAlchemy precisa de postgresql://
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        print("[DEBUG] URL do PostgreSQL corrigida de postgres:// para postgresql://")
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    print("[DEBUG] Configuração do banco PostgreSQL aplicada")
 else:
     # Desenvolvimento - SQLite local
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
+    sqlite_path = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
+    app.config['SQLALCHEMY_DATABASE_URI'] = sqlite_path
+    print(f"[DEBUG] Configuração do banco SQLite aplicada: {sqlite_path}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Criar tabelas apenas se não existirem
+# Inicializar banco de dados
 with app.app_context():
     try:
+        print("[DEBUG] Iniciando criação/verificação das tabelas do banco de dados...")
+        print(f"[DEBUG] URI do banco: {app.config['SQLALCHEMY_DATABASE_URI'][:50]}...")
+        
+        # Testar conexão com o banco
+        with db.engine.connect() as conn:
+            conn.execute(db.text('SELECT 1'))
+        print("[DEBUG] Conexão com o banco de dados testada com sucesso")
+        
         db.create_all()
         print("[DEBUG] Tabelas do banco de dados criadas/verificadas com sucesso")
+        
+        # Verificar se há funcionários no banco
+        from src.models.funcionario import Funcionario
+        funcionarios_count = Funcionario.query.count()
+        print(f"[DEBUG] Total de funcionários no banco: {funcionarios_count}")
+        
+        if funcionarios_count > 0:
+            funcionarios = Funcionario.query.limit(5).all()
+            for func in funcionarios:
+                print(f"[DEBUG] Funcionário encontrado: ID={func.id}, Nome='{func.nome}'")
+        
     except Exception as e:
-        print(f"[ERROR] Erro ao criar tabelas: {e}")
+        print(f"[ERROR] Erro ao criar tabelas ou conectar ao banco: {e}")
+        import traceback
+        print(f"[ERROR] Traceback completo: {traceback.format_exc()}")
 
 @app.route('/')
 def home():
@@ -339,8 +365,8 @@ def home():
 
 @app.route('/<path:path>')
 def serve(path):
-    # Não interceptar rotas da API
-    if path.startswith('api/'):
+    # Não interceptar rotas da API e rotas específicas como medicos, psicologos, funcionarios
+    if path.startswith('api/') or path in ['medicos', 'psicologos', 'funcionarios', 'especialidades']:
         return "API route not found", 404
         
     print(f"[DEBUG] FUNÇÃO SERVE CHAMADA - Tentando servir arquivo: {path}")

@@ -10,7 +10,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256))
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
-    subscription = db.relationship('Subscription', back_populates='user', uselist=False)
+    # subscription = db.relationship('Subscription', back_populates='user', uselist=False)
 
     def __repr__(self):
         return f'<User {self.username}>'

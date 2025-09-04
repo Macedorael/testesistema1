@@ -257,24 +257,36 @@ def transfer_appointments(funcionario_id):
 def get_medicos():
     """Listar todos os médicos/profissionais de saúde"""
     if 'user_id' not in session:
+        print("[ERROR] /medicos - Usuário não autenticado")
         return jsonify({'error': 'Usuário não autenticado'}), 401
     
     try:
+        print(f"[DEBUG] /medicos - Iniciando busca de funcionários para user_id: {session.get('user_id')}")
+        
         # Buscar todos os funcionários/profissionais de saúde
         funcionarios = Funcionario.query.join(Especialidade, Funcionario.especialidade_id == Especialidade.id, isouter=True).all()
+        
+        print(f"[DEBUG] /medicos - Encontrados {len(funcionarios)} funcionários")
         
         # Retornar todos os funcionários como profissionais de saúde
         medicos = []
         for funcionario in funcionarios:
-            medicos.append({
+            especialidade_nome = funcionario.especialidade.nome if funcionario.especialidade else 'Medicina Geral'
+            medico_data = {
                 'id': funcionario.id,
                 'nome': funcionario.nome,
-                'especialidade': funcionario.especialidade.nome if funcionario.especialidade else 'Medicina Geral'
-            })
+                'especialidade': especialidade_nome
+            }
+            medicos.append(medico_data)
+            print(f"[DEBUG] /medicos - Funcionário: ID={funcionario.id}, Nome='{funcionario.nome}', Especialidade='{especialidade_nome}'")
         
+        print(f"[DEBUG] /medicos - Retornando {len(medicos)} médicos")
         return jsonify(medicos)
     
     except Exception as e:
+        print(f"[ERROR] /medicos - Erro ao buscar médicos: {str(e)}")
+        import traceback
+        print(f"[ERROR] /medicos - Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @funcionarios_bp.route('/psicologos', methods=['GET'])

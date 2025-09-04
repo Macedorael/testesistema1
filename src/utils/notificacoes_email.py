@@ -175,20 +175,7 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
                 
                 <h3 style="color: #2c3e50;">Suas Sessões Agendadas</h3>
                 
-                <div style="text-align: center; margin: 25px 0;">
-                    <a href="{link_todas_sessoes}" 
-                       style="background-color: #27ae60; color: white; padding: 15px 30px; 
-                              text-decoration: none; border-radius: 8px; display: inline-block;
-                              font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                        📅 Adicionar TODAS as Sessões ao Google Calendar
-                    </a>
-                </div>
                 
-                <p style="text-align: center; color: #666; font-size: 14px; margin: 15px 0;">
-                    <em>Clique no botão acima para adicionar todas as sessões de uma só vez!</em>
-                </p>
-                
-                <hr style="margin: 25px 0; border: none; border-top: 1px solid #ddd;">
                 
                 <p><strong>Ou adicione sessões individuais:</strong></p>
                 
