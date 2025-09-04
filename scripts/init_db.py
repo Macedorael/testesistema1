@@ -48,7 +48,34 @@ def init_database():
     
     with app.app_context():
         # Remove todas as tabelas existentes
-        db.drop_all()
+        # Para PostgreSQL, usa CASCADE para resolver dependências de foreign keys
+        try:
+            db.drop_all()
+        except Exception as e:
+            if "DependentObjectsStillExist" in str(e) or "cannot drop table" in str(e):
+                print("⚠️  Detectadas dependências de foreign keys, usando CASCADE...")
+                # Para PostgreSQL, executa DROP com CASCADE
+                if os.getenv('DATABASE_URL'):
+                    from sqlalchemy import text
+                    # Obtém todas as tabelas e as dropa com CASCADE
+                    result = db.session.execute(text("""
+                        SELECT tablename FROM pg_tables 
+                        WHERE schemaname = 'public' 
+                        AND tablename NOT LIKE 'pg_%' 
+                        AND tablename NOT LIKE 'sql_%'
+                    """))
+                    tables = [row[0] for row in result]
+                    for table in tables:
+                        try:
+                            db.session.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE"))
+                        except Exception:
+                            pass
+                    db.session.commit()
+                else:
+                    # Para SQLite, simplesmente tenta novamente
+                    db.drop_all()
+            else:
+                raise e
         
         # Cria todas as tabelas
         db.create_all()
