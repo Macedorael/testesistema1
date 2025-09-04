@@ -67,32 +67,58 @@ def logout():
 
 @user_bp.route("/register", methods=["POST"])
 def register():
+    print("[DEBUG] Iniciando processo de registro de usuário")
     data = request.json
+    print(f"[DEBUG] Dados recebidos: {data}")
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
     
     # Validações básicas
     if not username or not email or not password:
+        print(f"[ERROR] Campos obrigatórios ausentes - username: {bool(username)}, email: {bool(email)}, password: {bool(password)}")
         return jsonify({"error": "Todos os campos são obrigatórios"}), 400
     
+    print("[DEBUG] Todos os campos obrigatórios presentes")
+    
     if len(password) < 6:
+        print(f"[ERROR] Senha muito curta: {len(password)} caracteres")
         return jsonify({"error": "A senha deve ter pelo menos 6 caracteres"}), 400
     
+    print("[DEBUG] Senha atende aos critérios de comprimento")
+    
     # Verificar se usuário já existe
+    print(f"[DEBUG] Verificando se username já existe: {username}")
     if User.query.filter_by(username=username).first():
+        print(f"[ERROR] Username já cadastrado: {username}")
         return jsonify({"error": "Nome de usuário já existe"}), 400
     
+    print("[DEBUG] Username disponível")
+    
+    print(f"[DEBUG] Verificando se email já existe: {email}")
     if User.query.filter_by(email=email).first():
+        print(f"[ERROR] Email já cadastrado: {email}")
         return jsonify({"error": "Email já está cadastrado"}), 400
     
+    print("[DEBUG] Email disponível")
+    
     try:
+        print("[DEBUG] Iniciando criação do novo usuário")
         # Criar novo usuário
+        print(f"[DEBUG] Criando objeto User para usuário: {username}")
         user = User(username=username, email=email)
-        user.set_password(password)
+        print("[DEBUG] Objeto User criado com sucesso")
         
+        print(f"[DEBUG] Gerando hash da senha para usuário: {username}")
+        user.set_password(password)
+        print("[DEBUG] Hash da senha gerado com sucesso")
+        
+        print("[DEBUG] Adicionando usuário à sessão do banco")
         db.session.add(user)
+        
+        print("[DEBUG] Fazendo commit no banco de dados")
         db.session.commit()
+        print(f"[DEBUG] Usuário criado com sucesso - ID: {user.id}")
         
         return jsonify({
             "message": "Usuário cadastrado com sucesso!",
@@ -103,7 +129,10 @@ def register():
             }
         }), 201
     except Exception as e:
+        print(f"[ERROR] Erro ao criar usuário: {str(e)}")
+        print(f"[ERROR] Tipo do erro: {type(e).__name__}")
         db.session.rollback()
+        print("[DEBUG] Rollback realizado")
         return jsonify({"error": "Erro ao cadastrar usuário"}), 500
 
 @user_bp.route("/users", methods=["GET"])
