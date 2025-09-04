@@ -2,12 +2,15 @@
 # exit on error
 set -o errexit
 
+# Force Python environment
+echo "Setting up Python environment..."
+export PATH="/opt/render/project/src/.venv/bin:$PATH"
+echo "PATH: $PATH"
+
 # Ensure we're using Python 3
 echo "Checking Python installation..."
 which python3 || echo "python3 not found"
-which python || echo "python not found"
-python3 --version || echo "python3 version check failed"
-python --version || echo "python version check failed"
+/opt/render/project/src/.venv/bin/python3 --version || python3 --version || echo "python3 version check failed"
 
 # Install dependencies
 python3 -m pip install --upgrade pip
