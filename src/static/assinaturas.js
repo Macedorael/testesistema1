@@ -142,15 +142,10 @@ class SubscriptionManager {
                 'annual': 'Anual'
             };
             
-            const statusNames = {
-                'cancelled': 'Cancelado',
-                'expired': 'Expirado'
-            };
-            
             document.getElementById('currentPlan').textContent = planNames[this.currentSubscription.plan_type] || this.currentSubscription.plan_type;
             
             const statusElement = document.getElementById('currentStatus');
-            statusElement.textContent = statusNames[this.currentSubscription.status] || this.currentSubscription.status;
+            statusElement.textContent = this.currentSubscription.status;
             statusElement.className = `info-value status-${this.currentSubscription.status}`;
             
             document.getElementById('currentPrice').textContent = `R$ ${this.currentSubscription.price.toFixed(2)}`;
