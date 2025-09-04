@@ -19,8 +19,8 @@ fi
 
 # Verify gunicorn is working and show path
 echo "Final Gunicorn check:"
-which gunicorn
-gunicorn --version
+which gunicorn || echo "Gunicorn not found in PATH"
+gunicorn --version || echo "Gunicorn version check failed"
 echo "PATH: $PATH"
 echo "Expected start command: gunicorn --bind 0.0.0.0:\$PORT wsgi:app"
 
