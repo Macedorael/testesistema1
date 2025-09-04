@@ -12,6 +12,8 @@ load_dotenv()
 
 from src.models.usuario import db, User
 from src.models.paciente import Patient
+from src.models.funcionario import Funcionario
+from src.models.especialidade import Especialidade
 from src.models.consulta import Appointment, Session, FrequencyType, SessionStatus, PaymentStatus
 from src.models.pagamento import Payment, PaymentSession, PaymentMethod
 from datetime import datetime, date, timedelta
