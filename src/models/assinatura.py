@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
-from src.models.usuario import db
+from src.models.base import db
 
 class Subscription(db.Model):
     __tablename__ = 'subscriptions'
@@ -18,7 +17,7 @@ class Subscription(db.Model):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamento com User
-    user = relationship('User', back_populates='subscription')
+    user = db.relationship('User', back_populates='subscription')
     
     # Preços dos planos (em reais)
     PLAN_PRICES = {

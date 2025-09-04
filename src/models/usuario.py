@@ -1,8 +1,5 @@
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.orm import relationship
-
-db = SQLAlchemy()
+from src.models.base import db
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -13,7 +10,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
-    subscription = relationship('Subscription', back_populates='user', uselist=False)
+    subscription = db.relationship('Subscription', back_populates='user', uselist=False)
 
     def __repr__(self):
         return f'<User {self.username}>'

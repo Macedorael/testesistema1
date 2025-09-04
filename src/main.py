@@ -12,7 +12,8 @@ from flask_cors import CORS
 
 # Importações básicas primeiro
 try:
-    from src.models.usuario import db, User
+    from src.models.base import db
+    from src.models.usuario import User
     print("[DEBUG] Importação de usuario OK")
 except Exception as e:
     print(f"[ERROR] Erro ao importar usuario: {e}")

@@ -1,4 +1,4 @@
-from sqlalchemy.ext.declarative import declarative_base
+from flask_sqlalchemy import SQLAlchemy
 
-# Base única para todos os modelos
-Base = declarative_base()
+# Instância única do SQLAlchemy para toda a aplicação
+db = SQLAlchemy()
