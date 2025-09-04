@@ -17,6 +17,13 @@ if ! command -v gunicorn &> /dev/null; then
     pip install gunicorn==21.2.0
 fi
 
+# Verify gunicorn is working and show path
+echo "Final Gunicorn check:"
+which gunicorn
+gunicorn --version
+echo "PATH: $PATH"
+echo "Expected start command: gunicorn --bind 0.0.0.0:\$PORT wsgi:app"
+
 # Initialize database
 python -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database initialized successfully')"
 
