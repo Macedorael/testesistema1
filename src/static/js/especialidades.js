@@ -110,12 +110,10 @@ function renderEspecialidadesTable(dataToRender = null) {
     paginatedData.forEach(especialidade => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>${especialidade.id}</td>
             <td>${especialidade.nome}</td>
             <td>${especialidade.descricao || '-'}</td>
             <td>${formatDate(especialidade.created_at)}</td>
-            <td>
-                <span class="status-badge status-ativo">Ativo</span>
-            </td>
             <td>
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editEspecialidade(${especialidade.id})" title="Editar">
                     <i class="bi bi-pencil"></i>
