@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 from src.models.funcionario import Funcionario
-from src.models.base import db
 from src.models.especialidade import Especialidade
 from src.models.consulta import Appointment
+from src.models.usuario import db
+from src.utils.auth import login_required, get_current_user
 import re
 
 funcionarios_bp = Blueprint('funcionarios', __name__)
@@ -14,63 +15,111 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
-@funcionarios_bp.route('/funcionarios', methods=['GET'])
+@funcionarios_bp.route('/', methods=['GET'])
+@login_required
 def get_funcionarios():
-    """Listar todos os funcionários"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Usuário não autenticado'}), 401
-    
+    """Retorna lista de funcionários do usuário logado"""
     try:
-        funcionarios = Funcionario.query.all()
-        result = [funcionario.to_dict() for funcionario in funcionarios]
-        return jsonify(result)
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
+        funcionarios = Funcionario.query.filter_by(user_id=current_user.id).all()
+        return jsonify({
+            'success': True,
+            'funcionarios': [funcionario.to_dict() for funcionario in funcionarios]
+        })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao buscar funcionários: {str(e)}'
+        }), 500
 
-@funcionarios_bp.route('/funcionarios', methods=['POST'])
+@funcionarios_bp.route('/', methods=['POST'])
+@login_required
 def create_funcionario():
-    """Criar novo funcionário"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Usuário não autenticado'}), 401
-    
+    """Cria um novo funcionário para o usuário logado"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
         data = request.get_json()
         
-        if not data or not data.get('nome'):
-            return jsonify({'error': 'Nome é obrigatório'}), 400
+        # Validar dados obrigatórios
+        if not data.get('nome'):
+            return jsonify({
+                'success': False,
+                'message': 'Nome é obrigatório'
+            }), 400
+            
+        if not data.get('especialidade_id'):
+            return jsonify({
+                'success': False,
+                'message': 'Especialidade é obrigatória'
+            }), 400
         
         # Validar email se fornecido
         if data.get('email') and not validate_email(data['email']):
-            return jsonify({'error': 'Formato de email inválido'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Formato de email inválido'
+            }), 400
         
-        # Verificar se já existe um funcionário com esse email
+        # Verificar se já existe um funcionário com esse email para este usuário
         if data.get('email'):
-            existing = Funcionario.query.filter_by(email=data['email']).first()
+            existing = Funcionario.query.filter_by(
+                email=data['email'], 
+                user_id=current_user.id
+            ).first()
             if existing:
-                return jsonify({'error': 'Já existe um funcionário com esse email'}), 400
+                return jsonify({
+                    'success': False,
+                    'message': 'Já existe um funcionário com esse email'
+                }), 400
         
-        # Verificar se a especialidade existe
-        if data.get('especialidade_id'):
-            especialidade = Especialidade.query.filter_by(id=data['especialidade_id']).first()
-            if not especialidade:
-                return jsonify({'error': 'Especialidade não encontrada'}), 400
+        # Verificar se especialidade existe e pertence ao usuário
+        especialidade = Especialidade.query.filter_by(
+            id=data['especialidade_id'], 
+            user_id=current_user.id
+        ).first()
+        if not especialidade:
+            return jsonify({
+                'success': False,
+                'message': 'Especialidade não encontrada ou não autorizada'
+            }), 404
         
+        # Criar funcionário
         funcionario = Funcionario(
+            user_id=current_user.id,
             nome=data['nome'],
+            especialidade_id=data['especialidade_id'],
             telefone=data.get('telefone', ''),
             email=data.get('email', ''),
-            especialidade_id=data.get('especialidade_id'),
             obs=data.get('obs', '')
         )
         
         db.session.add(funcionario)
         db.session.commit()
         
-        result = funcionario.to_dict()
+        return jsonify({
+            'success': True,
+            'message': 'Funcionário criado com sucesso',
+            'funcionario': funcionario.to_dict()
+        }), 201
         
-        return jsonify(result), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao criar funcionário: {str(e)}'
+        }), 500
 
 @funcionarios_bp.route('/funcionarios/<int:funcionario_id>', methods=['GET'])
 def get_funcionario(funcionario_id):
@@ -89,95 +138,142 @@ def get_funcionario(funcionario_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@funcionarios_bp.route('/funcionarios/<int:funcionario_id>', methods=['PUT'])
+@funcionarios_bp.route('/<int:funcionario_id>', methods=['PUT'])
+@login_required
 def update_funcionario(funcionario_id):
-    """Atualizar funcionário"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Usuário não autenticado'}), 401
-    
+    """Atualiza um funcionário do usuário logado"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
+        funcionario = Funcionario.query.filter_by(
+            id=funcionario_id, 
+            user_id=current_user.id
+        ).first()
+        if not funcionario:
+            return jsonify({
+                'success': False,
+                'message': 'Funcionário não encontrado ou não autorizado'
+            }), 404
+            
         data = request.get_json()
         
-        if not data or not data.get('nome'):
-            return jsonify({'error': 'Nome é obrigatório'}), 400
+        # Validar dados
+        if 'nome' in data and not data['nome']:
+            return jsonify({
+                'success': False,
+                'message': 'Nome é obrigatório'
+            }), 400
         
         # Validar email se fornecido
         if data.get('email') and not validate_email(data['email']):
-            return jsonify({'error': 'Formato de email inválido'}), 400
+            return jsonify({
+                'success': False,
+                'message': 'Formato de email inválido'
+            }), 400
         
-        funcionario = Funcionario.query.filter_by(id=funcionario_id).first()
-        
-        if not funcionario:
-            return jsonify({'error': 'Funcionário não encontrado'}), 404
-        
-        # Verificar se já existe outro funcionário com esse email
+        # Verificar se já existe outro funcionário com esse email para este usuário
         if data.get('email'):
             existing = Funcionario.query.filter(
                 Funcionario.email == data['email'],
-                Funcionario.id != funcionario_id
+                Funcionario.id != funcionario_id,
+                Funcionario.user_id == current_user.id
             ).first()
             if existing:
-                return jsonify({'error': 'Já existe um funcionário com esse email'}), 400
+                return jsonify({
+                    'success': False,
+                    'message': 'Já existe um funcionário com esse email'
+                }), 400
         
-        # Verificar se a especialidade existe
-        if data.get('especialidade_id'):
-            especialidade = Especialidade.query.filter_by(id=data['especialidade_id']).first()
+        if 'especialidade_id' in data:
+            especialidade = Especialidade.query.filter_by(
+                id=data['especialidade_id'],
+                user_id=current_user.id
+            ).first()
             if not especialidade:
-                return jsonify({'error': 'Especialidade não encontrada'}), 400
+                return jsonify({
+                    'success': False,
+                    'message': 'Especialidade não encontrada ou não autorizada'
+                }), 404
         
-        funcionario.nome = data['nome']
-        funcionario.telefone = data.get('telefone', '')
-        funcionario.email = data.get('email', '')
-        funcionario.especialidade_id = data.get('especialidade_id')
-        funcionario.obs = data.get('obs', '')
+        # Atualizar campos
+        if 'nome' in data:
+            funcionario.nome = data['nome']
+        if 'especialidade_id' in data:
+            funcionario.especialidade_id = data['especialidade_id']
+        if 'telefone' in data:
+            funcionario.telefone = data['telefone']
+        if 'email' in data:
+            funcionario.email = data['email']
+        if 'obs' in data:
+            funcionario.obs = data['obs']
         
         db.session.commit()
         
-        result = funcionario.to_dict()
+        return jsonify({
+            'success': True,
+            'message': 'Funcionário atualizado com sucesso',
+            'funcionario': funcionario.to_dict()
+        })
         
-        return jsonify(result)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao atualizar funcionário: {str(e)}'
+        }), 500
 
-@funcionarios_bp.route('/funcionarios/<int:funcionario_id>', methods=['DELETE'])
+@funcionarios_bp.route('/<int:funcionario_id>', methods=['DELETE'])
+@login_required
 def delete_funcionario(funcionario_id):
-    """Deletar funcionário"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Usuário não autenticado'}), 401
-    
+    """Deleta um funcionário do usuário logado"""
     try:
-        funcionario = Funcionario.query.filter_by(id=funcionario_id).first()
-        
-        if not funcionario:
-            return jsonify({'error': 'Funcionário não encontrado'}), 404
-        
-        # Verificar se o funcionário tem agendamentos
-        agendamentos = Appointment.query.filter_by(funcionario_id=funcionario_id).all()
-        
-        if agendamentos:
-            # Retornar informações sobre os agendamentos
-            agendamentos_info = []
-            for agendamento in agendamentos:
-                agendamentos_info.append({
-                    'id': agendamento.id,
-                    'patient_id': agendamento.patient_id,
-                    'data_primeira_sessao': agendamento.data_primeira_sessao.isoformat(),
-                    'quantidade_sessoes': agendamento.quantidade_sessoes
-                })
-            
+        current_user = get_current_user()
+        if not current_user:
             return jsonify({
-                'error': 'Funcionário possui agendamentos',
-                'has_appointments': True,
-                'appointments': agendamentos_info,
-                'funcionario_nome': funcionario.nome
-            }), 409
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
+        funcionario = Funcionario.query.filter_by(
+            id=funcionario_id, 
+            user_id=current_user.id
+        ).first()
+        if not funcionario:
+            return jsonify({
+                'success': False,
+                'message': 'Funcionário não encontrado ou não autorizado'
+            }), 404
+        
+        # Verificar se há appointments associados do mesmo usuário
+        appointments = Appointment.query.filter_by(
+            funcionario_id=funcionario_id,
+            user_id=current_user.id
+        ).first()
+        if appointments:
+            return jsonify({
+                'success': False,
+                'message': 'Não é possível excluir funcionário com agendamentos associados'
+            }), 400
         
         db.session.delete(funcionario)
         db.session.commit()
         
-        return jsonify({'message': 'Funcionário deletado com sucesso'})
+        return jsonify({
+            'success': True,
+            'message': 'Funcionário excluído com sucesso'
+        })
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao excluir funcionário: {str(e)}'
+        }), 500
 
 @funcionarios_bp.route('/funcionarios/<int:funcionario_id>/appointments', methods=['GET'])
 def get_funcionario_appointments(funcionario_id):

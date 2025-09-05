@@ -36,8 +36,7 @@ class Appointment(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamentos
-    user = db.relationship('User', backref='appointments', lazy=True)
-    funcionario = db.relationship('Funcionario', backref='appointments', lazy=True)
+    user = db.relationship('User', backref='user_appointments', lazy=True)
     sessions = db.relationship('Session', backref='appointment', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):

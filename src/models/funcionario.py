@@ -5,6 +5,7 @@ class Funcionario(db.Model):
     __tablename__ = 'funcionarios'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=True)
     email = db.Column(db.String(100), nullable=True, unique=True)
@@ -13,12 +14,14 @@ class Funcionario(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relacionamento com Especialidade
+    # Relacionamentos
+    user = db.relationship('User', backref='funcionarios', lazy=True)
     especialidade = db.relationship("Especialidade", backref="funcionarios")
     
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'nome': self.nome,
             'telefone': self.telefone,
             'email': self.email,

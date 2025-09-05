@@ -6,6 +6,7 @@ class Especialidade(db.Model):
     __tablename__ = 'especialidades'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     nome = db.Column(db.String(100), nullable=False, unique=True)
     descricao = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -39,11 +40,15 @@ class Especialidade(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'nome': self.nome,
             'descricao': self.descricao,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+    
+    # Relacionamentos
+    user = db.relationship('User', backref='especialidades', lazy=True)
     
     def __repr__(self):
         return f'<Especialidade {self.nome}>'
