@@ -82,44 +82,49 @@ class SubscriptionManager {
     }
     
     renderPlans() {
-        const plansGrid = document.getElementById('plansGrid');
-        plansGrid.innerHTML = '';
-        
-        const planNames = {
-            'monthly': 'Mensal',
-            'quarterly': 'Trimestral',
-            'biannual': 'Semestral',
-            'annual': 'Anual'
-        };
-        
-        const planFeatures = {
-            'monthly': ['Acesso completo ao sistema', 'Suporte por email', 'Backup automático'],
-            'quarterly': ['Acesso completo ao sistema', 'Suporte por email', 'Backup automático', '5% de desconto'],
-            'biannual': ['Acesso completo ao sistema', 'Suporte prioritário', 'Backup automático', '10% de desconto'],
-            'annual': ['Acesso completo ao sistema', 'Suporte prioritário', 'Backup automático', '15% de desconto', 'Recursos premium']
-        };
-        
-        Object.entries(this.plans).forEach(([planType, planInfo]) => {
-            const isCurrentPlan = this.currentSubscription && this.currentSubscription.plan_type === planType;
+        // Só mostra os planos se o usuário estiver logado e não tiver assinatura ativa
+        if (!this.currentSubscription || this.currentSubscription.status !== 'active') {
+            const plansGrid = document.getElementById('plansGrid');
+            if (!plansGrid) return;
             
-            const planCard = document.createElement('div');
-            planCard.className = `plan-card ${isCurrentPlan ? 'current' : ''}`;
-            planCard.onclick = () => this.selectPlan(planType);
+            plansGrid.innerHTML = '';
             
-            planCard.innerHTML = `
-                <div class="plan-name">${planNames[planType]}</div>
-                <div class="plan-price">R$ ${planInfo.price.toFixed(2)}</div>
-                <div class="plan-period">por ${planInfo.duration_months} ${planInfo.duration_months === 1 ? 'mês' : 'meses'}</div>
-                <ul class="plan-features">
-                    ${planFeatures[planType].map(feature => `<li>${feature}</li>`).join('')}
-                </ul>
-                <button class="btn ${isCurrentPlan ? 'btn-secondary' : 'btn-primary'}">
-                    ${isCurrentPlan ? 'Plano Atual' : 'Selecionar'}
-                </button>
-            `;
+            const planNames = {
+                'monthly': 'Mensal',
+                'quarterly': 'Trimestral',
+                'biannual': 'Semestral',
+                'annual': 'Anual'
+            };
             
-            plansGrid.appendChild(planCard);
-        });
+            const planFeatures = {
+                'monthly': ['Acesso completo ao sistema', 'Suporte por email', 'Backup automático'],
+                'quarterly': ['Acesso completo ao sistema', 'Suporte por email', 'Backup automático', '5% de desconto'],
+                'biannual': ['Acesso completo ao sistema', 'Suporte prioritário', 'Backup automático', '10% de desconto'],
+                'annual': ['Acesso completo ao sistema', 'Suporte prioritário', 'Backup automático', '15% de desconto', 'Recursos premium']
+            };
+            
+            Object.entries(this.plans).forEach(([planType, planInfo]) => {
+                const isCurrentPlan = this.currentSubscription && this.currentSubscription.plan_type === planType;
+                
+                const planCard = document.createElement('div');
+                planCard.className = `plan-card ${isCurrentPlan ? 'current' : ''}`;
+                planCard.onclick = () => this.selectPlan(planType);
+                
+                planCard.innerHTML = `
+                    <div class="plan-name">${planNames[planType]}</div>
+                    <div class="plan-price">R$ ${planInfo.price.toFixed(2)}</div>
+                    <div class="plan-period">por ${planInfo.duration_months} ${planInfo.duration_months === 1 ? 'mês' : 'meses'}</div>
+                    <ul class="plan-features">
+                        ${planFeatures[planType].map(feature => `<li>${feature}</li>`).join('')}
+                    </ul>
+                    <button class="btn ${isCurrentPlan ? 'btn-secondary' : 'btn-primary'}">
+                        ${isCurrentPlan ? 'Plano Atual' : 'Selecionar'}
+                    </button>
+                `;
+                
+                plansGrid.appendChild(planCard);
+            });
+        }
     }
     
     renderCurrentSubscription() {
@@ -127,6 +132,7 @@ class SubscriptionManager {
         const noSubscriptionDiv = document.getElementById('noSubscription');
         const actionsWithSubscription = document.getElementById('actionsWithSubscription');
         const actionsWithoutSubscription = document.getElementById('actionsWithoutSubscription');
+        const plansSection = document.getElementById('plansSection');
         
         if (this.currentSubscription && this.currentSubscription.status === 'active') {
             // Usuário tem assinatura ativa
@@ -134,6 +140,7 @@ class SubscriptionManager {
             noSubscriptionDiv.style.display = 'none';
             actionsWithSubscription.style.display = 'block';
             actionsWithoutSubscription.style.display = 'none';
+            plansSection.style.display = 'none'; // Oculta planos quando tem assinatura ativa
             
             const planNames = {
                 'monthly': 'Mensal',
@@ -164,6 +171,7 @@ class SubscriptionManager {
             noSubscriptionDiv.style.display = 'block';
             actionsWithSubscription.style.display = 'none';
             actionsWithoutSubscription.style.display = 'block';
+            plansSection.style.display = 'block'; // Mostra planos quando não tem assinatura ativa
         }
     }
     
