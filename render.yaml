@@ -2,7 +2,7 @@ services:
   - type: web
     name: consultorio-psicologia
     env: python
-    buildCommand: "chmod +x render_deploy.sh && ./render_deploy.sh"
+    buildCommand: ./build.sh
     startCommand: "bash -c 'export PATH=\"/opt/render/project/src/.venv/bin:$PATH\" && gunicorn --bind 0.0.0.0:$PORT wsgi:app'"
     plan: free
     envVars:

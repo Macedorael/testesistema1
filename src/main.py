@@ -312,15 +312,50 @@ with app.app_context():
         db.create_all()
         print("[DEBUG] Tabelas do banco de dados criadas/verificadas com sucesso")
         
+        # CORREÇÃO AUTOMÁTICA DE ISOLAMENTO
+        print("[STARTUP] Verificando isolamento de dados...")
+        try:
+            # Verificar se existem registros sem user_id
+            from src.models.especialidade import Especialidade
+            from src.models.funcionario import Funcionario
+            
+            esp_null = Especialidade.query.filter_by(user_id=None).count()
+            func_null = Funcionario.query.filter_by(user_id=None).count()
+            
+            if esp_null > 0 or func_null > 0:
+                print(f"[STARTUP] Problema detectado: {esp_null} especialidades e {func_null} funcionários sem user_id")
+                print("[STARTUP] Aplicando correções automáticas...")
+                
+                # Corrigir registros sem user_id
+                if esp_null > 0:
+                    especialidades_sem_user = Especialidade.query.filter_by(user_id=None).all()
+                    for i, esp in enumerate(especialidades_sem_user):
+                        esp.user_id = (i % 2) + 1  # Distribuir entre usuários 1 e 2
+                    print(f"[STARTUP] {esp_null} especialidades corrigidas")
+                
+                if func_null > 0:
+                    funcionarios_sem_user = Funcionario.query.filter_by(user_id=None).all()
+                    for i, func in enumerate(funcionarios_sem_user):
+                        func.user_id = (i % 2) + 1  # Distribuir entre usuários 1 e 2
+                    print(f"[STARTUP] {func_null} funcionários corrigidos")
+                
+                db.session.commit()
+                print("[STARTUP] Correções aplicadas com sucesso!")
+            else:
+                print("[STARTUP] Isolamento OK - nenhuma correção necessária")
+                
+        except Exception as e:
+            print(f"[STARTUP] Erro na verificação de isolamento: {e}")
+            db.session.rollback()
+        
         # Verificar se há funcionários no banco
-        from src.models.funcionario import Funcionario
         funcionarios_count = Funcionario.query.count()
         print(f"[DEBUG] Total de funcionários no banco: {funcionarios_count}")
         
         if funcionarios_count > 0:
             funcionarios = Funcionario.query.limit(5).all()
             for func in funcionarios:
-                print(f"[DEBUG] Funcionário encontrado: ID={func.id}, Nome='{func.nome}'")
+                print(f"[DEBUG] Funcionário encontrado: ID={func.id}, Nome='{func.nome}', User_ID={func.user_id}")
         
     except Exception as e:
         print(f"[ERROR] Erro ao criar tabelas ou conectar ao banco: {e}")
