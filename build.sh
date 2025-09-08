@@ -34,6 +34,10 @@ gunicorn --version || echo "Gunicorn version check failed"
 echo "PATH: $PATH"
 echo "Expected start command: gunicorn --bind 0.0.0.0:\$PORT wsgi:app"
 
+# Execute automatic migration for user_id column in funcionarios table
+echo "Running automatic migration..."
+python3 deploy_migration.py || echo "Migration completed or not needed"
+
 # Initialize database (only create tables if they don't exist - preserves existing data)
 python3 -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database tables created/verified successfully')"
 
