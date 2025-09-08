@@ -15,7 +15,7 @@ def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
-@funcionarios_bp.route('/', methods=['GET'])
+@funcionarios_bp.route('/funcionarios', methods=['GET'])
 @login_required
 def get_funcionarios():
     """Retorna lista de funcionários do usuário logado"""
@@ -38,7 +38,7 @@ def get_funcionarios():
             'message': f'Erro ao buscar funcionários: {str(e)}'
         }), 500
 
-@funcionarios_bp.route('/', methods=['POST'])
+@funcionarios_bp.route('/funcionarios', methods=['POST'])
 @login_required
 def create_funcionario():
     """Cria um novo funcionário para o usuário logado"""
