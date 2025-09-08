@@ -2,19 +2,19 @@
 
 ## Visão Geral
 
-Este sistema implementa um deploy automático que executa a migração da coluna `user_id` na tabela `funcionarios` durante o processo de deploy, garantindo que a aplicação funcione corretamente em produção sem intervenção manual.
+Este sistema implementa um deploy automático que executa a migração da coluna `user_id` nas tabelas `funcionarios` e `especialidades` durante o processo de deploy, garantindo que a aplicação funcione corretamente em produção sem intervenção manual.
 
 ## Arquivos Criados/Modificados
 
 ### 1. `deploy_migration.py`
 **Novo arquivo** - Script principal de migração automática que:
 - Detecta automaticamente o tipo de banco de dados (PostgreSQL/SQLite)
-- Verifica se a tabela `funcionarios` existe
-- Verifica se a coluna `user_id` já existe
-- Adiciona a coluna `user_id` se necessário
+- Verifica se as tabelas `funcionarios` e `especialidades` existem
+- Verifica se a coluna `user_id` já existe em cada tabela
+- Adiciona a coluna `user_id` se necessário em ambas as tabelas
 - Cria foreign key constraint (PostgreSQL)
-- Atualiza registros existentes com `user_id = 1`
-- Verifica se a migração foi aplicada corretamente
+- Atualiza registros existentes com `user_id = 1` em ambas as tabelas
+- Verifica se a migração foi aplicada corretamente em ambas as tabelas
 - Instala dependências automaticamente
 
 ### 2. `build.sh` (Modificado)
@@ -71,14 +71,25 @@ Este sistema implementa um deploy automático que executa a migração da coluna
 2025-01-08 10:30:00 - INFO - === INICIANDO DEPLOY COM MIGRAÇÃO AUTOMÁTICA ===
 2025-01-08 10:30:01 - INFO - Usando DATABASE_URL de produção: postgresql://...
 2025-01-08 10:30:02 - INFO - Conexão com banco de dados estabelecida
-2025-01-08 10:30:03 - INFO - Tabela 'funcionarios' existe
-2025-01-08 10:30:04 - INFO - Coluna 'user_id' na tabela 'funcionarios' não existe
-2025-01-08 10:30:05 - INFO - Iniciando migração: adicionando coluna 'user_id' na tabela 'funcionarios'
-2025-01-08 10:30:06 - INFO - Detectado PostgreSQL - executando migração para PostgreSQL
-2025-01-08 10:30:07 - INFO - Atualizados 6 registros com user_id = 1
-2025-01-08 10:30:08 - INFO - Migração concluída com sucesso!
-2025-01-08 10:30:09 - INFO - Verificação: 6 funcionários total, 6 com user_id, 0 com user_id NULL
-2025-01-08 10:30:10 - INFO - === MIGRAÇÃO CONCLUÍDA COM SUCESSO ===
+2025-01-08 10:30:03 - INFO - === INICIANDO MIGRAÇÃO DE COLUNAS USER_ID ===
+2025-01-08 10:30:04 - INFO - Migrando tabela: funcionarios
+2025-01-08 10:30:05 - INFO - Tabela 'funcionarios' existe
+2025-01-08 10:30:06 - INFO - Coluna 'user_id' na tabela 'funcionarios' não existe
+2025-01-08 10:30:07 - INFO - Iniciando migração: adicionando coluna 'user_id' na tabela 'funcionarios'
+2025-01-08 10:30:08 - INFO - Detectado PostgreSQL - executando migração para funcionarios
+2025-01-08 10:30:09 - INFO - Atualizados 6 registros em funcionarios com user_id = 1
+2025-01-08 10:30:10 - INFO - Migração da tabela funcionarios concluída com sucesso!
+2025-01-08 10:30:11 - INFO - Migrando tabela: especialidades
+2025-01-08 10:30:12 - INFO - Tabela 'especialidades' existe
+2025-01-08 10:30:13 - INFO - Coluna 'user_id' na tabela 'especialidades' não existe
+2025-01-08 10:30:14 - INFO - Iniciando migração: adicionando coluna 'user_id' na tabela 'especialidades'
+2025-01-08 10:30:15 - INFO - Detectado PostgreSQL - executando migração para especialidades
+2025-01-08 10:30:16 - INFO - Atualizados 4 registros em especialidades com user_id = 1
+2025-01-08 10:30:17 - INFO - Migração da tabela especialidades concluída com sucesso!
+2025-01-08 10:30:18 - INFO - === VERIFICANDO MIGRAÇÕES ===
+2025-01-08 10:30:19 - INFO - Verificação: 6 funcionários total, 6 com user_id, 0 com user_id NULL
+2025-01-08 10:30:20 - INFO - Verificação: 4 especialidades total, 4 com user_id, 0 com user_id NULL
+2025-01-08 10:30:21 - INFO - === MIGRAÇÃO CONCLUÍDA COM SUCESSO ===
 ```
 
 ### Execuções Subsequentes (Migração Não Necessária)
@@ -86,10 +97,17 @@ Este sistema implementa um deploy automático que executa a migração da coluna
 2025-01-08 11:00:00 - INFO - === INICIANDO DEPLOY COM MIGRAÇÃO AUTOMÁTICA ===
 2025-01-08 11:00:01 - INFO - Usando DATABASE_URL de produção: postgresql://...
 2025-01-08 11:00:02 - INFO - Conexão com banco de dados estabelecida
-2025-01-08 11:00:03 - INFO - Tabela 'funcionarios' existe
-2025-01-08 11:00:04 - INFO - Coluna 'user_id' já existe na tabela 'funcionarios'. Migração não necessária.
-2025-01-08 11:00:05 - INFO - Verificação: 6 funcionários total, 6 com user_id, 0 com user_id NULL
-2025-01-08 11:00:06 - INFO - === MIGRAÇÃO CONCLUÍDA COM SUCESSO ===
+2025-01-08 11:00:03 - INFO - === INICIANDO MIGRAÇÃO DE COLUNAS USER_ID ===
+2025-01-08 11:00:04 - INFO - Migrando tabela: funcionarios
+2025-01-08 11:00:05 - INFO - Tabela 'funcionarios' existe
+2025-01-08 11:00:06 - INFO - Coluna 'user_id' já existe na tabela 'funcionarios'. Migração não necessária.
+2025-01-08 11:00:07 - INFO - Migrando tabela: especialidades
+2025-01-08 11:00:08 - INFO - Tabela 'especialidades' existe
+2025-01-08 11:00:09 - INFO - Coluna 'user_id' já existe na tabela 'especialidades'. Migração não necessária.
+2025-01-08 11:00:10 - INFO - === VERIFICANDO MIGRAÇÕES ===
+2025-01-08 11:00:11 - INFO - Verificação: 6 funcionários total, 6 com user_id, 0 com user_id NULL
+2025-01-08 11:00:12 - INFO - Verificação: 4 especialidades total, 4 com user_id, 0 com user_id NULL
+2025-01-08 11:00:13 - INFO - === MIGRAÇÃO CONCLUÍDA COM SUCESSO ===
 ```
 
 ## Vantagens
@@ -141,10 +159,11 @@ Se houver problemas durante a migração:
 
 ## Conclusão
 
-Com esta implementação, o problema da coluna `user_id` faltante na tabela `funcionarios` será resolvido automaticamente em produção, garantindo que:
+Com esta implementação, o problema da coluna `user_id` faltante nas tabelas `funcionarios` e `especialidades` será resolvido automaticamente em produção, garantindo que:
 
 - ✅ Funcionários sejam exibidos corretamente
-- ✅ Isolamento entre usuários funcione
-- ✅ Não haja mais erros de "funcionários não encontrados"
+- ✅ Especialidades sejam exibidas corretamente
+- ✅ Isolamento entre usuários funcione para ambas as entidades
+- ✅ Não haja mais erros de "funcionários não encontrados" ou "especialidades não encontradas"
 - ✅ Deploy seja completamente automático
 - ✅ Não seja necessária intervenção manual

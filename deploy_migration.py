@@ -64,20 +64,20 @@ def check_column_exists(engine, table_name, column_name):
         logger.error(f"Erro ao verificar coluna {column_name} na tabela {table_name}: {e}")
         return False
 
-def migrate_add_user_id_column(engine):
-    """Adiciona a coluna user_id na tabela funcionarios se não existir"""
+def migrate_table_user_id(engine, table_name):
+    """Adiciona a coluna user_id em uma tabela específica se não existir"""
     try:
-        # Verifica se a tabela funcionarios existe
-        if not check_table_exists(engine, 'funcionarios'):
-            logger.error("Tabela 'funcionarios' não existe. Migração não pode prosseguir.")
+        # Verifica se a tabela existe
+        if not check_table_exists(engine, table_name):
+            logger.error(f"Tabela '{table_name}' não existe. Migração não pode prosseguir.")
             return False
             
         # Verifica se a coluna user_id já existe
-        if check_column_exists(engine, 'funcionarios', 'user_id'):
-            logger.info("Coluna 'user_id' já existe na tabela 'funcionarios'. Migração não necessária.")
+        if check_column_exists(engine, table_name, 'user_id'):
+            logger.info(f"Coluna 'user_id' já existe na tabela '{table_name}'. Migração não necessária.")
             return True
         
-        logger.info("Iniciando migração: adicionando coluna 'user_id' na tabela 'funcionarios'")
+        logger.info(f"Iniciando migração: adicionando coluna 'user_id' na tabela '{table_name}'")
         
         # Detecta o tipo de banco de dados
         db_url = str(engine.url)
@@ -86,77 +86,95 @@ def migrate_add_user_id_column(engine):
         
         with engine.connect() as conn:
             if is_postgresql:
-                logger.info("Detectado PostgreSQL - executando migração para PostgreSQL")
+                logger.info(f"Detectado PostgreSQL - executando migração para {table_name}")
                 
                 # Adiciona a coluna user_id
-                conn.execute(text("""
-                    ALTER TABLE funcionarios 
+                conn.execute(text(f"""
+                    ALTER TABLE {table_name} 
                     ADD COLUMN user_id INTEGER
                 """))
                 
                 # Adiciona a constraint de foreign key
-                conn.execute(text("""
-                    ALTER TABLE funcionarios 
-                    ADD CONSTRAINT fk_funcionarios_user_id 
+                conn.execute(text(f"""
+                    ALTER TABLE {table_name} 
+                    ADD CONSTRAINT fk_{table_name}_user_id 
                     FOREIGN KEY (user_id) REFERENCES users(id)
                 """))
                 
                 # Atualiza registros existentes com user_id = 1 (admin padrão)
-                result = conn.execute(text("""
-                    UPDATE funcionarios 
+                result = conn.execute(text(f"""
+                    UPDATE {table_name} 
                     SET user_id = 1 
                     WHERE user_id IS NULL
                 """))
                 
-                logger.info(f"Atualizados {result.rowcount} registros com user_id = 1")
+                logger.info(f"Atualizados {result.rowcount} registros em {table_name} com user_id = 1")
                 
             elif is_sqlite:
-                logger.info("Detectado SQLite - executando migração para SQLite")
+                logger.info(f"Detectado SQLite - executando migração para {table_name}")
                 
                 # SQLite não suporta ADD CONSTRAINT, então criamos sem constraint
-                conn.execute(text("""
-                    ALTER TABLE funcionarios 
+                conn.execute(text(f"""
+                    ALTER TABLE {table_name} 
                     ADD COLUMN user_id INTEGER
                 """))
                 
                 # Atualiza registros existentes
-                result = conn.execute(text("""
-                    UPDATE funcionarios 
+                result = conn.execute(text(f"""
+                    UPDATE {table_name} 
                     SET user_id = 1 
                     WHERE user_id IS NULL
                 """))
                 
-                logger.info(f"Atualizados {result.rowcount} registros com user_id = 1")
+                logger.info(f"Atualizados {result.rowcount} registros em {table_name} com user_id = 1")
             
             conn.commit()
             
-        logger.info("Migração concluída com sucesso!")
+        logger.info(f"Migração da tabela {table_name} concluída com sucesso!")
         return True
         
     except SQLAlchemyError as e:
-        logger.error(f"Erro na migração: {e}")
+        logger.error(f"Erro na migração da tabela {table_name}: {e}")
         return False
     except Exception as e:
-        logger.error(f"Erro inesperado na migração: {e}")
+        logger.error(f"Erro inesperado na migração da tabela {table_name}: {e}")
         return False
 
-def verify_migration(engine):
-    """Verifica se a migração foi aplicada corretamente"""
+def migrate_add_user_id_columns(engine):
+    """Adiciona a coluna user_id nas tabelas funcionarios e especialidades"""
+    logger.info("=== INICIANDO MIGRAÇÃO DE COLUNAS USER_ID ===")
+    
+    # Lista de tabelas que precisam da coluna user_id
+    tables_to_migrate = ['funcionarios', 'especialidades']
+    
+    success = True
+    for table in tables_to_migrate:
+        logger.info(f"Migrando tabela: {table}")
+        if not migrate_table_user_id(engine, table):
+            logger.error(f"Falha na migração da tabela {table}")
+            success = False
+        else:
+            logger.info(f"Tabela {table} migrada com sucesso")
+    
+    return success
+
+def verify_table_migration(engine, table_name):
+    """Verifica se a migração foi aplicada corretamente em uma tabela específica"""
     try:
-        logger.info("Verificando migração...")
+        logger.info(f"Verificando migração da tabela {table_name}...")
         
         # Verifica se a coluna existe
-        if not check_column_exists(engine, 'funcionarios', 'user_id'):
-            logger.error("Verificação falhou: coluna 'user_id' não encontrada")
+        if not check_column_exists(engine, table_name, 'user_id'):
+            logger.error(f"Verificação falhou: coluna 'user_id' não encontrada na tabela {table_name}")
             return False
         
         # Verifica dados
         with engine.connect() as conn:
-            result = conn.execute(text("""
+            result = conn.execute(text(f"""
                 SELECT COUNT(*) as total, 
                        COUNT(user_id) as with_user_id,
                        COUNT(*) - COUNT(user_id) as null_user_id
-                FROM funcionarios
+                FROM {table_name}
             """))
             
             row = result.fetchone()
@@ -164,17 +182,34 @@ def verify_migration(engine):
             with_user_id = row[1]
             null_user_id = row[2]
             
-            logger.info(f"Verificação: {total} funcionários total, {with_user_id} com user_id, {null_user_id} com user_id NULL")
+            logger.info(f"Verificação {table_name}: {total} registros total, {with_user_id} com user_id, {null_user_id} com user_id NULL")
             
             if null_user_id > 0:
-                logger.warning(f"Atenção: {null_user_id} funcionários ainda têm user_id NULL")
+                logger.warning(f"Atenção: {null_user_id} registros em {table_name} ainda têm user_id NULL")
             
-        logger.info("Verificação da migração concluída")
         return True
         
     except Exception as e:
-        logger.error(f"Erro na verificação: {e}")
+        logger.error(f"Erro na verificação da tabela {table_name}: {e}")
         return False
+
+def verify_migration(engine):
+    """Verifica se a migração foi aplicada corretamente em todas as tabelas"""
+    logger.info("=== VERIFICANDO MIGRAÇÕES ===")
+    
+    tables_to_verify = ['funcionarios', 'especialidades']
+    success = True
+    
+    for table in tables_to_verify:
+        if not verify_table_migration(engine, table):
+            success = False
+    
+    if success:
+        logger.info("Verificação de todas as migrações concluída com sucesso")
+    else:
+        logger.error("Falha na verificação de algumas migrações")
+    
+    return success
 
 def run_migration():
     """Executa a migração completa"""
@@ -188,7 +223,7 @@ def run_migration():
         logger.info("Conexão com banco de dados estabelecida")
         
         # Executa a migração
-        if migrate_add_user_id_column(engine):
+        if migrate_add_user_id_columns(engine):
             # Verifica a migração
             if verify_migration(engine):
                 logger.info("=== MIGRAÇÃO CONCLUÍDA COM SUCESSO ===")
