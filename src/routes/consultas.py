@@ -5,6 +5,11 @@ from src.models.paciente import Patient
 from src.models.consulta import Appointment, Session, FrequencyType, SessionStatus
 from datetime import datetime
 from sqlalchemy import func
+import logging
+
+# Configurar logger específico para consultas
+logger = logging.getLogger('consultas')
+logger.setLevel(logging.DEBUG)
 
 appointments_bp = Blueprint('appointments', __name__)
 
@@ -12,15 +17,21 @@ appointments_bp = Blueprint('appointments', __name__)
 @login_and_subscription_required
 def get_appointments():
     """Lista todos os agendamentos"""
+    logger.info("[GET /appointments] Iniciando busca de agendamentos")
     try:
         current_user = get_current_user()
+        logger.debug(f"[GET /appointments] Usuário atual: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.warning("[GET /appointments] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
             
+        logger.debug(f"[GET /appointments] Buscando agendamentos para user_id: {current_user.id}")
         appointments = Appointment.query.filter_by(user_id=current_user.id).join(Patient).order_by(Appointment.data_primeira_sessao.desc()).all()
+        logger.info(f"[GET /appointments] Encontrados {len(appointments)} agendamentos")
         
         appointments_data = []
         for appointment in appointments:
@@ -40,11 +51,13 @@ def get_appointments():
             
             appointments_data.append(appointment_dict)
         
+        logger.info(f"[GET /appointments] Retornando {len(appointments_data)} agendamentos processados")
         return jsonify({
             'success': True,
             'data': appointments_data
         })
     except Exception as e:
+        logger.error(f"[GET /appointments] Erro ao buscar agendamentos: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar agendamentos: {str(e)}'
@@ -54,20 +67,29 @@ def get_appointments():
 @login_and_subscription_required
 def get_appointment(appointment_id):
     """Busca um agendamento específico com todas as sessões"""
+    logger.info(f"[GET /appointments/{appointment_id}] Iniciando busca de agendamento específico")
     try:
         current_user = get_current_user()
+        logger.debug(f"[GET /appointments/{appointment_id}] Usuário atual: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.warning(f"[GET /appointments/{appointment_id}] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
             
+        logger.debug(f"[GET /appointments/{appointment_id}] Buscando agendamento para user_id: {current_user.id}")
         appointment = Appointment.query.filter_by(id=appointment_id, user_id=current_user.id).first()
+        
         if not appointment:
+            logger.warning(f"[GET /appointments/{appointment_id}] Agendamento não encontrado ou não autorizado")
             return jsonify({
                 'success': False,
                 'message': 'Agendamento não encontrado ou não autorizado'
             }), 404
+        
+        logger.info(f"[GET /appointments/{appointment_id}] Agendamento encontrado: {appointment.id}")
         
         appointment_data = appointment.to_dict()
         appointment_data['patient_name'] = appointment.patient.nome_completo
@@ -89,11 +111,13 @@ def get_appointment(appointment_id):
             'sessions_pendentes': total_sessions - sessions_realizadas,
         }
         
+        logger.info(f"[GET /appointments/{appointment_id}] Retornando dados do agendamento processado")
         return jsonify({
             'success': True,
             'data': appointment_data
         })
     except Exception as e:
+        logger.error(f"[GET /appointments/{appointment_id}] Erro ao buscar agendamento: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar agendamento: {str(e)}'

@@ -6,6 +6,11 @@ from src.models.pagamento import Payment
 from src.utils.auth import login_required, login_and_subscription_required, get_current_user
 from datetime import datetime
 from sqlalchemy import func
+import logging
+
+# Configurar logger específico para pacientes
+logger = logging.getLogger('pacientes')
+logger.setLevel(logging.DEBUG)
 
 patients_bp = Blueprint("patients", __name__)
 
@@ -13,20 +18,30 @@ patients_bp = Blueprint("patients", __name__)
 @login_and_subscription_required
 def get_patients():
     """Lista todos os pacientes do usuário logado"""
+    logger.info("[GET /patients] Iniciando busca de pacientes")
     try:
         current_user = get_current_user()
+        logger.debug(f"[GET /patients] Usuário atual: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.warning("[GET /patients] Usuário não encontrado")
             return jsonify({
                 "success": False,
                 "message": "Usuário não encontrado"
             }), 401
             
+        logger.debug(f"[GET /patients] Buscando pacientes para user_id: {current_user.id}")
         patients = Patient.query.filter_by(user_id=current_user.id).order_by(Patient.nome_completo).all()
+        logger.info(f"[GET /patients] Encontrados {len(patients)} pacientes")
+        
+        patients_data = [patient.to_dict() for patient in patients]
+        logger.info(f"[GET /patients] Retornando {len(patients_data)} pacientes processados")
         return jsonify({
             "success": True,
-            "data": [patient.to_dict() for patient in patients]
+            "data": patients_data
         })
     except Exception as e:
+        logger.error(f"[GET /patients] Erro ao buscar pacientes: {str(e)}", exc_info=True)
         return jsonify({
             "success": False,
             "message": f"Erro ao buscar pacientes: {str(e)}"
@@ -36,22 +51,32 @@ def get_patients():
 @login_and_subscription_required
 def get_patient(patient_id):
     """Busca um paciente específico com detalhes completos"""
+    logger.info(f"[GET /patients/{patient_id}] Iniciando busca de paciente específico")
     try:
         current_user = get_current_user()
+        logger.debug(f"[GET /patients/{patient_id}] Usuário atual: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.warning(f"[GET /patients/{patient_id}] Usuário não encontrado")
             return jsonify({
                 "success": False,
                 "message": "Usuário não encontrado"
             }), 401
             
+        logger.debug(f"[GET /patients/{patient_id}] Buscando paciente para user_id: {current_user.id}")
         patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
+        
         if not patient:
+            logger.warning(f"[GET /patients/{patient_id}] Paciente não encontrado ou não autorizado")
             return jsonify({
                 "success": False,
                 "message": "Paciente não encontrado ou não autorizado"
             }), 404
         
+        logger.info(f"[GET /patients/{patient_id}] Paciente encontrado: {patient.nome_completo}")
+        
         # Buscar estatísticas do paciente
+        logger.debug(f"[GET /patients/{patient_id}] Calculando estatísticas do paciente")
         total_appointments = Appointment.query.filter_by(patient_id=patient_id, user_id=current_user.id).count()
         total_sessions = Session.query.join(Appointment).filter(Appointment.patient_id == patient_id, Appointment.user_id == current_user.id).count()
         sessions_realizadas = Session.query.join(Appointment).filter(
@@ -81,11 +106,13 @@ def get_patient(patient_id):
             "total_a_receber": float(total_a_receber)
         }
         
+        logger.info(f"[GET /patients/{patient_id}] Retornando dados do paciente com estatísticas")
         return jsonify({
             "success": True,
             "data": patient_data
         })
     except Exception as e:
+        logger.error(f"[GET /patients/{patient_id}] Erro ao buscar paciente: {str(e)}", exc_info=True)
         return jsonify({
             "success": False,
             "message": f"Erro ao buscar paciente: {str(e)}"

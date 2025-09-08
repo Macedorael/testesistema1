@@ -6,6 +6,11 @@ from src.models.consulta import Appointment, Session, PaymentStatus
 from src.models.pagamento import Payment, PaymentSession
 from datetime import datetime, date
 from sqlalchemy import func
+import logging
+
+# Configurar logger específico para pagamentos
+logger = logging.getLogger('pagamentos')
+logger.setLevel(logging.DEBUG)
 
 payments_bp = Blueprint('payments', __name__)
 
@@ -13,15 +18,21 @@ payments_bp = Blueprint('payments', __name__)
 @login_and_subscription_required
 def get_payments():
     """Lista todos os pagamentos do usuário logado"""
+    logger.info("[GET /payments] Iniciando busca de pagamentos")
     try:
         current_user = get_current_user()
+        logger.debug(f"[GET /payments] Usuário atual: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.warning("[GET /payments] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
             
+        logger.debug(f"[GET /payments] Buscando pagamentos para user_id: {current_user.id}")
         payments = Payment.query.filter_by(user_id=current_user.id).join(Patient).order_by(Payment.data_pagamento.desc()).all()
+        logger.info(f"[GET /payments] Encontrados {len(payments)} pagamentos")
         
         payments_data = []
         for payment in payments:
@@ -29,11 +40,13 @@ def get_payments():
             payment_dict['patient_name'] = payment.patient.nome_completo
             payments_data.append(payment_dict)
         
+        logger.info(f"[GET /payments] Retornando {len(payments_data)} pagamentos processados")
         return jsonify({
             'success': True,
             'data': payments_data
         })
     except Exception as e:
+        logger.error(f"[GET /payments] Erro ao buscar pagamentos: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar pagamentos: {str(e)}'
@@ -43,30 +56,41 @@ def get_payments():
 @login_and_subscription_required
 def get_payment(payment_id):
     """Busca um pagamento específico com detalhes"""
+    logger.info(f"[GET /payments/{payment_id}] Iniciando busca de pagamento específico")
     try:
         current_user = get_current_user()
+        logger.debug(f"[GET /payments/{payment_id}] Usuário atual: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.warning(f"[GET /payments/{payment_id}] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
             
+        logger.debug(f"[GET /payments/{payment_id}] Buscando pagamento para user_id: {current_user.id}")
         payment = Payment.query.filter_by(id=payment_id, user_id=current_user.id).first()
+        
         if not payment:
+            logger.warning(f"[GET /payments/{payment_id}] Pagamento não encontrado ou não autorizado")
             return jsonify({
                 'success': False,
                 'message': 'Pagamento não encontrado ou não autorizado'
             }), 404
         
+        logger.info(f"[GET /payments/{payment_id}] Pagamento encontrado: {payment.id}")
+        
         payment_data = payment.to_dict()
         payment_data['patient_name'] = payment.patient.nome_completo
         payment_data['patient'] = payment.patient.to_dict()
         
+        logger.info(f"[GET /payments/{payment_id}] Retornando dados do pagamento processado")
         return jsonify({
             'success': True,
             'data': payment_data
         })
     except Exception as e:
+        logger.error(f"[GET /payments/{payment_id}] Erro ao buscar pagamento: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar pagamento: {str(e)}'
