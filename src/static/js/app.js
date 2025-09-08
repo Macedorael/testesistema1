@@ -383,7 +383,17 @@ class App {
             const response = await fetch('/api/especialidades');
             if (!response.ok) throw new Error('Erro ao carregar especialidades');
             
-            const especialidades = await response.json();
+            const data = await response.json();
+            
+            // Verificar se a resposta tem o formato esperado
+            let especialidades = [];
+            if (data.success && data.especialidades) {
+                especialidades = data.especialidades;
+            } else if (Array.isArray(data)) {
+                // Fallback para formato antigo (array direto)
+                especialidades = data;
+            }
+            
             const select = document.getElementById('especialidade');
             
             if (select) {
@@ -408,7 +418,17 @@ class App {
                 throw new Error('Erro ao carregar funcionários');
             }
             
-            const funcionarios = await response.json();
+            const data = await response.json();
+            
+            // Verificar se a resposta tem o formato esperado
+            let funcionarios = [];
+            if (data.success && data.funcionarios) {
+                funcionarios = data.funcionarios;
+            } else if (Array.isArray(data)) {
+                // Fallback para formato antigo (array direto)
+                funcionarios = data;
+            }
+            
             this.renderFuncionariosTable(funcionarios);
         } catch (error) {
             console.error('Erro ao carregar funcionários:', error);
@@ -1983,7 +2003,16 @@ async function loadFuncionariosForTransfer() {
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
-        const funcionarios = await response.json();
+        const data = await response.json();
+        
+        // Verificar se a resposta tem o formato esperado
+        let funcionarios = [];
+        if (data.success && data.funcionarios) {
+            funcionarios = data.funcionarios;
+        } else if (Array.isArray(data)) {
+            // Fallback para formato antigo (array direto)
+            funcionarios = data;
+        }
         
         const select = document.getElementById('novoFuncionario');
         if (!select) {

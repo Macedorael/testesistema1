@@ -66,7 +66,16 @@ async function loadEspecialidades() {
             throw new Error('Erro ao carregar especialidades');
         }
         
-        especialidades = await response.json();
+        const data = await response.json();
+        
+        // Verificar se a resposta tem o formato esperado
+        if (data.success && data.especialidades) {
+            especialidades = data.especialidades;
+        } else {
+            // Fallback para formato antigo (array direto)
+            especialidades = Array.isArray(data) ? data : [];
+        }
+        
         renderEspecialidadesTable();
     } catch (error) {
         console.error('Erro:', error);
