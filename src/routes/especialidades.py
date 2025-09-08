@@ -10,20 +10,48 @@ especialidades_bp = Blueprint('especialidades', __name__)
 @login_required
 def get_especialidades():
     """Retorna lista de especialidades do usuário logado"""
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info("[ESPECIALIDADES] Iniciando busca de especialidades")
+        
         current_user = get_current_user()
+        logger.info(f"[ESPECIALIDADES] Current user obtido: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.error("[ESPECIALIDADES] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
-            
+        
+        logger.info(f"[ESPECIALIDADES] Buscando especialidades para user_id: {current_user.id}")
         especialidades = Especialidade.query.filter_by(user_id=current_user.id).all()
+        logger.info(f"[ESPECIALIDADES] Encontradas {len(especialidades)} especialidades")
+        
+        especialidades_dict = []
+        for i, especialidade in enumerate(especialidades):
+            try:
+                logger.info(f"[ESPECIALIDADES] Convertendo especialidade {i+1}: ID={especialidade.id}, Nome={especialidade.nome}")
+                esp_dict = especialidade.to_dict()
+                especialidades_dict.append(esp_dict)
+                logger.info(f"[ESPECIALIDADES] Especialidade {i+1} convertida com sucesso")
+            except Exception as conv_error:
+                logger.error(f"[ESPECIALIDADES] Erro ao converter especialidade {i+1}: {str(conv_error)}")
+                raise conv_error
+        
+        logger.info(f"[ESPECIALIDADES] Retornando {len(especialidades_dict)} especialidades")
         return jsonify({
             'success': True,
-            'especialidades': [especialidade.to_dict() for especialidade in especialidades]
+            'especialidades': especialidades_dict
         })
     except Exception as e:
+        logger.error(f"[ESPECIALIDADES] Erro geral: {str(e)}")
+        logger.error(f"[ESPECIALIDADES] Tipo do erro: {type(e).__name__}")
+        import traceback
+        logger.error(f"[ESPECIALIDADES] Traceback: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar especialidades: {str(e)}'

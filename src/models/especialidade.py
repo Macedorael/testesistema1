@@ -41,14 +41,33 @@ class Especialidade(db.Model):
         return value
 
     def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'nome': self.nome,
-            'descricao': self.descricao,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            result = {
+                'id': self.id,
+                'user_id': self.user_id,
+                'nome': self.nome,
+                'descricao': self.descricao,
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            }
+            
+            logger.debug(f"[ESPECIALIDADE] to_dict() concluído para especialidade ID {self.id}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"[ESPECIALIDADE] Erro em to_dict(): {str(e)}")
+            # Retornar versão mínima em caso de erro
+            return {
+                'id': getattr(self, 'id', None),
+                'user_id': getattr(self, 'user_id', None),
+                'nome': getattr(self, 'nome', 'Nome não disponível'),
+                'descricao': getattr(self, 'descricao', None),
+                'created_at': None,
+                'updated_at': None
+            }
     
     # Relacionamentos
     user = db.relationship('User', backref='especialidades', lazy=True)

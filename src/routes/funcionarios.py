@@ -19,20 +19,48 @@ def validate_email(email):
 @login_required
 def get_funcionarios():
     """Retorna lista de funcionários do usuário logado"""
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info("[FUNCIONARIOS] Iniciando busca de funcionários")
+        
         current_user = get_current_user()
+        logger.info(f"[FUNCIONARIOS] Current user obtido: {current_user.id if current_user else 'None'}")
+        
         if not current_user:
+            logger.error("[FUNCIONARIOS] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
-            
+        
+        logger.info(f"[FUNCIONARIOS] Buscando funcionários para user_id: {current_user.id}")
         funcionarios = Funcionario.query.filter_by(user_id=current_user.id).all()
+        logger.info(f"[FUNCIONARIOS] Encontrados {len(funcionarios)} funcionários")
+        
+        funcionarios_dict = []
+        for i, funcionario in enumerate(funcionarios):
+            try:
+                logger.info(f"[FUNCIONARIOS] Convertendo funcionário {i+1}: ID={funcionario.id}, Nome={funcionario.nome}")
+                func_dict = funcionario.to_dict()
+                funcionarios_dict.append(func_dict)
+                logger.info(f"[FUNCIONARIOS] Funcionário {i+1} convertido com sucesso")
+            except Exception as conv_error:
+                logger.error(f"[FUNCIONARIOS] Erro ao converter funcionário {i+1}: {str(conv_error)}")
+                raise conv_error
+        
+        logger.info(f"[FUNCIONARIOS] Retornando {len(funcionarios_dict)} funcionários")
         return jsonify({
             'success': True,
-            'funcionarios': [funcionario.to_dict() for funcionario in funcionarios]
+            'funcionarios': funcionarios_dict
         })
     except Exception as e:
+        logger.error(f"[FUNCIONARIOS] Erro geral: {str(e)}")
+        logger.error(f"[FUNCIONARIOS] Tipo do erro: {type(e).__name__}")
+        import traceback
+        logger.error(f"[FUNCIONARIOS] Traceback: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar funcionários: {str(e)}'
