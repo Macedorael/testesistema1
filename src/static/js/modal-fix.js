@@ -75,6 +75,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Fix específico para problema de blur e página não responsiva
+    document.addEventListener('click', function(event) {
+        // Se clicou no backdrop do modal
+        if (event.target.classList.contains('modal-backdrop')) {
+            // Encontra o modal ativo
+            const activeModal = document.querySelector('.modal.show');
+            if (activeModal) {
+                const modalInstance = bootstrap.Modal.getInstance(activeModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+            // Force remove backdrop se ainda existir
+            setTimeout(() => {
+                const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+                remainingBackdrops.forEach(backdrop => {
+                    backdrop.remove();
+                });
+                // Restaura funcionalidade da página
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+        }
+    });
+    
     // Previne múltiplos modais abertos simultaneamente
     document.addEventListener('show.bs.modal', function (event) {
         const openModals = document.querySelectorAll('.modal.show');
@@ -144,6 +170,59 @@ document.addEventListener('DOMContentLoaded', function() {
         const openModals = document.querySelectorAll('.modal.show');
         if (openModals.length === 0) {
             modalZIndex = 1050;
+        }
+    });
+    
+    // Fix para página travada - verifica periodicamente se há problemas
+    setInterval(function() {
+        const hasModalOpen = document.body.classList.contains('modal-open');
+        const activeModals = document.querySelectorAll('.modal.show');
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        
+        // Se o body tem modal-open mas não há modais ativos, limpa tudo
+        if (hasModalOpen && activeModals.length === 0) {
+            console.log('Detectado problema de modal travado - limpando...');
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Remove backdrops órfãos
+            backdrops.forEach(backdrop => backdrop.remove());
+        }
+        
+        // Se há backdrops mas não há modais ativos, remove os backdrops
+        if (backdrops.length > 0 && activeModals.length === 0) {
+            console.log('Removendo backdrops órfãos...');
+            backdrops.forEach(backdrop => backdrop.remove());
+        }
+    }, 1000); // Verifica a cada segundo
+    
+    // Adiciona botão de emergência para destravar página (Ctrl+Alt+M)
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey && event.altKey && event.key === 'm') {
+            console.log('Atalho de emergência ativado - limpando todos os modais...');
+            
+            // Remove todos os modais e backdrops
+            const allModals = document.querySelectorAll('.modal');
+            const allBackdrops = document.querySelectorAll('.modal-backdrop');
+            
+            allModals.forEach(modal => {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                modal.remove();
+            });
+            
+            allBackdrops.forEach(backdrop => backdrop.remove());
+            
+            // Restaura estado normal da página
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Mostra confirmação
+            alert('Página destravada! Todos os modais foram fechados.');
         }
     });
 });
