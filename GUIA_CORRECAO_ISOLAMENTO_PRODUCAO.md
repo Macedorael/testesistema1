@@ -1,164 +1,159 @@
 # Guia de Correção de Isolamento em Produção
 
-## 🚨 Problema Identificado
+## Problema Identificado
 
-O isolamento de dados entre usuários está funcionando localmente mas não em produção. Isso indica que as correções aplicadas localmente precisam ser replicadas no ambiente de produção.
+Usuários estão vendo funcionários e especialidades de outras contas em produção:
+- Conta `as@teste.com` cria funcionários
+- Conta `oi@teste.com` consegue ver esses funcionários
+- Funciona corretamente em desenvolvimento, mas não em produção
 
-## 📋 Checklist de Correções Necessárias
+## Diagnóstico
 
-### 1. Verificar Estado Atual em Produção
+O problema pode estar relacionado a:
+1. **Registros sem user_id**: Dados criados antes da implementação do isolamento
+2. **Diferença entre desenvolvimento e produção**: SQLite vs PostgreSQL
+3. **Correção automática não executada**: A correção pode não estar sendo aplicada em produção
 
-```bash
-# Conectar ao servidor de produção e executar:
-python check_production_user_ids.py
+## Soluções Implementadas
+
+### 1. Correção Automática Integrada (main.py)
+
+A correção foi integrada diretamente no `src/main.py` e executa automaticamente na inicialização:
+
+```python
+# CORREÇÃO AUTOMÁTICA DE ISOLAMENTO
+print("[STARTUP] Verificando isolamento de dados...")
+try:
+    # Verificar se existem registros sem user_id
+    from src.models.especialidade import Especialidade
+    from src.models.funcionario import Funcionario
+    
+    esp_null = Especialidade.query.filter_by(user_id=None).count()
+    func_null = Funcionario.query.filter_by(user_id=None).count()
+    
+    if esp_null > 0 or func_null > 0:
+        print(f"[STARTUP] Problema detectado: {esp_null} especialidades e {func_null} funcionários sem user_id")
+        print("[STARTUP] Aplicando correções automáticas...")
+        
+        # Corrigir registros sem user_id
+        if esp_null > 0:
+            especialidades_sem_user = Especialidade.query.filter_by(user_id=None).all()
+            for i, esp in enumerate(especialidades_sem_user):
+                esp.user_id = (i % 2) + 1  # Distribuir entre usuários 1 e 2
+            print(f"[STARTUP] {esp_null} especialidades corrigidas")
+        
+        if func_null > 0:
+            funcionarios_sem_user = Funcionario.query.filter_by(user_id=None).all()
+            for i, func in enumerate(funcionarios_sem_user):
+                func.user_id = (i % 2) + 1  # Distribuir entre usuários 1 e 2
+            print(f"[STARTUP] {func_null} funcionários corrigidos")
+        
+        db.session.commit()
+        print("[STARTUP] Correções aplicadas com sucesso!")
+    else:
+        print("[STARTUP] Isolamento OK - nenhuma correção necessária")
+        
+except Exception as e:
+    print(f"[STARTUP] Erro na verificação de isolamento: {e}")
+    db.session.rollback()
 ```
 
-### 2. Aplicar Correções de Constraints
+### 2. Script de Teste para Produção
+
+Criado `test_production_isolation_fix.py` para testar e corrigir manualmente em produção:
 
 ```bash
-# Executar script de correção de constraints:
-python fix_isolation_constraints.py
+# Para testar em produção (se necessário)
+python test_production_isolation_fix.py
 ```
 
-**⚠️ IMPORTANTE:** Este script:
-- Faz backup dos dados
-- Recria as tabelas com constraints corretas
-- Restaura os dados
-- Testa as novas constraints
+## Como Verificar se Está Funcionando
 
-### 3. Redistribuir Dados Entre Usuários
+### 1. Logs de Inicialização
+
+Quando a aplicação iniciar, você deve ver nos logs:
+
+```
+[STARTUP] Verificando isolamento de dados...
+[STARTUP] Isolamento OK - nenhuma correção necessária
+```
+
+Ou, se houver problemas:
+
+```
+[STARTUP] Problema detectado: X especialidades e Y funcionários sem user_id
+[STARTUP] Aplicando correções automáticas...
+[STARTUP] X especialidades corrigidas
+[STARTUP] Y funcionários corrigidos
+[STARTUP] Correções aplicadas com sucesso!
+```
+
+### 2. Teste Manual
+
+1. **Criar funcionário na conta A**:
+   - Login com `as@teste.com`
+   - Criar um funcionário
+   - Verificar se aparece na lista
+
+2. **Verificar isolamento na conta B**:
+   - Logout e login com `oi@teste.com`
+   - Verificar se o funcionário da conta A NÃO aparece
+   - Criar um funcionário próprio
+   - Verificar se apenas o próprio funcionário aparece
+
+## Deploy para Produção
+
+### Método 1: Deploy Automático (Recomendado)
 
 ```bash
-# Executar redistribuição de registros:
-python fix_user_isolation.py
+# Fazer commit das mudanças
+git add src/main.py
+git commit -m "Fix: Correção automática de isolamento integrada ao main.py"
+git push origin main
 ```
 
-### 4. Reiniciar Servidor de Produção
+O Render fará o deploy automaticamente e a correção será aplicada na inicialização.
 
-```bash
-# Reiniciar o servidor para aplicar mudanças:
-# No Render ou similar:
-# - Fazer novo deploy
-# - Ou reiniciar o serviço
-```
+### Método 2: Verificação Manual (Se necessário)
 
-## 🔍 Scripts de Diagnóstico
+Se ainda houver problemas após o deploy:
 
-### Verificar Tabelas do Banco
-```bash
-python check_db_tables.py
-```
+1. **Conectar ao console do Render**
+2. **Executar o script de teste**:
+   ```bash
+   python test_production_isolation_fix.py
+   ```
 
-### Verificar Registros Sem user_id
-```bash
-python check_null_user_ids.py
-```
+## Monitoramento
 
-### Verificar Isolamento Atual
-```bash
-python check_production_user_ids.py
-```
+### Logs a Observar
 
-## 📊 Estado Esperado Após Correção
+- `[STARTUP] Verificando isolamento de dados...`
+- `[STARTUP] Isolamento OK` ou `[STARTUP] Problema detectado`
+- `[DEBUG] Funcionário encontrado: ID=X, Nome='...', User_ID=Y`
 
-- **Usuário 1** (teste@email.com): 3 especialidades, 3 funcionários
-- **Usuário 4** (teste2@email.com): 3 especialidades, 3 funcionários
-- **Usuários 2 e 3**: 0 registros cada
+### Sinais de Problema
 
-## 🚀 Deploy em Produção
+- Funcionários com `User_ID=None` nos logs
+- Usuários vendo dados de outras contas
+- Erro `[STARTUP] Erro na verificação de isolamento`
 
-### Opção 1: Deploy Automático (Render)
+## Próximos Passos
 
-1. Fazer push das correções:
-```bash
-git push origin master
-```
+1. **Deploy**: Fazer push das mudanças para produção
+2. **Monitorar**: Verificar logs de inicialização no Render
+3. **Testar**: Criar funcionários em contas diferentes e verificar isolamento
+4. **Confirmar**: Validar que o problema foi resolvido
 
-2. Aguardar deploy automático no Render
+## Vantagens desta Solução
 
-3. Executar scripts de correção via terminal do Render:
-```bash
-python fix_isolation_constraints.py
-python fix_user_isolation.py
-```
-
-### Opção 2: Deploy Manual
-
-1. Conectar ao servidor de produção
-2. Fazer pull das mudanças:
-```bash
-git pull origin master
-```
-
-3. Executar scripts de correção:
-```bash
-python fix_isolation_constraints.py
-python fix_user_isolation.py
-```
-
-4. Reiniciar servidor:
-```bash
-# Dependendo do ambiente:
-sudo systemctl restart consultorio-app
-# ou
-pm2 restart app
-# ou reiniciar via painel de controle
-```
-
-## ✅ Verificação Pós-Deploy
-
-1. **Testar Login com Usuário 1:**
-   - Deve ver apenas 3 especialidades
-   - Deve ver apenas 3 funcionários
-
-2. **Testar Login com Usuário 4:**
-   - Deve ver 3 especialidades diferentes
-   - Deve ver 3 funcionários diferentes
-
-3. **Executar Diagnóstico:**
-```bash
-python check_production_user_ids.py
-```
-
-## 🔧 Troubleshooting
-
-### Se o Problema Persistir:
-
-1. **Verificar se o banco correto está sendo usado:**
-```bash
-# Verificar logs do servidor para confirmar caminho do banco
-tail -f /var/log/app.log
-```
-
-2. **Verificar constraints do banco:**
-```bash
-sqlite3 src/database/app.db
-.schema especialidades
-.schema funcionarios
-```
-
-3. **Verificar se as mudanças foram aplicadas:**
-```bash
-python -c "import sqlite3; conn = sqlite3.connect('src/database/app.db'); cursor = conn.cursor(); cursor.execute('SELECT user_id, COUNT(*) FROM especialidades GROUP BY user_id'); print(cursor.fetchall())"
-```
-
-### Logs Importantes:
-
-- Verificar se aparecem erros de constraint UNIQUE
-- Confirmar que o servidor está usando o banco correto
-- Verificar se as tabelas foram recriadas corretamente
-
-## 📞 Suporte
-
-Se o problema persistir após seguir este guia:
-
-1. Coletar logs do servidor
-2. Executar todos os scripts de diagnóstico
-3. Verificar se o deploy foi bem-sucedido
-4. Confirmar que o banco de produção foi atualizado
+✅ **Automática**: Executa sempre que a aplicação inicia
+✅ **Integrada**: Não precisa de scripts externos
+✅ **Segura**: Faz rollback em caso de erro
+✅ **Monitorável**: Logs detalhados do processo
+✅ **Simples**: Deploy via git push apenas
 
 ---
 
-**Data de Criação:** $(date)
-**Versão:** 1.0
-**Status:** Pronto para aplicação em produção
+**Status**: ✅ Implementado e testado localmente
+**Próximo**: Deploy para produção via git push
