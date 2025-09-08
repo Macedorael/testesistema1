@@ -8,11 +8,14 @@ class Funcionario(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=True)
-    email = db.Column(db.String(100), nullable=True, unique=True)
+    email = db.Column(db.String(100), nullable=True)
     especialidade_id = db.Column(db.Integer, db.ForeignKey('especialidades.id'), nullable=True)
     obs = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Constraint única composta: email deve ser único por usuário (quando não for nulo)
+    __table_args__ = (db.UniqueConstraint('user_id', 'email', name='uq_user_funcionario_email'),)
     
     # Relacionamentos
     user = db.relationship('User', backref='funcionarios', lazy=True)

@@ -7,10 +7,13 @@ class Especialidade(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    nome = db.Column(db.String(100), nullable=False, unique=True)
+    nome = db.Column(db.String(100), nullable=False)
     descricao = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Constraint única composta: nome deve ser único por usuário
+    __table_args__ = (db.UniqueConstraint('user_id', 'nome', name='uq_user_especialidade_nome'),)
     
     
     @validates('created_at', 'updated_at')
