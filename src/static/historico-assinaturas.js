@@ -12,7 +12,13 @@ async function loadSubscriptionHistory(page = 1) {
     try {
         showLoading(true);
         
-        const response = await fetch(`/api/subscriptions/history?page=${page}&per_page=${itemsPerPage}`);
+        const response = await fetch(`/api/subscriptions/history?page=${page}&per_page=${itemsPerPage}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         const data = await response.json();
         
         if (!response.ok) {
@@ -281,7 +287,11 @@ function showError(message) {
 function logout() {
     if (confirm('Tem certeza que deseja sair?')) {
         fetch('/api/logout', {
-            method: 'POST'
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         }).then(() => {
             window.location.href = '/entrar.html';
         }).catch(() => {
