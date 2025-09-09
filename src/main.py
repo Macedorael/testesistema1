@@ -154,15 +154,7 @@ def log_request_info():
 
 @app.after_request
 def log_response_info(response):
-    print(f"[DEBUG] <<< RESPOSTA: {response.status_code}")
     
-    # Headers de segurança para produção
-    if os.getenv('FLASK_ENV') == 'production':
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     
     return response
 

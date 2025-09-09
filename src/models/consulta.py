@@ -37,6 +37,7 @@ class Appointment(db.Model):
     
     # Relacionamentos
     user = db.relationship('User', backref='user_appointments', lazy=True)
+    funcionario = db.relationship('Funcionario', backref='appointments', lazy=True)
     sessions = db.relationship('Session', backref='appointment', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
