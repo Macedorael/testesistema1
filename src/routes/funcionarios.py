@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from src.models.funcionario import Funcionario
 from src.models.especialidade import Especialidade
 from src.models.consulta import Appointment

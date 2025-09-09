@@ -28,16 +28,20 @@ window.Appointments = {
 
     async loadPatients() {
         try {
+            LoadingManager.show('appointments-loading', 'Carregando pacientes...');
             const response = await window.app.apiCall('/patients');
             this.patients = response.data;
             this.populatePatientFilters();
         } catch (error) {
             console.error('Error loading patients:', error);
+        } finally {
+            LoadingManager.hide('appointments-loading');
         }
     },
 
     async loadMedicos() {
         try {
+            LoadingManager.show('appointments-loading', 'Carregando médicos...');
             const response = await window.app.apiCall('/medicos');
             // O endpoint /medicos retorna uma lista diretamente, não um objeto com data
             this.medicos = Array.isArray(response) ? response : (response.data || []);
@@ -45,6 +49,8 @@ window.Appointments = {
         } catch (error) {
             console.error('Error loading médicos:', error);
             this.medicos = [];
+        } finally {
+            LoadingManager.hide('appointments-loading');
         }
     },
 
@@ -62,12 +68,15 @@ window.Appointments = {
 
     async loadAppointments() {
         try {
+            LoadingManager.show('appointments-loading', 'Carregando agendamentos...');
             const response = await window.app.apiCall('/appointments');
             this.appointments = response.data;
             this.renderAppointments(this.appointments);
         } catch (error) {
             console.error('Error loading appointments:', error);
             window.app.showError('Erro ao carregar agendamentos');
+        } finally {
+            LoadingManager.hide('appointments-loading');
         }
     },
 

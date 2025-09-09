@@ -20,12 +20,18 @@ window.Patients = {
 
     async loadPatients() {
         try {
+            // Mostrar loading
+            LoadingManager.show('patients-loading', 'Carregando pacientes...');
+            
             const response = await window.app.apiCall('/patients');
             this.patients = response.data;
             this.renderPatients(this.patients);
         } catch (error) {
             console.error('Error loading patients:', error);
             window.app.showError('Erro ao carregar pacientes');
+        } finally {
+            // Esconder loading
+            LoadingManager.hide('patients-loading');
         }
     },
 

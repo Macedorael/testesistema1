@@ -56,6 +56,7 @@ function setupEventListeners() {
 // Carregar especialidades
 async function loadEspecialidades() {
     try {
+        LoadingManager.show('specialties-loading', 'Carregando especialidades...');
         const response = await fetch('/api/especialidades');
         
         if (!response.ok) {
@@ -80,6 +81,8 @@ async function loadEspecialidades() {
     } catch (error) {
         console.error('Erro:', error);
         showAlert('Erro ao carregar especialidades: ' + error.message, 'danger');
+    } finally {
+        LoadingManager.hide('specialties-loading');
     }
 }
 

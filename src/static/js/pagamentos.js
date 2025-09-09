@@ -26,11 +26,14 @@ window.Payments = {
 
     async loadPatients() {
         try {
+            LoadingManager.show('payments-loading', 'Carregando pacientes...');
             const response = await window.app.apiCall('/patients');
             this.patients = response.data;
             this.populatePatientFilters();
         } catch (error) {
             console.error('Erro ao carregar pacientes:', error);
+        } finally {
+            LoadingManager.hide('payments-loading');
         }
     },
 
@@ -46,12 +49,15 @@ window.Payments = {
 
     async loadPayments() {
         try {
+            LoadingManager.show('payments-loading', 'Carregando pagamentos...');
             const response = await window.app.apiCall('/payments');
             this.payments = response.data;
             this.renderPayments(this.payments);
         } catch (error) {
             console.error('Erro ao carregar pagamentos:', error);
             window.app.showError('Erro ao carregar pagamentos');
+        } finally {
+            LoadingManager.hide('payments-loading');
         }
     },
 

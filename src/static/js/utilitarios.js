@@ -406,3 +406,57 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', Utils.debounce(updateResponsiveClasses, 250));
 });
 
+// Loading Manager - Sistema padronizado de loading
+window.LoadingManager = {
+    // Criar elemento de loading se não existir
+    createLoadingElement(containerId = 'page-loading') {
+        let loadingElement = document.getElementById(containerId);
+        if (!loadingElement) {
+            loadingElement = document.createElement('div');
+            loadingElement.id = containerId;
+            loadingElement.className = 'page-loading hidden';
+            loadingElement.innerHTML = `
+                <div class="text-center">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Carregando...</div>
+                </div>
+            `;
+            document.body.appendChild(loadingElement);
+        }
+        return loadingElement;
+    },
+
+    // Mostrar loading
+    show(containerId = 'page-loading', text = 'Carregando...') {
+        const loadingElement = this.createLoadingElement(containerId);
+        const textElement = loadingElement.querySelector('.loading-text');
+        if (textElement) {
+            textElement.textContent = text;
+        }
+        loadingElement.classList.remove('hidden');
+    },
+
+    // Esconder loading
+    hide(containerId = 'page-loading') {
+        const loadingElement = document.getElementById(containerId);
+        if (loadingElement) {
+            loadingElement.classList.add('hidden');
+        }
+    },
+
+    // Loading para tabelas
+    showTableLoading(tableId) {
+        const table = document.getElementById(tableId);
+        if (table) {
+            table.classList.add('table-loading');
+        }
+    },
+
+    hideTableLoading(tableId) {
+        const table = document.getElementById(tableId);
+        if (table) {
+            table.classList.remove('table-loading');
+        }
+    }
+};
+
