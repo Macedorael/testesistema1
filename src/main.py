@@ -418,10 +418,38 @@ with app.app_context():
     
     # Criar usuário administrador automaticamente em produção
     try:
-        print("[STARTUP] Verificando usuário administrador...")
+        print("[STARTUP] Verificando estrutura da base de dados...")
         from src.models.usuario import User
         from src.models.assinatura import Subscription
         from datetime import datetime, timedelta
+        from sqlalchemy import text, inspect
+        
+        # Verificar e adicionar coluna 'role' se não existir
+        try:
+            inspector = inspect(db.engine)
+            columns = inspector.get_columns('users')
+            column_names = [col['name'] for col in columns]
+            
+            if 'role' not in column_names:
+                print("[MIGRATION] Coluna 'role' não encontrada. Adicionando...")
+                
+                # Adicionar coluna 'role' com valor padrão 'user'
+                db.engine.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
+                
+                # Popular todos os usuários existentes com role 'user'
+                db.engine.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+                
+                print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
+            else:
+                # Garantir que usuários sem role sejam populados
+                result = db.engine.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+                if result.rowcount > 0:
+                    print(f"✅ [MIGRATION] {result.rowcount} usuário(s) populado(s) com role 'user'")
+                    
+        except Exception as migration_error:
+            print(f"[WARNING] Erro na migração da coluna 'role': {migration_error}")
+        
+        print("[STARTUP] Verificando usuário administrador...")
         
         # Verificar se já existe um usuário admin
         existing_admin = User.query.filter_by(email='admin@consultorio.com').first()
