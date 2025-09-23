@@ -434,10 +434,11 @@ with app.app_context():
                 print("[MIGRATION] Coluna 'role' não encontrada. Adicionando...")
                 
                 # Adicionar coluna 'role' com valor padrão 'user'
-                db.engine.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
+                db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
                 
                 # Popular todos os usuários existentes com role 'user'
-                db.engine.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+                db.session.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+                db.session.commit()
                 
                 print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
             else:
