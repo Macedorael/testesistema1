@@ -416,7 +416,7 @@ with app.app_context():
     if not database_initialized:
         print("[WARNING] Banco não foi inicializado completamente, mas aplicação continuará")
     
-    # Criar usuário administrador automaticamente no primeiro deploy
+    # Criar usuário administrador automaticamente em produção
     try:
         print("[STARTUP] Verificando usuário administrador...")
         from src.models.usuario import User
@@ -426,8 +426,14 @@ with app.app_context():
         # Verificar se já existe um usuário admin
         existing_admin = User.query.filter_by(email='admin@consultorio.com').first()
         
+        # Em produção, criar admin automaticamente se não existir
+        is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('DATABASE_URL') is not None
+        
         if not existing_admin:
-            print("[STARTUP] Criando usuário administrador...")
+            if is_production:
+                print("[PRODUCTION] Criando usuário administrador automaticamente...")
+            else:
+                print("[STARTUP] Criando usuário administrador...")
             
             # Criar usuário administrador
             admin_user = User(
@@ -455,11 +461,20 @@ with app.app_context():
             db.session.add(admin_subscription)
             db.session.commit()
             
-            print("✅ Usuário administrador criado com sucesso!")
-            print("📧 Email: admin@consultorio.com")
-            print("🔑 Senha: admin123 (ALTERE APÓS O PRIMEIRO LOGIN)")
+            if is_production:
+                print("🚀 [PRODUCTION] Usuário administrador criado automaticamente no deploy!")
+                print("📧 Email: admin@consultorio.com")
+                print("🔑 Senha: admin123")
+                print("⚠️  IMPORTANTE: Altere a senha após o primeiro login!")
+            else:
+                print("✅ Usuário administrador criado com sucesso!")
+                print("📧 Email: admin@consultorio.com")
+                print("🔑 Senha: admin123 (ALTERE APÓS O PRIMEIRO LOGIN)")
         else:
-            print("✅ Usuário administrador já existe.")
+            if is_production:
+                print("✅ [PRODUCTION] Usuário administrador já existe no ambiente de produção.")
+            else:
+                print("✅ Usuário administrador já existe.")
             
     except Exception as e:
         print(f"[ERROR] Erro ao criar usuário administrador: {e}")
