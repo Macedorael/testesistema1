@@ -270,6 +270,12 @@ window.Appointments = {
                                                 <option value="quinzenal" ${isEdit && this.currentAppointment.frequencia === 'quinzenal' ? 'selected' : ''}>Quinzenal</option>
                                                 <option value="mensal" ${isEdit && this.currentAppointment.frequencia === 'mensal' ? 'selected' : ''}>Mensal</option>
                                             </select>
+                                            <div class="form-text">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    <strong>Mensal:</strong> Mesmo dia da semana (ex: primeira segunda-feira do mês)
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
