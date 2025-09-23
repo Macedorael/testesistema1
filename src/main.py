@@ -441,18 +441,62 @@ with app.app_context():
                 
                 print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
             else:
-                # Garantir que usuários sem role sejam populados
-                result = db.engine.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
-                if result.rowcount > 0:
-                    print(f"✅ [MIGRATION] {result.rowcount} usuário(s) populado(s) com role 'user'")
-                    
+                print("✅ [MIGRATION] Coluna 'role' já existe")
+                
+            # População automática de roles para usuários existentes
+            print("[STARTUP] Verificando e populando roles de usuários...")
+            
+            # Contar usuários sem role ou com role vazio
+            users_without_role = db.session.execute(
+                text("SELECT COUNT(*) FROM users WHERE role IS NULL OR role = ''")
+            ).scalar()
+            
+            if users_without_role > 0:
+                print(f"[STARTUP] Encontrados {users_without_role} usuário(s) sem role definido")
+                
+                # Popular usuários sem role com 'user'
+                result = db.session.execute(
+                    text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''")
+                )
+                db.session.commit()
+                
+                print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com role 'user'")
+            else:
+                print("✅ [STARTUP] Todos os usuários já possuem roles definidos")
+                
+            # Garantir que existe pelo menos um admin
+            admin_count = db.session.execute(
+                text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+            ).scalar()
+            
+            if admin_count == 0:
+                print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário a admin...")
+                # Promover o primeiro usuário a admin se não houver nenhum
+                first_user = db.session.execute(
+                    text("SELECT id FROM users ORDER BY id LIMIT 1")
+                ).first()
+                
+                if first_user:
+                    db.session.execute(
+                        text("UPDATE users SET role = 'admin' WHERE id = :user_id"),
+                        {"user_id": first_user[0]}
+                    )
+                    db.session.commit()
+                    print(f"✅ [STARTUP] Usuário ID {first_user[0]} promovido a administrador")
+            else:
+                print(f"✅ [STARTUP] {admin_count} administrador(es) encontrado(s)")
+                
         except Exception as migration_error:
-            print(f"[WARNING] Erro na migração da coluna 'role': {migration_error}")
+            print(f"[WARNING] Erro na migração/população de roles: {migration_error}")
+            db.session.rollback()
         
         print("[STARTUP] Verificando usuário administrador...")
         
-        # Verificar se já existe um usuário admin
-        existing_admin = User.query.filter_by(email='admin@consultorio.com').first()
+        # Verificar se já existe um usuário admin (por email OU username)
+        existing_admin = User.query.filter(
+            (User.email == 'admin@consultorio.com') | 
+            (User.username == 'admin')
+        ).first()
         
         # Em produção, criar admin automaticamente se não existir
         is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('DATABASE_URL') is not None
