@@ -7,6 +7,24 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
 
+# Configurar logging detalhado
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+# Configurar loggers específicos para nível DEBUG
+logging.getLogger('src.routes.assinaturas').setLevel(logging.INFO)
+logging.getLogger('src.utils.subscription_payment_handler').setLevel(logging.INFO)
+logging.getLogger('src.utils.mercadopago_config').setLevel(logging.INFO)
+logging.getLogger('src.routes.mercadopago_webhook').setLevel(logging.INFO)
+
+print("[DEBUG] Configuração de logging aplicada - logs detalhados habilitados")
+
 from flask import Flask, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
 
@@ -54,6 +72,13 @@ try:
 except Exception as e:
     print(f"[ERROR] Erro ao importar funcionario: {e}")
 
+try:
+    from src.models.assinatura import Subscription
+    from src.models.historico_assinatura import SubscriptionHistory
+    print("[DEBUG] Importação de assinatura e historico OK")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar assinatura: {e}")
+
 # Importações de rotas
 try:
     from src.routes.usuario import user_bp
@@ -98,8 +123,8 @@ except Exception as e:
     print(f"[ERROR] Erro ao importar dashboard_sessions routes: {e}")
 
 try:
-    from src.routes.assinaturas import subscriptions_bp
-    print("[DEBUG] Importação de assinaturas routes OK")
+    # Importar após inicialização do Mercado Pago
+    pass
 except Exception as e:
     print(f"[ERROR] Erro ao importar assinaturas routes: {e}")
 
@@ -115,6 +140,12 @@ try:
 except Exception as e:
     print(f"[ERROR] Erro ao importar funcionarios routes: {e}")
 
+try:
+    from src.routes.mercadopago_webhook import mercadopago_webhook_bp
+    print("[DEBUG] Importação de mercadopago_webhook routes OK")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar mercadopago_webhook routes: {e}")
+
 
 
 # Configuração do Flask com debug de static folder
@@ -125,6 +156,13 @@ print(f"[DEBUG] Static folder exists: {os.path.exists(static_path)}")
 app = Flask(__name__, static_folder=static_path)
 # Configuração da SECRET_KEY
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'consultorio-psicologia-secret-key-2024')
+
+# Configurações de sessão para funcionar com requisições HTTP
+app.config['SESSION_COOKIE_HTTPONLY'] = False
+app.config['SESSION_COOKIE_SECURE'] = False  # Para desenvolvimento local
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hora
+print("[DEBUG] Configurações de sessão aplicadas para desenvolvimento")
 
 print(f"[DEBUG] Flask static_folder: {app.static_folder}")
 print(f"[DEBUG] Flask static_url_path: {app.static_url_path}")
@@ -181,7 +219,7 @@ def handle_exception(e):
     # Em desenvolvimento, retornar detalhes do erro
     if os.getenv('FLASK_ENV') != 'production':
         return jsonify({
-            'error': 'Internal Server Error',
+            'erro': 'Erro Interno do Servidor',
             'message': str(e),
             'type': type(e).__name__,
             'error_id': error_id,
@@ -190,7 +228,7 @@ def handle_exception(e):
     else:
         # Em produção, retornar erro genérico mas logar detalhes
         return jsonify({
-            'error': 'Internal Server Error',
+            'erro': 'Erro Interno do Servidor',
             'message': 'Ocorreu um erro interno no servidor',
             'error_id': error_id
         }), 500
@@ -202,7 +240,7 @@ def handle_500_error(e):
     print(f"[ERROR] ERRO 500 [ID: {error_id}]: {str(e)}")
     
     return jsonify({
-        'error': 'Internal Server Error',
+        'erro': 'Erro Interno do Servidor',
         'message': 'Erro interno do servidor',
         'error_id': error_id
     }), 500
@@ -249,12 +287,6 @@ try:
     print("[DEBUG] Blueprint dashboard_sessions_bp registrado")
 except Exception as e:
     print(f"[ERROR] Erro ao registrar dashboard_sessions_bp: {e}")
-
-try:
-    app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
-    print("[DEBUG] Blueprint subscriptions_bp registrado")
-except Exception as e:
-    print(f"[ERROR] Erro ao registrar subscriptions_bp: {e}")
 
 try:
     app.register_blueprint(especialidades_bp, url_prefix='/api')
@@ -383,6 +415,85 @@ with app.app_context():
     database_initialized = initialize_database()
     if not database_initialized:
         print("[WARNING] Banco não foi inicializado completamente, mas aplicação continuará")
+    
+    # Criar usuário administrador automaticamente no primeiro deploy
+    try:
+        print("[STARTUP] Verificando usuário administrador...")
+        from src.models.usuario import User
+        from src.models.assinatura import Subscription
+        from datetime import datetime, timedelta
+        
+        # Verificar se já existe um usuário admin
+        existing_admin = User.query.filter_by(email='admin@consultorio.com').first()
+        
+        if not existing_admin:
+            print("[STARTUP] Criando usuário administrador...")
+            
+            # Criar usuário administrador
+            admin_user = User(
+                username='admin',
+                email='admin@consultorio.com',
+                role='admin'
+            )
+            admin_user.set_password('admin123')  # Senha padrão - ALTERE APÓS O PRIMEIRO LOGIN
+            
+            db.session.add(admin_user)
+            db.session.flush()  # Para obter o ID do usuário
+            
+            # Criar assinatura ativa para o admin (válida por 1 ano)
+            end_date = datetime.now() + timedelta(days=365)
+            admin_subscription = Subscription(
+                user_id=admin_user.id,
+                plan_type='admin',
+                status='active',
+                start_date=datetime.now(),
+                end_date=end_date,
+                price=0.0,
+                auto_renew=True
+            )
+            
+            db.session.add(admin_subscription)
+            db.session.commit()
+            
+            print("✅ Usuário administrador criado com sucesso!")
+            print("📧 Email: admin@consultorio.com")
+            print("🔑 Senha: admin123 (ALTERE APÓS O PRIMEIRO LOGIN)")
+        else:
+            print("✅ Usuário administrador já existe.")
+            
+    except Exception as e:
+        print(f"[ERROR] Erro ao criar usuário administrador: {e}")
+        db.session.rollback()
+
+# Inicializar Mercado Pago
+try:
+    from src.utils.mercadopago_config import init_mercadopago
+    init_mercadopago(app)
+    print("[DEBUG] Mercado Pago inicializado com sucesso")
+except Exception as e:
+    print(f"[ERROR] Erro ao inicializar Mercado Pago: {e}")
+
+# Importar blueprints que dependem do Mercado Pago após inicialização
+try:
+    from src.routes.assinaturas import subscriptions_bp
+    app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
+    print("[DEBUG] Blueprint subscriptions_bp importado e registrado após inicialização do Mercado Pago")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar/registrar subscriptions_bp: {e}")
+
+try:
+    from src.routes.mercadopago_webhook import mercadopago_webhook_bp
+    app.register_blueprint(mercadopago_webhook_bp, url_prefix='/api')
+    print("[DEBUG] Blueprint mercadopago_webhook_bp importado e registrado após inicialização do Mercado Pago")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar/registrar mercadopago_webhook_bp: {e}")
+
+try:
+    from src.routes.admin import admin_bp
+    app.register_blueprint(admin_bp)
+    print("[DEBUG] Blueprint admin_bp importado e registrado")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar/registrar admin_bp: {e}")
 
 @app.route('/')
 def home():
@@ -392,7 +503,19 @@ def home():
         
         # Verificar se o usuário está logado
         if 'user_id' in session:
-            print("[DEBUG] Usuário logado, verificando assinatura...")
+            print(f"[DEBUG] Usuário logado com ID: {session['user_id']}, verificando tipo de usuário...")
+            
+            # Verificar se é administrador
+            user = User.query.get(session['user_id'])
+            if user:
+                print(f"[DEBUG] Usuário encontrado: {user.username}, email: {user.email}, role: {user.role}")
+                if user.is_admin():
+                    print("[DEBUG] Usuário é administrador, redirecionando para dashboard admin")
+                    return redirect('/admin/dashboard')
+                else:
+                    print(f"[DEBUG] Usuário não é admin (role: {user.role}), continuando verificação de assinatura")
+            else:
+                print(f"[DEBUG] Usuário com ID {session['user_id']} não encontrado no banco")
             
             # Importar aqui para evitar circular imports
             from src.models.assinatura import Subscription
@@ -420,11 +543,24 @@ def home():
         print(f"[ERROR] Erro na rota principal: {e}")
         return f"Erro: {str(e)}", 500
 
+# Rotas de pagamento desabilitadas - funcionalidade removida
+# @app.route('/payment/success')
+# def payment_success():
+#     return send_from_directory('templates', 'payment_success.html')
+
+# @app.route('/payment/failure')
+# def payment_failure():
+#     return send_from_directory('templates', 'payment_failure.html')
+
+# @app.route('/checkout')
+# def checkout():
+#     return send_from_directory(app.static_folder, 'checkout.html')
+
 @app.route('/<path:path>')
 def serve(path):
     # Não interceptar rotas da API e rotas específicas como medicos, psicologos, funcionarios
     if path.startswith('api/') or path in ['medicos', 'psicologos', 'funcionarios', 'especialidades']:
-        return "API route not found", 404
+        return jsonify({'erro': 'Rota da API não encontrada', 'path': path}), 404
         
     print(f"[DEBUG] FUNÇÃO SERVE CHAMADA - Tentando servir arquivo: {path}")
     static_folder_path = app.static_folder
@@ -432,7 +568,7 @@ def serve(path):
     
     if static_folder_path is None:
         print("[ERROR] Static folder not configured")
-        return "Static folder not configured", 404
+        return jsonify({'erro': 'Pasta estática não configurada'}), 404
 
     # Verificar se o arquivo existe
     file_path = os.path.join(static_folder_path, path)
@@ -445,7 +581,7 @@ def serve(path):
     else:
         # Se o arquivo não existe, retornar 404 ao invés de index.html
         print(f"[ERROR] Arquivo não encontrado: {path}")
-        return f"File not found: {path}", 404
+        return jsonify({'erro': 'Arquivo não encontrado', 'path': path}), 404
 
 
 if __name__ == '__main__':
