@@ -432,9 +432,9 @@ with app.app_context():
             # Criar usuário administrador
             admin_user = User(
                 username='admin',
-                email='admin@consultorio.com',
-                role='admin'
+                email='admin@consultorio.com'
             )
+            admin_user.role = 'admin'  # Definir role após criar a instância
             admin_user.set_password('admin123')  # Senha padrão - ALTERE APÓS O PRIMEIRO LOGIN
             
             db.session.add(admin_user)
