@@ -17,9 +17,9 @@ def get_payments_stats():
         current_user = get_current_user()
         if not current_user:
             return jsonify({
-                'success': False,
-                'message': 'Usuário não autenticado'
-            }), 401
+            'success': False,
+            'message': 'Usuário não encontrado'
+        }), 401
             
         # Parâmetros de filtro de data
         date_from = request.args.get('date_from')
@@ -76,16 +76,23 @@ def get_payments_stats():
 def get_payments_by_modality():
     """Retorna pagamentos agrupados por modalidade"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
         # Parâmetros de filtro de data
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        # Query base
+        # Query base com filtro de usuário
         query = db.session.query(
             Payment.modalidade_pagamento,
             func.count(Payment.id).label('quantidade'),
             func.coalesce(func.sum(Payment.valor_pago), 0).label('total_valor')
-        )
+        ).filter(Payment.user_id == current_user.id)
         
         # Aplicar filtros de data se fornecidos
         if date_from:
@@ -179,9 +186,18 @@ def get_monthly_revenue():
 def get_recent_payments():
     """Retorna os pagamentos mais recentes"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
         limit = request.args.get('limit', 10, type=int)
         
-        payments = Payment.query.join(Patient).order_by(
+        payments = Payment.query.join(Patient).filter(
+            Payment.user_id == current_user.id
+        ).order_by(
             Payment.data_pagamento.desc(),
             Payment.created_at.desc()
         ).limit(limit).all()
@@ -207,6 +223,13 @@ def get_recent_payments():
 def get_pending_sessions():
     """Retorna sessões pendentes de pagamento"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
         limit = request.args.get('limit', 10, type=int)
         
         sessions = Session.query.join(
@@ -214,7 +237,8 @@ def get_pending_sessions():
         ).join(
             Session.appointment.property.mapper.class_.patient
         ).filter(
-            Session.status_pagamento == PaymentStatus.PENDENTE
+            Session.status_pagamento == PaymentStatus.PENDENTE,
+            Session.appointment.has(Appointment.user_id == current_user.id)
         ).order_by(
             Session.data_sessao.asc()
         ).limit(limit).all()
@@ -241,11 +265,19 @@ def get_pending_sessions():
 def get_daily_revenue():
     """Retorna receita diária dos últimos 30 dias"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
         # Query para receita diária dos últimos 30 dias
         daily_data = db.session.query(
             Payment.data_pagamento,
             func.coalesce(func.sum(Payment.valor_pago), 0).label('total')
         ).filter(
+            Payment.user_id == current_user.id,
             Payment.data_pagamento >= func.date('now', '-30 days')
         ).group_by(
             Payment.data_pagamento
