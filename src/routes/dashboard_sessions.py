@@ -527,12 +527,16 @@ def get_sessions_by_psychologist():
                 'sessoes_canceladas': funcionario.sessoes_canceladas or 0
             })
         
-        # Adicionar dados do usuário principal se houver sessões sem funcionário específico
-        if user_sessions_query and user_sessions_query.total_sessoes and user_sessions_query.total_sessoes > 0:
+        # Verificar se existem funcionários no sistema
+        from src.models.funcionario import Funcionario
+        has_funcionarios = Funcionario.query.filter_by(user_id=current_user.id).count() > 0
+        
+        # Adicionar dados do usuário principal apenas se houver sessões sem funcionário específico E não houver funcionários criados
+        if (user_sessions_query and user_sessions_query.total_sessoes and user_sessions_query.total_sessoes > 0 and not has_funcionarios):
             funcionarios_data.append({
                 'id': 'user_' + str(current_user.id),
-                'nome': current_user.username + ' (Proprietário)',
-                'especialidade': 'Medicina Geral',
+                'nome': current_user.username,
+                'especialidade': 'Responsável',
                 'total_sessoes': user_sessions_query.total_sessoes or 0,
                 'sessoes_realizadas': user_sessions_query.sessoes_realizadas or 0,
                 'sessoes_agendadas': user_sessions_query.sessoes_agendadas or 0,
