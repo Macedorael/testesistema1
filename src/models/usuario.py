@@ -8,6 +8,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
+    role = db.Column(db.String(20), default='user', nullable=False)  # 'user' ou 'admin'
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
     # subscription = db.relationship('Subscription', back_populates='user', uselist=False)
@@ -20,6 +21,11 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def is_admin(self):
+        """Verifica se o usuário é administrador"""
+        role = getattr(self, 'role', None) or 'user'
+        return role == 'admin'
 
     def has_active_subscription(self):
         """Verifica se o usuário tem uma assinatura ativa"""
@@ -90,6 +96,7 @@ class User(db.Model):
             'id': self.id,
             'username': self.username,
             'email': self.email,
+            'role': getattr(self, 'role', None) or 'user',
             'subscription': subscription_info,
             'has_active_subscription': self.has_active_subscription()
         }

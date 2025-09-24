@@ -596,12 +596,19 @@ def home():
             # Verificar se é administrador
             user = User.query.get(session['user_id'])
             if user:
-                print(f"[DEBUG] Usuário encontrado: {user.username}, email: {user.email}, role: {user.role}")
+                # Verificar se o usuário tem role definido, se não tiver, definir como 'user'
+                user_role = getattr(user, 'role', None) or 'user'
+                if user_role is None or user_role == '':
+                    user.role = 'user'
+                    db.session.commit()
+                    user_role = 'user'
+                
+                print(f"[DEBUG] Usuário encontrado: {user.username}, email: {user.email}, role: {user_role}")
                 if user.is_admin():
                     print("[DEBUG] Usuário é administrador, redirecionando para dashboard admin")
                     return redirect('/admin/dashboard')
                 else:
-                    print(f"[DEBUG] Usuário não é admin (role: {user.role}), continuando verificação de assinatura")
+                    print(f"[DEBUG] Usuário não é admin (role: {user_role}), continuando verificação de assinatura")
             else:
                 print(f"[DEBUG] Usuário com ID {session['user_id']} não encontrado no banco")
             
