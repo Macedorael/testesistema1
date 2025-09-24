@@ -426,24 +426,47 @@ with app.app_context():
         from sqlalchemy import text, inspect
         
         # Verificar e adicionar coluna 'role' se não existir
-        try:
-            inspector = inspect(db.engine)
-            columns = inspector.get_columns('users')
-            column_names = [col['name'] for col in columns]
-            
-            if 'role' not in column_names:
-                print("[MIGRATION] Coluna 'role' não encontrada. Adicionando...")
+            try:
+                inspector = inspect(db.engine)
+                columns = inspector.get_columns('users')
+                column_names = [col['name'] for col in columns]
                 
-                # Adicionar coluna 'role' com valor padrão 'user'
-                db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
+                if 'role' not in column_names:
+                    print("[MIGRATION] Coluna 'role' não encontrada. Adicionando...")
+                    
+                    # Adicionar coluna 'role' com valor padrão 'user'
+                    db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
+                    
+                    # Popular todos os usuários existentes com role 'user'
+                    db.session.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+                    db.session.commit()
+                    
+                    print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
+                else:
+                    print("✅ [MIGRATION] Coluna 'role' já existe")
                 
-                # Popular todos os usuários existentes com role 'user'
-                db.session.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
-                db.session.commit()
-                
-                print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
-            else:
-                print("✅ [MIGRATION] Coluna 'role' já existe")
+                # Verificar e adicionar coluna 'created_at' se não existir
+                if 'created_at' not in column_names:
+                    print("[MIGRATION] Coluna 'created_at' não encontrada. Adicionando...")
+                    
+                    # Detectar tipo de banco de dados
+                    db_url = os.getenv('DATABASE_URL', '')
+                    is_postgres = 'postgresql' in db_url or 'postgres' in db_url
+                    
+                    if is_postgres:
+                        # PostgreSQL
+                        db.session.execute(text("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                    else:
+                        # SQLite
+                        db.session.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
+                    
+                    # Popular usuários existentes com data atual
+                    db.session.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+                    db.session.commit()
+                    
+                    print("✅ [MIGRATION] Coluna 'created_at' adicionada e usuários existentes populados")
+                else:
+                    print("✅ [MIGRATION] Coluna 'created_at' já existe")
                 
             # População automática de roles para usuários existentes
             print("[STARTUP] Verificando e populando roles de usuários...")

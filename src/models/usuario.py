@@ -1,5 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from src.models.base import db
+from datetime import datetime
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -9,6 +10,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     role = db.Column(db.String(20), default='user', nullable=False)  # 'user' ou 'admin'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
     # subscription = db.relationship('Subscription', back_populates='user', uselist=False)
@@ -26,6 +28,13 @@ class User(db.Model):
         """Verifica se o usuário é administrador"""
         role = getattr(self, 'role', None) or 'user'
         return role == 'admin'
+    
+    def is_new_user(self):
+        """Verifica se o usuário foi criado há menos de 1 dia"""
+        if not self.created_at:
+            return False
+        time_diff = datetime.utcnow() - self.created_at
+        return time_diff.days < 1
 
     def has_active_subscription(self):
         """Verifica se o usuário tem uma assinatura ativa"""

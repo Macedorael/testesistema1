@@ -126,6 +126,7 @@ def admin_dashboard():
                             <th>Nome de Usuário</th>
                             <th>E-mail</th>
                             <th>Tipo</th>
+                            <th>Data de Criação</th>
                             <th>Assinatura</th>
                             <th>Status</th>
                             <th>Dias Restantes</th>
@@ -135,7 +136,7 @@ def admin_dashboard():
                     </thead>
                     <tbody id="users-table-body">
                         <tr>
-                            <td colspan="9" class="text-center">
+                            <td colspan="10" class="text-center">
                                 <i class="fas fa-spinner fa-spin me-2"></i>Carregando dados...
                             </td>
                         </tr>
@@ -180,6 +181,20 @@ def admin_dashboard():
                     
                     const roleClass = user.role === 'admin' ? 'badge-admin' : 'badge-user';
                     const roleText = user.role === 'admin' ? 'Administrador' : 'Usuário';
+                    
+                    // Formatar data de criação
+                    let createdAtText = '-';
+                    let isNewUser = false;
+                    if (user.created_at) {
+                        const createdDate = new Date(user.created_at);
+                        createdAtText = createdDate.toLocaleDateString('pt-BR');
+                        
+                        // Verificar se é usuário novo (menos de 24 horas)
+                        const now = new Date();
+                        const diffTime = Math.abs(now - createdDate);
+                        const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+                        isNewUser = diffHours <= 24;
+                    }
                     
                     // Traduzir tipo de plano para português
                     let subscriptionText = 'Nenhuma';
@@ -227,11 +242,16 @@ def admin_dashboard():
                     const autoRenew = user.subscription ? (user.subscription.auto_renew ? 'Sim' : 'Não') : '-';
                     const renewalsCount = user.subscription ? user.subscription.renewals_count : 0;
                     
+                    // Adicionar classe para usuários novos
+                    const newUserClass = isNewUser ? 'table-warning' : '';
+                    const newUserBadge = isNewUser ? ' <span class="badge bg-success ms-1">NOVO</span>' : '';
+                    
                     row.innerHTML = `
                         <td>${user.id}</td>
-                        <td>${user.username}</td>
+                        <td>${user.username}${newUserBadge}</td>
                         <td>${user.email}</td>
                         <td><span class="badge ${roleClass}">${roleText}</span></td>
+                        <td>${createdAtText}</td>
                         <td>${subscriptionText}</td>
                         <td>${statusText}</td>
                         <td>${daysRemaining}</td>
@@ -239,15 +259,20 @@ def admin_dashboard():
                         <td>${renewalsCount}</td>
                     `;
                     
+                    // Adicionar classe de destaque para usuários novos
+                    if (isNewUser) {
+                        row.classList.add('table-warning');
+                    }
+                    
                     tbody.appendChild(row);
                 });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-warning">Nenhum usuário encontrado</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-warning">Nenhum usuário encontrado</td></tr>';
                 }
             } catch (error) {
                 console.error('Erro ao carregar usuários:', error);
                 document.getElementById('users-table-body').innerHTML = 
-                    '<tr><td colspan="9" class="text-center text-danger">Erro ao carregar dados</td></tr>';
+                    '<tr><td colspan="10" class="text-center text-danger">Erro ao carregar dados</td></tr>';
             }
         }
 
