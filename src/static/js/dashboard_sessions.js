@@ -196,10 +196,49 @@ window.DashboardSessions = {
             if (data.success) {
                 this.currentData.psychologistsList = data.data;
                 this.renderPsychologistsList();
+                // Verificar se há funcionários e controlar visibilidade das seções
+                this.togglePsychologistSections();
             }
         } catch (error) {
             console.error('Erro ao carregar lista de médicos:', error);
         }
+    },
+
+    togglePsychologistSections() {
+        const hasPsychologists = this.currentData.psychologistsList && this.currentData.psychologistsList.length > 0;
+        
+        // Seções que devem ser ocultadas quando não há funcionários
+        const sectionsToToggle = [];
+        
+        // Encontrar seções por texto do título
+        const allH3 = document.querySelectorAll('h3');
+        allH3.forEach(h3 => {
+            const text = h3.textContent.trim();
+            if (text.includes('Atendimentos por Médico') || 
+                text.includes('Agenda dos Próximos 10 Dias por Médico') || 
+                text.includes('Pacientes por Médico')) {
+                // Pegar o elemento pai que contém toda a seção (row)
+                sectionsToToggle.push(h3.closest('.row'));
+            }
+        });
+        
+        // Adicionar cards específicos
+        const psychologistsStatsCard = document.getElementById('psychologists-stats-container')?.closest('.card')?.closest('.row');
+        const upcomingSessionsCard = document.getElementById('upcoming-sessions-by-psychologist-container')?.closest('.card')?.closest('.row');
+        const patientsByPsychologistCard = document.getElementById('patients-by-psychologist-container')?.closest('.card')?.closest('.row');
+        
+        if (psychologistsStatsCard) sectionsToToggle.push(psychologistsStatsCard);
+        if (upcomingSessionsCard) sectionsToToggle.push(upcomingSessionsCard);
+        if (patientsByPsychologistCard) sectionsToToggle.push(patientsByPsychologistCard);
+        
+        // Aplicar visibilidade
+        sectionsToToggle.forEach(section => {
+            if (section) {
+                section.style.display = hasPsychologists ? 'block' : 'none';
+            }
+        });
+        
+        console.log(`Seções de funcionários ${hasPsychologists ? 'exibidas' : 'ocultadas'} - ${this.currentData.psychologistsList?.length || 0} funcionários encontrados`);
     },
 
     renderPsychologistsList() {
@@ -473,7 +512,7 @@ window.DashboardSessions = {
                 throw new Error(result.message);
             }
         } catch (error) {
-            console.error('Error loading patients stats:', error);
+            console.error('Erro ao carregar estatísticas de pacientes:', error);
             this.currentData.patientsStats = {};
         }
     },
@@ -490,7 +529,7 @@ window.DashboardSessions = {
                 throw new Error(result.message);
             }
         } catch (error) {
-            console.error('Error loading patients list:', error);
+            console.error('Erro ao carregar lista de pacientes:', error);
             this.currentData.patientsList = [];
         }
     },
