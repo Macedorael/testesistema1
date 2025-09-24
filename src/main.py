@@ -19,9 +19,9 @@ logging.basicConfig(
 
 # Configurar loggers específicos para nível DEBUG
 logging.getLogger('src.routes.assinaturas').setLevel(logging.INFO)
-logging.getLogger('src.utils.subscription_payment_handler').setLevel(logging.INFO)
-logging.getLogger('src.utils.mercadopago_config').setLevel(logging.INFO)
-logging.getLogger('src.routes.mercadopago_webhook').setLevel(logging.INFO)
+# logging.getLogger('src.utils.subscription_payment_handler').setLevel(logging.INFO)
+# logging.getLogger('src.utils.mercadopago_config').setLevel(logging.INFO)
+# logging.getLogger('src.routes.mercadopago_webhook').setLevel(logging.INFO)
 
 print("[DEBUG] Configuração de logging aplicada - logs detalhados habilitados")
 
@@ -140,11 +140,12 @@ try:
 except Exception as e:
     print(f"[ERROR] Erro ao importar funcionarios routes: {e}")
 
-try:
-    from src.routes.mercadopago_webhook import mercadopago_webhook_bp
-    print("[DEBUG] Importação de mercadopago_webhook routes OK")
-except Exception as e:
-    print(f"[ERROR] Erro ao importar mercadopago_webhook routes: {e}")
+# Comentado - removendo importação do mercadopago_webhook
+# try:
+#     from src.routes.mercadopago_webhook import mercadopago_webhook_bp
+#     print("[DEBUG] Importação de mercadopago_webhook routes OK")
+# except Exception as e:
+#     print(f"[ERROR] Erro ao importar mercadopago_webhook routes: {e}")
 
 
 
@@ -553,28 +554,29 @@ with app.app_context():
         print(f"[ERROR] Erro ao criar usuário administrador: {e}")
         db.session.rollback()
 
-# Inicializar Mercado Pago
-try:
-    from src.utils.mercadopago_config import init_mercadopago
-    init_mercadopago(app)
-    print("[DEBUG] Mercado Pago inicializado com sucesso")
-except Exception as e:
-    print(f"[ERROR] Erro ao inicializar Mercado Pago: {e}")
+# Comentado - removendo inicialização do Mercado Pago
+# try:
+#     from src.utils.mercadopago_config import init_mercadopago
+#     init_mercadopago(app)
+#     print("[DEBUG] Mercado Pago inicializado com sucesso")
+# except Exception as e:
+#     print(f"[ERROR] Erro ao inicializar Mercado Pago: {e}")
 
 # Importar blueprints que dependem do Mercado Pago após inicialização
 try:
     from src.routes.assinaturas import subscriptions_bp
     app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
-    print("[DEBUG] Blueprint subscriptions_bp importado e registrado após inicialização do Mercado Pago")
+    print("[DEBUG] Blueprint subscriptions_bp importado e registrado")
 except Exception as e:
     print(f"[ERROR] Erro ao importar/registrar subscriptions_bp: {e}")
 
-try:
-    from src.routes.mercadopago_webhook import mercadopago_webhook_bp
-    app.register_blueprint(mercadopago_webhook_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint mercadopago_webhook_bp importado e registrado após inicialização do Mercado Pago")
-except Exception as e:
-    print(f"[ERROR] Erro ao importar/registrar mercadopago_webhook_bp: {e}")
+# Comentado - removendo registro do mercadopago_webhook_bp
+# try:
+#     from src.routes.mercadopago_webhook import mercadopago_webhook_bp
+#     app.register_blueprint(mercadopago_webhook_bp, url_prefix='/api')
+#     print("[DEBUG] Blueprint mercadopago_webhook_bp importado e registrado após inicialização do Mercado Pago")
+# except Exception as e:
+#     print(f"[ERROR] Erro ao importar/registrar mercadopago_webhook_bp: {e}")
 
 try:
     from src.routes.admin import admin_bp

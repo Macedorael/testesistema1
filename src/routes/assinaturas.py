@@ -3,7 +3,25 @@ from src.models.usuario import db, User
 from src.models.assinatura import Subscription
 from src.models.historico_assinatura import SubscriptionHistory
 from src.utils.auth import login_required
+
+# Importações do Mercado Pago com tratamento de erro melhorado
+get_mercadopago_config = None
+subscription_payment_handler = None
+
+try:
+    from src.utils.mercadopago_config import get_mercadopago_config
+    from src.utils.subscription_payment_handler import subscription_payment_handler
+    print("[DEBUG] Mercado Pago importado com sucesso")
+except ImportError as e:
+    print(f"[WARNING] Mercado Pago não disponível: {e}")
+except Exception as e:
+    print(f"[WARNING] Erro ao configurar Mercado Pago: {e}")
+
 from datetime import datetime
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 subscriptions_bp = Blueprint('subscriptions', __name__)
 
@@ -41,7 +59,7 @@ def create_subscription_guest():
         # Validar tipo de plano
         if plan_type not in Subscription.PLAN_PRICES:
             return jsonify({
-                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, annual'
+                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
         # Verificar se já tem assinatura ativa
@@ -149,7 +167,7 @@ def create_subscription():
         # Validar tipo de plano
         if plan_type not in Subscription.PLAN_PRICES:
             return jsonify({
-                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, annual'
+                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
         # Cancelar todas as assinaturas ativas anteriores
@@ -195,14 +213,12 @@ def create_subscription():
         db.session.commit()
         
         return jsonify({
-            'success': True,
+            'sucesso': True,
             'message': 'Assinatura criada com sucesso',
-            'subscription': subscription.to_dict()
-        }), 201
-        
+            'subscription_id': subscription.id
+        })
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'erro': str(e)}), 500
 
 @subscriptions_bp.route('/update', methods=['PUT'])
 @login_required
@@ -222,7 +238,7 @@ def update_subscription():
         # Validar tipo de plano
         if new_plan_type and new_plan_type not in Subscription.PLAN_PRICES:
             return jsonify({
-                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, annual'
+                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
         subscription = user.subscription
@@ -424,7 +440,7 @@ def renew_subscription_with_plan():
         # Validar tipo de plano
         if new_plan_type not in Subscription.PLAN_PRICES:
             return jsonify({
-                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, annual'
+                'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
         # Capturar informações do plano anterior para o histórico
@@ -577,3 +593,146 @@ def get_subscription_history():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@subscriptions_bp.route('/create-payment-preference', methods=['POST'])
+def create_payment_preference():
+    """Cria preferência de pagamento para assinatura - APENAS para usuários logados"""
+    try:
+        logger.info("[PAYMENT] ========== INICIANDO CRIAÇÃO DE PREFERÊNCIA DE PAGAMENTO ==========")
+        logger.info(f"[PAYMENT] Método da requisição: {request.method}")
+        logger.info(f"[PAYMENT] Headers da requisição: {dict(request.headers)}")
+        logger.info(f"[PAYMENT] Sessão atual: {dict(session)}")
+        
+        # Verificar se o usuário está logado
+        if 'user_id' not in session:
+            logger.warning("[PAYMENT] ❌ ERRO: Tentativa de pagamento sem usuário logado")
+            logger.warning(f"[PAYMENT] Chaves na sessão: {list(session.keys())}")
+            return jsonify({
+                'success': False,
+                'error': 'Usuário deve estar logado para realizar pagamentos'
+            }), 401
+        
+        user_id = session['user_id']
+        logger.info(f"[PAYMENT] ✅ Usuário logado encontrado: {user_id}")
+        
+        # Buscar dados do usuário logado
+        from src.models.usuario import User
+        logger.info(f"[PAYMENT] Buscando usuário no banco de dados...")
+        user = User.query.get(user_id)
+        if not user:
+            logger.error(f"[PAYMENT] ❌ ERRO CRÍTICO: Usuário não encontrado no banco: {user_id}")
+            logger.error(f"[PAYMENT] Query executada: User.query.get({user_id})")
+            return jsonify({
+                'success': False,
+                'error': 'Usuário não encontrado'
+            }), 404
+        
+        logger.info(f"[PAYMENT] ✅ Usuário encontrado no banco: email={user.email}, username={user.username}, id={user.id}")
+        
+        # Obter dados da requisição
+        logger.info(f"[PAYMENT] Obtendo dados JSON da requisição...")
+        data = request.get_json()
+        logger.info(f"[PAYMENT] ✅ Dados recebidos: {data}")
+        logger.info(f"[PAYMENT] Tipo dos dados: {type(data)}")
+        logger.info(f"[PAYMENT] Content-Type: {request.content_type}")
+        
+        # Validar dados obrigatórios
+        logger.info(f"[PAYMENT] Validando campos obrigatórios...")
+        required_fields = ['plan_type']
+        for field in required_fields:
+            if not data.get(field):
+                logger.error(f"[PAYMENT] ❌ ERRO: Campo obrigatório ausente: {field}")
+                logger.error(f"[PAYMENT] Campos disponíveis nos dados: {list(data.keys()) if data else 'None'}")
+                return jsonify({
+                    'success': False,
+                    'error': f'Campo obrigatório: {field}'
+                }), 400
+        
+        plan_type = data['plan_type']
+        user_email = user.email
+        user_name = user.username
+        
+        logger.info(f"[PAYMENT] ✅ Validação concluída")
+        logger.info(f"[PAYMENT] 📋 Dados para processamento:")
+        logger.info(f"[PAYMENT]    - Plan Type: {plan_type}")
+        logger.info(f"[PAYMENT]    - User Email: {user_email}")
+        logger.info(f"[PAYMENT]    - User Name: {user_name}")
+        logger.info(f"[PAYMENT]    - User ID: {user_id}")
+        
+        # Verificar se o Mercado Pago está configurado
+        logger.info(f"[PAYMENT] Verificando configuração do Mercado Pago...")
+        logger.info(f"[PAYMENT] subscription_payment_handler: {subscription_payment_handler}")
+        logger.info(f"[PAYMENT] get_mercadopago_config: {get_mercadopago_config}")
+        
+        if subscription_payment_handler is None or get_mercadopago_config is None:
+            logger.warning("[PAYMENT] ⚠️ Mercado Pago não configurado - modo desenvolvimento")
+            logger.warning(f"[PAYMENT] Handler é None: {subscription_payment_handler is None}")
+            logger.warning(f"[PAYMENT] Config é None: {get_mercadopago_config is None}")
+            # Modo de desenvolvimento - retornar URL mock
+            return jsonify({
+                'success': True,
+                'preference_url': 'http://localhost:5000/payment/success?collection_id=mock&status=approved&payment_type=credit_card',
+                'message': 'Modo de desenvolvimento - Mercado Pago não configurado'
+            })
+        
+        logger.info("[PAYMENT] ✅ Mercado Pago configurado corretamente")
+        logger.info("[PAYMENT] 🚀 Chamando handler de pagamento...")
+        
+        # Usar o handler para criar o pagamento
+        try:
+            result = subscription_payment_handler.create_subscription_payment(
+                user_id=user_id,
+                plan_type=plan_type,
+                email=user_email,
+                name=user_name
+            )
+            logger.info(f"[PAYMENT] ✅ Handler executado com sucesso")
+        except Exception as handler_error:
+            logger.error(f"[PAYMENT] ❌ ERRO no handler: {str(handler_error)}")
+            logger.exception(f"[PAYMENT] Stack trace do handler:")
+            raise handler_error
+        
+        logger.info(f"[PAYMENT] 📊 Resultado do handler:")
+        logger.info(f"[PAYMENT]    - Success: {result.get('success')}")
+        logger.info(f"[PAYMENT]    - Error: {result.get('error')}")
+        logger.info(f"[PAYMENT]    - Resultado completo: {result}")
+        
+        if not result['success']:
+            logger.error(f"[PAYMENT] ❌ ERRO: Falha ao criar pagamento")
+            logger.error(f"[PAYMENT] Erro retornado: {result['error']}")
+            logger.error(f"[PAYMENT] Resultado completo: {result}")
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 400
+        
+        logger.info(f"[PAYMENT] 🎉 SUCESSO: Preferência de pagamento criada!")
+        logger.info(f"[PAYMENT] Assinatura ID: {result['subscription']['id']}")
+        logger.info(f"[PAYMENT] Preference ID: {result.get('preference_id')}")
+        logger.info(f"[PAYMENT] Init Point: {result.get('init_point')}")
+        
+        response_data = {
+            'success': True,
+            'subscription': result['subscription'],
+            'preference': {
+                'id': result['preference_id'],
+                'init_point': result['init_point'],
+                'sandbox_init_point': result.get('sandbox_init_point')
+            }
+        }
+        
+        logger.info(f"[PAYMENT] 📤 Retornando resposta: {response_data}")
+        logger.info("[PAYMENT] ========== FIM DA CRIAÇÃO DE PREFERÊNCIA ==========\n")
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        logger.error(f"[PAYMENT] ❌ ERRO CRÍTICO: Exceção não tratada")
+        logger.error(f"[PAYMENT] Tipo da exceção: {type(e).__name__}")
+        logger.error(f"[PAYMENT] Mensagem: {str(e)}")
+        logger.exception("[PAYMENT] Stack trace completo:")
+        logger.error("[PAYMENT] ========== FIM COM ERRO ==========\n")
+        return jsonify({
+            'success': False,
+            'error': 'Erro interno do servidor'
+        }), 500
