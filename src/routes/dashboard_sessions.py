@@ -636,21 +636,32 @@ def get_upcoming_sessions_by_psychologist():
             })
         
         # Dados do usuário (sessões sem funcionário específico)
-        user_data = {
-            'nome': current_user.username,
-            'especialidade': 'Psicólogo(a)',
-            'sessoes': []
-        }
+        # Só incluir se houver funcionários criados ou se o usuário tiver sessões
+        user_sessions_count = len(user_sessions)
         
-        for session in user_sessions:
-            user_data['sessoes'].append({
-                'id': session.session_id,
-                'data_sessao': session.data_sessao.strftime('%Y-%m-%d'),
-                'horario': session.data_sessao.strftime('%H:%M') if session.data_sessao else None,
-                'status': session.status.value,
-                'paciente_nome': session.paciente_nome,
-                'paciente_telefone': session.paciente_telefone
-            })
+        # Verificar se existem funcionários no sistema
+        from src.models.funcionario import Funcionario
+        has_funcionarios = Funcionario.query.filter_by(user_id=current_user.id).count() > 0
+        
+        user_data = None
+        if user_sessions_count > 0 and not has_funcionarios:
+            # Só mostrar dados do usuário se não houver funcionários e houver sessões
+            user_data = {
+                'nome': current_user.username,
+                'especialidade': 'Responsável',
+                'sessoes': []
+            }
+        
+        if user_data:
+            for session in user_sessions:
+                user_data['sessoes'].append({
+                    'id': session.session_id,
+                    'data_sessao': session.data_sessao.strftime('%Y-%m-%d'),
+                    'horario': session.data_sessao.strftime('%H:%M') if session.data_sessao else None,
+                    'status': session.status.value,
+                    'paciente_nome': session.paciente_nome,
+                    'paciente_telefone': session.paciente_telefone
+                })
         
         # Preparar dados finais
         result_data = []
@@ -672,7 +683,7 @@ def get_upcoming_sessions_by_psychologist():
                 })
         
         # Adicionar sessões do usuário se houver
-        if user_data['sessoes']:
+        if user_data and user_data['sessoes']:
             agendadas = len([s for s in user_data['sessoes'] if s['status'] == 'agendada'])
             reagendadas = len([s for s in user_data['sessoes'] if s['status'] == 'reagendada'])
             total = len(user_data['sessoes'])
