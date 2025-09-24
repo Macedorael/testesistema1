@@ -83,9 +83,9 @@ def admin_dashboard():
                     <p class="mb-0">Visão geral do sistema de consultório</p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="/inicial.html" class="btn btn-light">
-                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Sistema
-                    </a>
+                    <button onclick="logout()" class="btn btn-primary">
+                        <i class="fas fa-sign-out-alt me-2"></i>Sair do Sistema
+                    </button>
                 </div>
             </div>
         </div>
@@ -123,8 +123,8 @@ def admin_dashboard():
                     <thead class="table-dark">
                         <tr>
                             <th>ID</th>
-                            <th>Username</th>
-                            <th>Email</th>
+                            <th>Nome de Usuário</th>
+                            <th>E-mail</th>
                             <th>Tipo</th>
                             <th>Assinatura</th>
                             <th>Status</th>
@@ -181,7 +181,26 @@ def admin_dashboard():
                     const roleClass = user.role === 'admin' ? 'badge-admin' : 'badge-user';
                     const roleText = user.role === 'admin' ? 'Administrador' : 'Usuário';
                     
-                    const subscriptionText = user.subscription ? user.subscription.plan_type : 'Nenhuma';
+                    // Traduzir tipo de plano para português
+                    let subscriptionText = 'Nenhuma';
+                    if (user.subscription) {
+                        switch(user.subscription.plan_type) {
+                            case 'annual':
+                                subscriptionText = 'Anual';
+                                break;
+                            case 'monthly':
+                                subscriptionText = 'Mensal';
+                                break;
+                            case 'quarterly':
+                                subscriptionText = 'Trimestral';
+                                break;
+                            case 'biannual':
+                                subscriptionText = 'Semestral';
+                                break;
+                            default:
+                                subscriptionText = user.subscription.plan_type;
+                        }
+                    }
                     
                     // Traduzir status para português
                     let statusText = 'Sem assinatura';
@@ -241,6 +260,31 @@ def admin_dashboard():
         document.addEventListener('DOMContentLoaded', function() {
             refreshData();
         });
+
+        // Função de logout
+        function logout() {
+            if (confirm('Tem certeza que deseja sair do sistema?')) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    // Limpar dados de sessão locais
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    
+                    // Redirecionar para a tela inicial (landing page)
+                    window.location.href = '/';
+                }).catch(error => {
+                    console.error('Erro no logout:', error);
+                    // Mesmo se der erro, limpar dados locais e redirecionar
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/';
+                });
+            }
+        }
     </script>
 </body>
 </html>
