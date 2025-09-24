@@ -4,7 +4,7 @@ from src.models.usuario import db
 from src.models.pagamento import Payment, PaymentMethod
 from src.models.consulta import Session, PaymentStatus, Appointment
 from src.models.paciente import Patient
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from sqlalchemy import func, and_, or_
 
 dashboard_payments_bp = Blueprint('dashboard_payments', __name__)
@@ -273,12 +273,13 @@ def get_daily_revenue():
             }), 401
             
         # Query para receita diária dos últimos 30 dias
+        data_limite = date.today() - timedelta(days=30)
         daily_data = db.session.query(
             Payment.data_pagamento,
             func.coalesce(func.sum(Payment.valor_pago), 0).label('total')
         ).filter(
             Payment.user_id == current_user.id,
-            Payment.data_pagamento >= func.date('now', '-30 days')
+            Payment.data_pagamento >= data_limite
         ).group_by(
             Payment.data_pagamento
         ).order_by(

@@ -68,10 +68,11 @@ def get_sessions_stats():
         ).count()
         
         # Próximas sessões (próximos 7 dias)
+        data_limite = hoje + timedelta(days=7)
         proximas_sessoes = Session.query.join(Appointment).filter(
             Appointment.user_id == current_user.id,
             func.date(Session.data_sessao) > hoje,
-            func.date(Session.data_sessao) <= func.date('now', '+7 days'),
+            func.date(Session.data_sessao) <= data_limite,
             Session.status.in_([SessionStatus.AGENDADA, SessionStatus.REAGENDADA])
         ).count()
         
