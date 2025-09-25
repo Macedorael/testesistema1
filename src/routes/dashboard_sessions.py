@@ -880,30 +880,34 @@ def get_patients_by_psychologist():
 @dashboard_sessions_bp.route('/dashboard/psychologists/list', methods=['GET'])
 @login_and_subscription_required
 def get_psychologists_list():
-    """Retorna lista de todos os psicólogos disponíveis"""
+    """Retorna apenas o psicólogo atual (isolamento de dados)"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+            
         from src.models.usuario import User
         from src.models.funcionario import Funcionario
         
-        # Buscar todos os usuários que têm sessões ou pacientes
-        psychologists = db.session.query(
-            User.id,
-            User.username,
-            User.email
-        ).join(
-            Appointment, User.id == Appointment.user_id
-        ).distinct().order_by(User.username).all()
+        # Buscar apenas o usuário atual (isolamento de dados)
+        psychologist = User.query.get(current_user.id)
+        if not psychologist:
+            return jsonify({
+                'success': False,
+                'message': 'Psicólogo não encontrado'
+            }), 404
         
-        psychologists_data = []
-        for psychologist in psychologists:
-            # Buscar funcionário associado ao usuário
-            funcionario = Funcionario.query.filter_by(user_id=psychologist.id).first()
-            
-            psychologists_data.append({
-                'id': psychologist.id,
-                'nome': funcionario.nome if funcionario else psychologist.username,
-                'email': psychologist.email
-            })
+        # Buscar funcionário associado ao usuário atual
+        funcionario = Funcionario.query.filter_by(user_id=current_user.id).first()
+        
+        psychologists_data = [{
+            'id': psychologist.id,
+            'nome': funcionario.nome if funcionario else psychologist.username,
+            'email': psychologist.email
+        }]
         
         return jsonify({
             'success': True,
