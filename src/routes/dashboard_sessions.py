@@ -139,7 +139,7 @@ def get_rescheduled_sessions():
             if session.appointment.funcionario:
                 session_dict['funcionario_nome'] = session.appointment.funcionario.nome
             else:
-                session_dict['funcionario_nome'] = session.appointment.user.username
+                session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
             sessions_data.append(session_dict)
         
         return jsonify({
@@ -196,7 +196,7 @@ def get_missed_sessions():
             if session.appointment.funcionario:
                 session_dict['funcionario_nome'] = session.appointment.funcionario.nome
             else:
-                session_dict['funcionario_nome'] = session.appointment.user.username
+                session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
             sessions_data.append(session_dict)
         
         return jsonify({
@@ -240,8 +240,8 @@ def get_today_sessions():
                 session_dict['funcionario_nome'] = session.appointment.funcionario.nome
                 session_dict['psychologist_name'] = session.appointment.funcionario.nome
             else:
-                session_dict['funcionario_nome'] = session.appointment.user.username
-                session_dict['psychologist_name'] = session.appointment.user.username
+                session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
+                session_dict['psychologist_name'] = 'Responsável pelo Atendimento'
             
             sessions_data.append(session_dict)
         
@@ -286,7 +286,7 @@ def get_upcoming_sessions():
             if session.appointment.funcionario:
                 session_dict['funcionario_nome'] = session.appointment.funcionario.nome
             else:
-                session_dict['funcionario_nome'] = session.appointment.user.username
+                session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
             
             sessions_data.append(session_dict)
         
@@ -652,7 +652,7 @@ def get_upcoming_sessions_by_psychologist():
         if user_sessions_count > 0 and not has_funcionarios:
             # Só mostrar dados do usuário se não houver funcionários e houver sessões
             user_data = {
-                'nome': current_user.username,
+                'nome': 'Responsável pelo Atendimento',
                 'especialidade': 'Responsável',
                 'sessoes': []
             }
@@ -816,14 +816,18 @@ def get_patients_by_psychologist():
         
         # Buscar dados do psicólogo selecionado
         from src.models.usuario import User
+        from src.models.funcionario import Funcionario
         target_user = User.query.get(target_user_id)
         if not target_user:
             return jsonify({'success': False, 'message': 'Psicólogo não encontrado'}), 404
         
+        # Buscar funcionário associado ao usuário
+        funcionario = Funcionario.query.filter_by(user_id=target_user_id).first()
+        
         # Dados do psicólogo selecionado
         psicologo_data = {
             'id': target_user.id,
-            'nome': target_user.username,
+            'nome': funcionario.nome if funcionario else target_user.username,
             'especialidade': 'Psicólogo(a)',
             'total_pacientes': len(pacientes),
             'pacientes': []
@@ -879,6 +883,7 @@ def get_psychologists_list():
     """Retorna lista de todos os psicólogos disponíveis"""
     try:
         from src.models.usuario import User
+        from src.models.funcionario import Funcionario
         
         # Buscar todos os usuários que têm sessões ou pacientes
         psychologists = db.session.query(
@@ -891,9 +896,12 @@ def get_psychologists_list():
         
         psychologists_data = []
         for psychologist in psychologists:
+            # Buscar funcionário associado ao usuário
+            funcionario = Funcionario.query.filter_by(user_id=psychologist.id).first()
+            
             psychologists_data.append({
                 'id': psychologist.id,
-                'nome': psychologist.username,
+                'nome': funcionario.nome if funcionario else psychologist.username,
                 'email': psychologist.email
             })
         
