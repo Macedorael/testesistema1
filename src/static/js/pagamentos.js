@@ -254,6 +254,7 @@ window.Payments = {
                                                 <option value="CARTAO_CREDITO" ${isEdit && this.currentPayment.modalidade_pagamento === 'CARTAO_CREDITO' ? 'selected' : ''}>Cartão de crédito</option>
                                                 <option value="CARTAO_DEBITO" ${isEdit && this.currentPayment.modalidade_pagamento === 'CARTAO_DEBITO' ? 'selected' : ''}>Cartão de débito</option>
                                                 <option value="LINK_PAGAMENTO" ${isEdit && this.currentPayment.modalidade_pagamento === 'LINK_PAGAMENTO' ? 'selected' : ''}>Link de pagamento</option>
+                                                <option value="OUTROS" ${isEdit && this.currentPayment.modalidade_pagamento === 'OUTROS' ? 'selected' : ''}>Outros</option>
                                             </select>
                                         </div>
                                     </div>
@@ -529,6 +530,170 @@ window.Payments = {
             console.error('Error creating quick payment:', error);
             window.app.showError(error.message || 'Erro ao registrar pagamento');
         }
+    },
+
+    async showFechamentoCaixa() {
+        try {
+            const response = await window.app.apiCall('/payments/fechamento-caixa');
+            const data = response.data;
+            
+            this.showFechamentoCaixaModal(data);
+        } catch (error) {
+            console.error('Erro ao carregar fechamento de caixa:', error);
+            window.app.showError('Erro ao carregar fechamento de caixa');
+        }
+    },
+
+    showFechamentoCaixaModal(data) {
+        const modalidadesLabels = {
+            'DINHEIRO': 'Dinheiro',
+            'PIX': 'PIX',
+            'CARTAO_CREDITO': 'Cartão de Crédito',
+            'CARTAO_DEBITO': 'Cartão de Débito',
+            'LINK_PAGAMENTO': 'Link de Pagamento',
+            'OUTROS': 'Outros'
+        };
+
+        let modalidadesHtml = '';
+        if (Object.keys(data.resumo_modalidades).length === 0) {
+            modalidadesHtml = `
+                <div class="text-center py-4">
+                    <i class="bi bi-cash-stack fs-1 text-muted"></i>
+                    <h5 class="text-muted mt-3">Nenhum pagamento hoje</h5>
+                    <p class="text-muted">Não há pagamentos registrados para o dia de hoje.</p>
+                </div>
+            `;
+        } else {
+            modalidadesHtml = `
+                <div class="row">
+                    ${Object.entries(data.resumo_modalidades).map(([modalidade, valor]) => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-muted mb-1">${modalidadesLabels[modalidade] || modalidade}</h6>
+                                    <h4 class="text-success mb-0">${window.app.formatCurrency(valor)}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-primary mb-1">Total Geral</h6>
+                                <h3 class="text-primary mb-0">${window.app.formatCurrency(data.total_geral)}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-info">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-info mb-1">Quantidade de Pagamentos</h6>
+                                <h3 class="text-info mb-0">${data.quantidade_pagamentos}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const modalHtml = `
+            <div class="modal fade" id="fechamentoCaixaModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-calculator me-2"></i>
+                                Fechamento de Caixa - ${data.data}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${modalidadesHtml}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remover modal existente
+        const existingModal = document.getElementById('fechamentoCaixaModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Adicionar novo modal
+        document.getElementById('modals-container').innerHTML = modalHtml;
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('fechamentoCaixaModal'));
+        modal.show();
+    },
+
+    imprimirFechamento(data, dadosFechamento) {
+        const modalidadesLabels = {
+            'DINHEIRO': 'Dinheiro',
+            'PIX': 'PIX',
+            'CARTAO_CREDITO': 'Cartão de Crédito',
+            'CARTAO_DEBITO': 'Cartão de Débito',
+            'LINK_PAGAMENTO': 'Link de Pagamento',
+            'OUTROS': 'Outros'
+        };
+
+        let conteudoImpressao = `
+            <html>
+            <head>
+                <title>Fechamento de Caixa - ${data}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .modalidade { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+                    .total { font-weight: bold; font-size: 18px; margin-top: 20px; padding: 15px; background-color: #f8f9fa; }
+                    .data-impressao { text-align: right; margin-top: 30px; font-size: 12px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>Fechamento de Caixa</h2>
+                    <h3>${data}</h3>
+                </div>
+        `;
+
+        if (Object.keys(dadosFechamento.resumo_modalidades).length > 0) {
+            Object.entries(dadosFechamento.resumo_modalidades).forEach(([modalidade, valor]) => {
+                conteudoImpressao += `
+                    <div class="modalidade">
+                        <strong>${modalidadesLabels[modalidade] || modalidade}:</strong> ${window.app.formatCurrency(valor)}
+                    </div>
+                `;
+            });
+        } else {
+            conteudoImpressao += '<p>Nenhum pagamento registrado para este dia.</p>';
+        }
+
+        conteudoImpressao += `
+                <div class="total">
+                    Total Geral: ${window.app.formatCurrency(dadosFechamento.total_geral)}<br>
+                    Quantidade de Pagamentos: ${dadosFechamento.quantidade_pagamentos}
+                </div>
+                <div class="data-impressao">
+                    Relatório gerado em: ${new Date().toLocaleString('pt-BR')}
+                </div>
+            </body>
+            </html>
+        `;
+
+        const janelaImpressao = window.open('', '_blank');
+        janelaImpressao.document.write(conteudoImpressao);
+        janelaImpressao.document.close();
+        janelaImpressao.print();
     },
 
     async viewPayment(paymentId) {

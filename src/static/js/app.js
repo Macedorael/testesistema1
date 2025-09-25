@@ -620,9 +620,14 @@ class App {
                         <h2>
                             <i class="bi bi-credit-card me-2"></i>Pagamentos
                         </h2>
-                        <button class="btn btn-primary" onclick="Payments.showCreateModal()">
-                            <i class="bi bi-plus-lg me-1"></i>Registrar Pagamento
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" onclick="Payments.showFechamentoCaixa()">
+                                <i class="bi bi-calculator me-1"></i>Fechamento de Caixa
+                            </button>
+                            <button class="btn btn-primary" onclick="Payments.showCreateModal()">
+                                <i class="bi bi-plus-lg me-1"></i>Registrar Pagamento
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -671,6 +676,7 @@ class App {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include', // Incluir cookies de sessão
         };
 
         const finalOptions = { ...defaultOptions, ...options };

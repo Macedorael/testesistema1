@@ -268,13 +268,20 @@ window.Dashboard = {
             this.renderTodaySessions(sessions);
         } catch (error) {
             console.error('Error loading today sessions:', error);
-            document.getElementById('today-sessions').innerHTML = 
-                '<div class="text-muted">Erro ao carregar atendimentos de hoje</div>';
+            const container = document.getElementById('today-sessions');
+            if (container) {
+                container.innerHTML = '<div class="text-muted">Erro ao carregar atendimentos de hoje</div>';
+            }
         }
     },
 
     renderTodaySessions(sessions) {
         const container = document.getElementById('today-sessions');
+        
+        if (!container) {
+            console.warn('Element with id "today-sessions" not found');
+            return;
+        }
         
         if (sessions.length === 0) {
             container.innerHTML = '<div class="text-muted">Nenhum atendimento agendado para hoje</div>';
@@ -318,13 +325,20 @@ window.Dashboard = {
             this.renderUpcomingSessions(sessions);
         } catch (error) {
             console.error('Error loading upcoming sessions:', error);
-            document.getElementById('upcoming-sessions').innerHTML = 
-                '<div class="text-muted">Erro ao carregar próximas sessões</div>';
+            const container = document.getElementById('upcoming-sessions');
+            if (container) {
+                container.innerHTML = '<div class="text-muted">Erro ao carregar próximas sessões</div>';
+            }
         }
     },
 
     renderUpcomingSessions(sessions) {
         const container = document.getElementById('upcoming-sessions');
+        
+        if (!container) {
+            console.warn('Element with id "upcoming-sessions" not found');
+            return;
+        }
         
         if (sessions.length === 0) {
             container.innerHTML = '<div class="text-muted">Nenhuma sessão agendada</div>';

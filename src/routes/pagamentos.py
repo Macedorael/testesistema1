@@ -528,3 +528,81 @@ def get_all_sessions(patient_id):
             'message': f'Erro ao buscar sessões: {str(e)}'
         }), 500
 
+@payments_bp.route('/payments/fechamento-caixa', methods=['GET'])
+@login_and_subscription_required
+def fechamento_caixa():
+    """Retorna resumo dos pagamentos do dia por modalidade para fechamento de caixa"""
+    logger.info("[GET /payments/fechamento-caixa] Iniciando fechamento de caixa")
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 401
+        
+        # Obter data de hoje
+        hoje = date.today()
+        logger.debug(f"[FECHAMENTO CAIXA] Buscando pagamentos do dia: {hoje}")
+        
+        # Buscar pagamentos do dia atual do usuário
+        pagamentos_hoje = Payment.query.filter(
+            Payment.user_id == current_user.id,
+            func.date(Payment.data_pagamento) == hoje
+        ).all()
+        
+        logger.info(f"[FECHAMENTO CAIXA] Encontrados {len(pagamentos_hoje)} pagamentos hoje")
+        
+        # Agrupar por modalidade de pagamento
+        resumo_modalidades = {
+            'DINHEIRO': 0.0,
+            'PIX': 0.0,
+            'CARTAO_CREDITO': 0.0,
+            'CARTAO_DEBITO': 0.0,
+            'LINK_PAGAMENTO': 0.0,
+            'OUTROS': 0.0  # Para modalidades não especificadas
+        }
+        
+        total_geral = 0.0
+        
+        for pagamento in pagamentos_hoje:
+            valor = float(pagamento.valor_pago)
+            modalidade = pagamento.modalidade_pagamento
+            
+            # Debug: log da modalidade encontrada
+            logger.debug(f"[FECHAMENTO CAIXA] Pagamento ID {pagamento.id}: modalidade='{modalidade}', valor={valor}")
+            
+            # Converter enum para string se necessário
+            if modalidade:
+                modalidade_str = modalidade.value if hasattr(modalidade, 'value') else str(modalidade)
+            else:
+                modalidade_str = None
+            
+            if modalidade_str and modalidade_str in resumo_modalidades:
+                resumo_modalidades[modalidade_str] += valor
+                logger.debug(f"[FECHAMENTO CAIXA] Modalidade '{modalidade_str}' reconhecida")
+            else:
+                resumo_modalidades['OUTROS'] += valor
+                logger.debug(f"[FECHAMENTO CAIXA] Modalidade '{modalidade_str}' NÃO reconhecida, adicionado em OUTROS")
+            
+            total_geral += valor
+        
+        logger.info(f"[FECHAMENTO CAIXA] Total geral: R$ {total_geral:.2f}")
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'data': hoje.strftime('%d/%m/%Y'),
+                'resumo_modalidades': resumo_modalidades,
+                'total_geral': total_geral,
+                'quantidade_pagamentos': len(pagamentos_hoje)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"[FECHAMENTO CAIXA] Erro: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao gerar fechamento de caixa: {str(e)}'
+        }), 500
+
