@@ -106,6 +106,7 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'role': getattr(self, 'role', None) or 'user',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
             'subscription': subscription_info,
             'has_active_subscription': self.has_active_subscription()
         }
