@@ -376,15 +376,21 @@ def reset_password():
 
 def send_password_reset_email(email, username, token):
     """Função para enviar email de recuperação de senha"""
-    import os
+    
+    # Verificar se emails estão habilitados
+    from src.utils.notificacoes_email import is_email_enabled
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Email de recuperação não será enviado.")
+        return True  # Retorna True para não quebrar o fluxo da aplicação
+    
     try:
         # Configurações do email do arquivo .env
         smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
         smtp_port = int(os.getenv('SMTP_PORT', 587))
         sender_email = os.getenv('SMTP_EMAIL')
         sender_password = os.getenv('SMTP_PASSWORD')
-        base_url = os.getenv('BASE_URL', 'http://localhost:5000')
         
+        # Verificar se as configurações estão disponíveis
         if not sender_email or not sender_password:
             print("[ERROR] Configurações de email não encontradas no .env")
             return False
@@ -393,7 +399,7 @@ def send_password_reset_email(email, username, token):
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = email
-        msg['Subject'] = "Recuperação de Senha - Consultório Médico"
+        msg['Subject'] = "Recuperação de Senha - Sistema Consultório"
         
         # Corpo do email em HTML
         html_body = f"""
@@ -401,17 +407,10 @@ def send_password_reset_email(email, username, token):
         <body>
             <h2>Recuperação de Senha</h2>
             <p>Olá {username},</p>
-            <p>Você solicitou a recuperação de sua senha no sistema do Consultório Médico.</p>
-            <p>Para criar uma nova senha, clique no link abaixo:</p>
-            <p><a href="{base_url}/resetar-senha.html?token={token}" 
-               style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-               Resetar Senha</a></p>
-            <p>Ou copie e cole este link no seu navegador:</p>
-            <p>{base_url}/resetar-senha.html?token={token}</p>
-            <p><strong>Este link expira em 30 minutos.</strong></p>
+            <p>Você solicitou a recuperação de sua senha. Use o token abaixo para redefinir sua senha:</p>
+            <p><strong>Token: {token}</strong></p>
+            <p>Este token é válido por 1 hora.</p>
             <p>Se você não solicitou esta recuperação, ignore este email.</p>
-            <br>
-            <p>Atenciosamente,<br>Equipe do Consultório Médico</p>
         </body>
         </html>
         """

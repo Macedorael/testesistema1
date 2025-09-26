@@ -8,6 +8,16 @@ from src.models.paciente import Patient
 from src.models.usuario import User
 from urllib.parse import quote
 
+def is_email_enabled():
+    """
+    Verifica se o envio de emails está habilitado
+    
+    Returns:
+        bool: True se emails estão habilitados, False caso contrário
+    """
+    email_enabled = os.getenv('EMAIL_ENABLED', 'true').lower()
+    return email_enabled in ['true', '1', 'yes', 'on']
+
 def gerar_link_google_calendar(titulo, data_inicio, data_fim=None, descricao="", local=""):
     """Gera um link para adicionar evento ao Google Calendar"""
     from datetime import timedelta
@@ -42,6 +52,11 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
     Returns:
         bool: True se o email foi enviado com sucesso, False caso contrário
     """
+    
+    # Verificar se emails estão habilitados
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Email de confirmação não será enviado.")
+        return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações do agendamento
@@ -235,6 +250,11 @@ def enviar_lembrete_sessao(id_sessao):
         bool: True se o email foi enviado com sucesso, False caso contrário
     """
     
+    # Verificar se emails estão habilitados
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Lembrete de sessão não será enviado.")
+        return True  # Retorna True para não quebrar o fluxo da aplicação
+    
     try:
         # Buscar informações da sessão
         sessao = Session.query.get(id_sessao)
@@ -381,6 +401,11 @@ def enviar_email_atualizacao_agendamento(id_agendamento):
     Returns:
         bool: True se o email foi enviado com sucesso, False caso contrário
     """
+    
+    # Verificar se emails estão habilitados
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Email de atualização não será enviado.")
+        return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações do agendamento
@@ -561,6 +586,11 @@ def enviar_email_cancelamento_agendamento(agendamento_data):
         bool: True se o email foi enviado com sucesso, False caso contrário
     """
     
+    # Verificar se emails estão habilitados
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Email de cancelamento não será enviado.")
+        return True  # Retorna True para não quebrar o fluxo da aplicação
+    
     try:
         # Configurações de email do .env
         servidor_smtp = os.getenv('SMTP_SERVER')
@@ -652,6 +682,11 @@ def enviar_email_reagendamento_sessao(id_sessao):
     Returns:
         bool: True se o email foi enviado com sucesso, False caso contrário
     """
+    
+    # Verificar se emails estão habilitados
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Email de reagendamento não será enviado.")
+        return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações da sessão
