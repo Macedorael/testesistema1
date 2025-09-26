@@ -303,7 +303,18 @@ def get_upcoming_sessions():
         limit = request.args.get('limit', 10, type=int)
         hoje = date.today()
         
-        sessions = Session.query.join(Appointment).join(Patient).filter(
+        # Buscar sessões com informações dos funcionários e especialidades
+        from src.models.funcionario import Funcionario
+        from src.models.especialidade import Especialidade
+        from sqlalchemy.orm import joinedload
+        
+        sessions = db.session.query(Session).join(Appointment).join(Patient).outerjoin(
+            Funcionario, Appointment.funcionario_id == Funcionario.id
+        ).outerjoin(
+            Especialidade, Funcionario.especialidade_id == Especialidade.id
+        ).options(
+            joinedload(Session.appointment).joinedload(Appointment.funcionario).joinedload(Funcionario.especialidade)
+        ).filter(
             func.date(Session.data_sessao) > hoje,
             Session.status.in_([SessionStatus.AGENDADA, SessionStatus.REAGENDADA]),
             Appointment.user_id == current_user.id
@@ -315,11 +326,29 @@ def get_upcoming_sessions():
             session_dict['patient_name'] = session.appointment.patient.nome_completo
             session_dict['patient_id'] = session.appointment.patient.id
             
-            # Adicionar nome do funcionário
-            if session.appointment.funcionario:
-                session_dict['funcionario_nome'] = session.appointment.funcionario.nome
+            # Adicionar informações do psicólogo responsável
+            if hasattr(session.appointment, 'funcionario_id') and session.appointment.funcionario_id:
+                funcionario = session.appointment.funcionario
+                if funcionario:
+                    session_dict['funcionario_nome'] = funcionario.nome
+                    session_dict['funcionario_id'] = funcionario.id
+                    # Adicionar especialidade do funcionário
+                    if hasattr(funcionario, 'especialidade') and funcionario.especialidade:
+                        session_dict['funcionario_especialidade'] = funcionario.especialidade.nome
+                        session_dict['especialidade_nome'] = funcionario.especialidade.nome  # Campo esperado pelo JavaScript
+                    else:
+                        session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                        session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
+                else:
+                    session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
+                    session_dict['funcionario_id'] = None
+                    session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                    session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
             else:
                 session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
+                session_dict['funcionario_id'] = None
+                session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
             
             sessions_data.append(session_dict)
         
