@@ -220,7 +220,7 @@ def handle_exception(e):
     # Em desenvolvimento, retornar detalhes do erro
     if os.getenv('FLASK_ENV') != 'production':
         return jsonify({
-            'erro': 'Erro Interno do Servidor',
+            'error': 'Erro Interno do Servidor',
             'message': str(e),
             'type': type(e).__name__,
             'error_id': error_id,
@@ -229,7 +229,7 @@ def handle_exception(e):
     else:
         # Em produção, retornar erro genérico mas logar detalhes
         return jsonify({
-            'erro': 'Erro Interno do Servidor',
+            'error': 'Erro Interno do Servidor',
             'message': 'Ocorreu um erro interno no servidor',
             'error_id': error_id
         }), 500
@@ -241,7 +241,7 @@ def handle_500_error(e):
     print(f"[ERROR] ERRO 500 [ID: {error_id}]: {str(e)}")
     
     return jsonify({
-        'erro': 'Erro Interno do Servidor',
+        'error': 'Erro Interno do Servidor',
         'message': 'Erro interno do servidor',
         'error_id': error_id
     }), 500
@@ -680,7 +680,7 @@ def home():
 def serve(path):
     # Não interceptar rotas da API e rotas específicas como medicos, psicologos, funcionarios
     if path.startswith('api/') or path in ['medicos', 'psicologos', 'funcionarios', 'especialidades']:
-        return jsonify({'erro': 'Rota da API não encontrada', 'path': path}), 404
+        return jsonify({'error': 'Rota da API não encontrada', 'path': path}), 404
         
     print(f"[DEBUG] FUNÇÃO SERVE CHAMADA - Tentando servir arquivo: {path}")
     static_folder_path = app.static_folder
@@ -688,7 +688,7 @@ def serve(path):
     
     if static_folder_path is None:
         print("[ERROR] Static folder not configured")
-        return jsonify({'erro': 'Pasta estática não configurada'}), 404
+        return jsonify({'error': 'Pasta estática não configurada'}), 404
 
     # Verificar se o arquivo existe
     file_path = os.path.join(static_folder_path, path)
@@ -701,7 +701,7 @@ def serve(path):
     else:
         # Se o arquivo não existe, retornar 404 ao invés de index.html
         print(f"[ERROR] Arquivo não encontrado: {path}")
-        return jsonify({'erro': 'Arquivo não encontrado', 'path': path}), 404
+        return jsonify({'error': 'Arquivo não encontrado', 'path': path}), 404
 
 
 if __name__ == '__main__':

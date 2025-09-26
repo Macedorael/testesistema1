@@ -334,12 +334,12 @@ def get_stats():
         }
         
         return jsonify({
-            'sucesso': True,
+            'success': True,
             'data': stats_data
         })
     except Exception as e:
         return jsonify({
-            'sucesso': False,
+            'success': False,
             'message': f'Erro ao buscar estatísticas: {str(e)}'
         }), 500
 
@@ -392,12 +392,12 @@ def get_users():
             users_data.append(user_dict)
         
         return jsonify({
-            'sucesso': True,
+            'success': True,
             'data': users_data
         })
     except Exception as e:
         return jsonify({
-            'sucesso': False,
+            'success': False,
             'message': f'Erro ao buscar usuários: {str(e)}'
         }), 500
 
@@ -417,12 +417,12 @@ def get_user_details(user_id):
         user_data['subscriptions_history'] = [sub.to_dict() for sub in subscriptions]
         
         return jsonify({
-            'sucesso': True,
+            'success': True,
             'data': user_data
         })
     except Exception as e:
         return jsonify({
-            'erro': f'Erro ao buscar usuário: {str(e)}'
+            'error': f'Erro ao buscar usuário: {str(e)}'
         }), 500
 
 @admin_bp.route('/user/<int:user_id>/update')
@@ -441,13 +441,13 @@ def update_user(user_id):
         user_data['subscriptions_history'] = [sub.to_dict() for sub in subscriptions]
         
         return jsonify({
-            'sucesso': True,
+            'success': True,
             'message': 'Usuário atualizado com sucesso',
             'data': user_data
         })
     except Exception as e:
         return jsonify({
-            'erro': f'Erro ao atualizar usuário: {str(e)}'
+            'error': f'Erro ao atualizar usuário: {str(e)}'
         }), 500
 
 @admin_bp.route('/user/<int:user_id>/delete')
@@ -466,10 +466,10 @@ def delete_user(user_id):
         user_data['subscriptions_history'] = [sub.to_dict() for sub in subscriptions]
         
         return jsonify({
-            'sucesso': True,
+            'success': True,
             'message': 'Usuário deletado com sucesso'
         })
     except Exception as e:
         return jsonify({
-            'erro': f'Erro ao deletar usuário: {str(e)}'
+            'error': f'Erro ao deletar usuário: {str(e)}'
         }), 500
