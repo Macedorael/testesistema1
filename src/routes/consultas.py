@@ -268,20 +268,13 @@ def update_appointment(appointment_id):
         data = request.get_json()
         
         # Validações básicas
-        required_fields = ['patient_id', 'funcionario_id', 'data_primeira_sessao', 'quantidade_sessoes', 'frequencia', 'valor_por_sessao']
+        required_fields = ['patient_id', 'data_primeira_sessao', 'quantidade_sessoes', 'frequencia', 'valor_por_sessao']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({
                     'success': False,
                     'message': f'Campo obrigatório: {field}'
                 }), 400
-        
-        current_user = get_current_user()
-        if not current_user:
-            return jsonify({
-                'success': False,
-                'message': 'Usuário não encontrado'
-            }), 401
             
         # Verificar se paciente existe e pertence ao usuário
         patient = Patient.query.filter_by(id=data['patient_id'], user_id=current_user.id).first()
@@ -291,14 +284,16 @@ def update_appointment(appointment_id):
                 'message': 'Paciente não encontrado'
             }), 404
         
-        # Verificar se funcionário existe
-        from src.models.funcionario import Funcionario
-        funcionario = Funcionario.query.filter_by(id=data['funcionario_id'], user_id=current_user.id).first()
-        if not funcionario:
-            return jsonify({
-                'success': False,
-                'message': 'Médico/Funcionário não encontrado'
-            }), 404
+        # Verificar se funcionário existe (se fornecido)
+        funcionario_id = data.get('funcionario_id')
+        if funcionario_id:
+            from src.models.funcionario import Funcionario
+            funcionario = Funcionario.query.filter_by(id=funcionario_id, user_id=current_user.id).first()
+            if not funcionario:
+                return jsonify({
+                    'success': False,
+                    'message': 'Médico/Funcionário não encontrado'
+                }), 404
         
         # Converter data da primeira sessão
         try:
@@ -323,7 +318,7 @@ def update_appointment(appointment_id):
         
         # Atualizar dados
         appointment.patient_id = data['patient_id']
-        appointment.funcionario_id = data['funcionario_id']
+        appointment.funcionario_id = funcionario_id  # Pode ser None
         appointment.data_primeira_sessao = data_primeira_sessao
         appointment.quantidade_sessoes = data['quantidade_sessoes']
         appointment.frequencia = frequencia
