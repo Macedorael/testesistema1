@@ -9,6 +9,13 @@ from sqlalchemy import func, extract
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
+# Tradução dos meses para português
+MESES_PORTUGUES = {
+    1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+    5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+    9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+}
+
 @dashboard_bp.route('/dashboard/stats', methods=['GET'])
 @login_and_subscription_required
 def get_dashboard_stats():
@@ -232,7 +239,7 @@ def get_monthly_revenue():
             monthly_data.append({
                 'month': month,
                 'year': year,
-                'month_name': datetime(year, month, 1).strftime('%B'),
+                'month_name': MESES_PORTUGUES.get(month, f'Mês {month}'),
                 'revenue': float(monthly_payments),
                 'sessions': monthly_sessions
             })
@@ -267,7 +274,18 @@ def get_upcoming_sessions():
         
         end_date = datetime.now() + timedelta(days=days_ahead)
         
-        sessions = Session.query.join(Appointment).join(Patient).filter(
+        # Buscar sessões com informações dos pacientes e funcionários
+        from src.models.funcionario import Funcionario
+        from src.models.especialidade import Especialidade
+        from sqlalchemy.orm import joinedload
+        
+        sessions = db.session.query(Session).join(Appointment).join(Patient).outerjoin(
+            Funcionario, Appointment.funcionario_id == Funcionario.id
+        ).outerjoin(
+            Especialidade, Funcionario.especialidade_id == Especialidade.id
+        ).options(
+            joinedload(Session.appointment).joinedload(Appointment.funcionario).joinedload(Funcionario.especialidade)
+        ).filter(
             Appointment.user_id == current_user.id,
             Session.data_sessao >= datetime.now(),
             Session.data_sessao <= end_date,
@@ -286,9 +304,18 @@ def get_upcoming_sessions():
                 funcionario = session.appointment.funcionario
                 session_dict['funcionario_nome'] = funcionario.nome if funcionario else 'Não definido'
                 session_dict['funcionario_id'] = session.appointment.funcionario_id
+                # Adicionar especialidade do funcionário
+                if funcionario and hasattr(funcionario, 'especialidade') and funcionario.especialidade:
+                    session_dict['funcionario_especialidade'] = funcionario.especialidade.nome
+                    session_dict['especialidade_nome'] = funcionario.especialidade.nome  # Campo esperado pelo JavaScript
+                else:
+                    session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                    session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
             else:
                 session_dict['funcionario_nome'] = 'Não definido'
                 session_dict['funcionario_id'] = None
+                session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
                 
             sessions_data.append(session_dict)
         
@@ -315,8 +342,18 @@ def get_today_sessions():
             }), 401
             
         # Buscar sessões de hoje
+        from src.models.funcionario import Funcionario
+        from src.models.especialidade import Especialidade
+        from sqlalchemy.orm import joinedload
+        
         today = date.today()
-        sessions = Session.query.join(Appointment).join(Patient).filter(
+        sessions = db.session.query(Session).join(Appointment).join(Patient).outerjoin(
+            Funcionario, Appointment.funcionario_id == Funcionario.id
+        ).outerjoin(
+            Especialidade, Funcionario.especialidade_id == Especialidade.id
+        ).options(
+            joinedload(Session.appointment).joinedload(Appointment.funcionario).joinedload(Funcionario.especialidade)
+        ).filter(
             Appointment.user_id == current_user.id,
             func.date(Session.data_sessao) == today,
             Session.status.in_([SessionStatus.AGENDADA, SessionStatus.REAGENDADA])
@@ -331,17 +368,27 @@ def get_today_sessions():
             
             # Adicionar informações do psicólogo se disponível
             if hasattr(session.appointment, 'funcionario_id') and session.appointment.funcionario_id:
-                from src.models.funcionario import Funcionario
-                funcionario = Funcionario.query.get(session.appointment.funcionario_id)
+                funcionario = session.appointment.funcionario
                 if funcionario:
                     session_dict['funcionario_nome'] = funcionario.nome
                     session_dict['funcionario_id'] = funcionario.id
+                    # Adicionar especialidade do funcionário
+                    if hasattr(funcionario, 'especialidade') and funcionario.especialidade:
+                        session_dict['funcionario_especialidade'] = funcionario.especialidade.nome
+                        session_dict['especialidade_nome'] = funcionario.especialidade.nome  # Campo esperado pelo JavaScript
+                    else:
+                        session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                        session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
                 else:
                     session_dict['funcionario_nome'] = 'Não definido'
                     session_dict['funcionario_id'] = None
+                    session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                    session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
             else:
                 session_dict['funcionario_nome'] = 'Não definido'
                 session_dict['funcionario_id'] = None
+                session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
                 
             sessions_data.append(session_dict)
         
@@ -402,9 +449,16 @@ def get_overdue_sessions():
             }), 401
             
         # Sessões realizadas mas não pagas há mais de 30 dias
+        from src.models.funcionario import Funcionario
+        from src.models.especialidade import Especialidade
+        
         cutoff_date = datetime.now() - timedelta(days=30)
         
-        sessions = Session.query.join(Appointment).join(Patient).filter(
+        sessions = db.session.query(Session).join(Appointment).join(Patient).outerjoin(
+            Funcionario, Appointment.funcionario_id == Funcionario.id
+        ).outerjoin(
+            Especialidade, Funcionario.especialidade_id == Especialidade.id
+        ).filter(
             Appointment.user_id == current_user.id,
             Session.data_sessao <= cutoff_date,
             Session.status == SessionStatus.REALIZADA,

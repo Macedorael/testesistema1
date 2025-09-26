@@ -222,6 +222,8 @@ def get_today_sessions():
             }), 401
             
         hoje = date.today()
+        print(f"[DEBUG] Buscando sessões para hoje: {hoje}")
+        print(f"[DEBUG] Usuário atual: {current_user.id} - {current_user.email}")
         
         sessions = Session.query.join(Appointment).join(Patient).filter(
             func.date(Session.data_sessao) == hoje,
@@ -229,27 +231,58 @@ def get_today_sessions():
             Appointment.user_id == current_user.id
         ).order_by(Session.data_sessao.asc()).all()
         
+        print(f"[DEBUG] Encontradas {len(sessions)} sessões para hoje")
+        
         sessions_data = []
         for session in sessions:
+            print(f"[DEBUG] Processando sessão ID: {session.id}")
             session_dict = session.to_dict()
             session_dict['patient_name'] = session.appointment.patient.nome_completo
             session_dict['patient_id'] = session.appointment.patient.id
             
-            # Adicionar nome do funcionário
+            print(f"[DEBUG] Paciente: {session_dict['patient_name']}")
+            
+            # Adicionar informações do funcionário e especialidade
             if session.appointment.funcionario:
-                session_dict['funcionario_nome'] = session.appointment.funcionario.nome
-                session_dict['psychologist_name'] = session.appointment.funcionario.nome
+                funcionario = session.appointment.funcionario
+                print(f"[DEBUG] Funcionário encontrado: ID={funcionario.id}, Nome={funcionario.nome}")
+                
+                session_dict['funcionario_nome'] = funcionario.nome
+                session_dict['psychologist_name'] = funcionario.nome
+                session_dict['funcionario_id'] = funcionario.id
+                
+                # Adicionar especialidade do funcionário
+                if hasattr(funcionario, 'especialidade') and funcionario.especialidade:
+                    print(f"[DEBUG] Especialidade encontrada: {funcionario.especialidade.nome}")
+                    session_dict['funcionario_especialidade'] = funcionario.especialidade.nome
+                    session_dict['especialidade_nome'] = funcionario.especialidade.nome  # Campo esperado pelo JavaScript
+                else:
+                    print(f"[DEBUG] Funcionário sem especialidade ou especialidade não encontrada")
+                    print(f"[DEBUG] hasattr(funcionario, 'especialidade'): {hasattr(funcionario, 'especialidade')}")
+                    if hasattr(funcionario, 'especialidade'):
+                        print(f"[DEBUG] funcionario.especialidade: {funcionario.especialidade}")
+                    session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                    session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
             else:
+                print(f"[DEBUG] Nenhum funcionário associado ao appointment")
                 session_dict['funcionario_nome'] = 'Responsável pelo Atendimento'
                 session_dict['psychologist_name'] = 'Responsável pelo Atendimento'
+                session_dict['funcionario_id'] = None
+                session_dict['funcionario_especialidade'] = 'Especialidade não informada'
+                session_dict['especialidade_nome'] = 'Especialidade não informada'  # Campo esperado pelo JavaScript
             
+            print(f"[DEBUG] Dados finais da sessão: especialidade_nome={session_dict.get('especialidade_nome')}, funcionario_nome={session_dict.get('funcionario_nome')}")
             sessions_data.append(session_dict)
         
+        print(f"[DEBUG] Retornando {len(sessions_data)} sessões processadas")
         return jsonify({
             'success': True,
             'data': sessions_data
         })
     except Exception as e:
+        print(f"[ERROR] Erro ao buscar sessões de hoje: {str(e)}")
+        import traceback
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar sessões de hoje: {str(e)}'
@@ -783,10 +816,11 @@ def get_patients_by_psychologist():
         # Parâmetros de filtro
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
-        psychologist_id = request.args.get('psychologist_id')
+        # CORREÇÃO DE SEGURANÇA: Remover psychologist_id para evitar vazamento de dados
+        # psychologist_id = request.args.get('psychologist_id')
         
-        # Determinar qual psicólogo usar (filtrado ou atual)
-        target_user_id = int(psychologist_id) if psychologist_id else current_user.id
+        # CORREÇÃO: Sempre usar apenas o usuário atual para evitar vazamento de dados
+        target_user_id = current_user.id
         
         # Data limite para os últimos 10 dias
         data_limite = date.today() - timedelta(days=10)

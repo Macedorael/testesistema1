@@ -262,8 +262,23 @@ window.Dashboard = {
 
     async loadTodaySessions() {
         try {
+            console.log('[DEBUG] Carregando sessões de hoje...');
             const response = await window.app.apiCall('/dashboard/sessions/today');
             const sessions = response.data;
+            
+            console.log('[DEBUG] Resposta da API para sessões de hoje:', response);
+            console.log('[DEBUG] Número de sessões:', sessions.length);
+            
+            sessions.forEach((session, index) => {
+                console.log(`[DEBUG] Sessão ${index + 1}:`, {
+                    id: session.id,
+                    patient_name: session.patient_name,
+                    funcionario_nome: session.funcionario_nome,
+                    especialidade_nome: session.especialidade_nome,
+                    funcionario_especialidade: session.funcionario_especialidade,
+                    funcionario_id: session.funcionario_id
+                });
+            });
             
             this.renderTodaySessions(sessions);
         } catch (error) {
@@ -305,7 +320,7 @@ window.Dashboard = {
                     </div>
                     <div class="text-muted small">
                         <i class="bi bi-person-badge me-1"></i>
-                        Médico: ${session.funcionario_nome}
+                        ${session.funcionario_nome} - ${session.especialidade_nome || 'Especialidade não informada'}
                     </div>
                 </div>
                 <div>
@@ -319,8 +334,23 @@ window.Dashboard = {
 
     async loadUpcomingSessions() {
         try {
+            console.log('[DEBUG] Carregando sessões próximas...');
             const response = await window.app.apiCall('/dashboard/sessions/upcoming?limit=5');
             const sessions = response.data;
+            
+            console.log('[DEBUG] Resposta da API para sessões próximas:', response);
+            console.log('[DEBUG] Número de sessões próximas:', sessions.length);
+            
+            sessions.forEach((session, index) => {
+                console.log(`[DEBUG] Sessão próxima ${index + 1}:`, {
+                    id: session.id,
+                    patient_name: session.patient_name,
+                    funcionario_nome: session.funcionario_nome,
+                    especialidade_nome: session.especialidade_nome,
+                    funcionario_especialidade: session.funcionario_especialidade,
+                    funcionario_id: session.funcionario_id
+                });
+            });
             
             this.renderUpcomingSessions(sessions);
         } catch (error) {
@@ -362,7 +392,7 @@ window.Dashboard = {
                     </div>
                     <div class="text-muted small">
                         <i class="bi bi-person-badge me-1"></i>
-                        Médico: ${session.funcionario_nome}
+                        ${session.funcionario_nome} - ${session.especialidade_nome || 'Especialidade não informada'}
                     </div>
                 </div>
                 <div>

@@ -158,7 +158,7 @@ def create_appointment():
         funcionario_id = data.get('funcionario_id')
         if funcionario_id:
             from src.models.funcionario import Funcionario
-            funcionario = Funcionario.query.get(funcionario_id)
+            funcionario = Funcionario.query.filter_by(id=funcionario_id, user_id=current_user.id).first()
             if not funcionario:
                 return jsonify({
                     'success': False,
@@ -293,7 +293,7 @@ def update_appointment(appointment_id):
         
         # Verificar se funcionário existe
         from src.models.funcionario import Funcionario
-        funcionario = Funcionario.query.get(data['funcionario_id'])
+        funcionario = Funcionario.query.filter_by(id=data['funcionario_id'], user_id=current_user.id).first()
         if not funcionario:
             return jsonify({
                 'success': False,
@@ -438,7 +438,7 @@ def delete_appointment(appointment_id):
         if funcionario:
             doctor_name = f"Dr(a). {funcionario.nome}"
         else:
-            doctor_name = usuario.username if usuario else 'Médico'
+            doctor_name = "Dr(a). Responsável pelo Atendimento" if usuario else 'Médico'
         
         agendamento_data = {
             'patient_name': paciente.nome_completo if paciente else 'Paciente',

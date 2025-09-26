@@ -683,7 +683,7 @@ def enviar_email_reagendamento_sessao(id_sessao):
         else:
             # Fallback para o usuário se não houver funcionário
             usuario = User.query.get(agendamento.user_id)
-            nome_doutor = usuario.username if usuario else "Médico"
+            nome_doutor = "Dr(a). Responsável pelo Atendimento" if usuario else "Médico"
         
         # Configurações de email do .env
         servidor_smtp = os.getenv('SMTP_SERVER')

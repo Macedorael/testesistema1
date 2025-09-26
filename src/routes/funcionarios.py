@@ -385,26 +385,27 @@ def get_medicos():
         return jsonify({'error': 'Usuário não autenticado'}), 401
     
     try:
-        print(f"[DEBUG] /medicos - Iniciando busca de funcionários para user_id: {session.get('user_id')}")
+        user_id = session.get('user_id')
+        print(f"[DEBUG] /medicos - Iniciando busca de funcionários para user_id: {user_id}")
         
-        # Buscar todos os funcionários/profissionais de saúde
-        funcionarios = Funcionario.query.join(Especialidade, Funcionario.especialidade_id == Especialidade.id, isouter=True).all()
+        # CORREÇÃO: Buscar APENAS os funcionários do usuário atual (isolamento de dados)
+        funcionarios = Funcionario.query.filter_by(user_id=user_id).join(Especialidade, Funcionario.especialidade_id == Especialidade.id, isouter=True).all()
         
-        print(f"[DEBUG] /medicos - Encontrados {len(funcionarios)} funcionários")
+        print(f"[DEBUG] /medicos - Encontrados {len(funcionarios)} funcionários para user_id: {user_id}")
         
-        # Retornar todos os funcionários como profissionais de saúde
+        # Retornar apenas os funcionários do usuário atual
         medicos = []
         for funcionario in funcionarios:
-            especialidade_nome = funcionario.especialidade.nome if funcionario.especialidade else 'Medicina Geral'
+            especialidade_nome = funcionario.especialidade.nome if funcionario.especialidade else 'Especialidade não informada'
             medico_data = {
                 'id': funcionario.id,
                 'nome': funcionario.nome,
                 'especialidade': especialidade_nome
             }
             medicos.append(medico_data)
-            print(f"[DEBUG] /medicos - Funcionário: ID={funcionario.id}, Nome='{funcionario.nome}', Especialidade='{especialidade_nome}'")
+            print(f"[DEBUG] /medicos - Funcionário: ID={funcionario.id}, Nome='{funcionario.nome}', Especialidade='{especialidade_nome}', User_ID={funcionario.user_id}")
         
-        print(f"[DEBUG] /medicos - Retornando {len(medicos)} médicos")
+        print(f"[DEBUG] /medicos - Retornando {len(medicos)} médicos para user_id: {user_id}")
         return jsonify(medicos)
     
     except Exception as e:

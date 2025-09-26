@@ -132,17 +132,35 @@ window.DashboardSessions = {
 
     async loadTodaySessions() {
         try {
+            console.log('[DEBUG] Carregando sessões de hoje...');
             const response = await fetch('/api/dashboard/sessions/today');
             const result = await response.json();
 
+            console.log('[DEBUG] Resposta da API:', result);
+
             if (result.success) {
                 this.currentData.todaySessions = result.data;
+                console.log('[DEBUG] Sessões carregadas:', this.currentData.todaySessions);
+                
+                // Log detalhado de cada sessão
+                this.currentData.todaySessions.forEach((session, index) => {
+                    console.log(`[DEBUG] Sessão ${index + 1}:`, {
+                        id: session.id,
+                        patient_name: session.patient_name,
+                        funcionario_nome: session.funcionario_nome,
+                        especialidade_nome: session.especialidade_nome,
+                        funcionario_especialidade: session.funcionario_especialidade,
+                        funcionario_id: session.funcionario_id
+                    });
+                });
+                
                 this.renderTodaySessions();
             } else {
+                console.error('[ERROR] Erro na API:', result.message);
                 throw new Error(result.message);
             }
         } catch (error) {
-            console.error('Erro ao carregar sessões de hoje:', error);
+            console.error('[ERROR] Erro ao carregar sessões de hoje:', error);
             throw error;
         }
     },
@@ -429,6 +447,10 @@ window.DashboardSessions = {
                     </div>
                     <div class="space-y-1 text-sm">
                         <div class="flex justify-between">
+                            <span class="text-gray-500">${session.especialidade_nome || 'Especialidade não informada'}:</span>
+                            <span class="text-gray-700">${session.funcionario_nome || 'N/A'}</span>
+                        </div>
+                        <div class="flex justify-between">
                             <span class="text-gray-500">Horário:</span>
                             <span class="text-blue-600 font-medium">${this.formatTime(session.data_sessao)}</span>
                         </div>
@@ -475,8 +497,8 @@ window.DashboardSessions = {
                     </div>
                     <div class="space-y-1 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-500">Médico:</span>
-                            <span class="text-gray-700">${session.psychologist_name || 'N/A'}</span>
+                            <span class="text-gray-500">${session.especialidade_nome || 'Especialidade não informada'}:</span>
+                            <span class="text-gray-700">${session.funcionario_nome || 'N/A'}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Data/Hora:</span>
@@ -632,7 +654,7 @@ window.DashboardSessions = {
                         <div class="row align-items-center">
                             <div class="col-md-3">
                                 <h6 class="mb-1">${psychologist.nome}</h6>
-                                <small class="text-muted">${psychologist.especialidade || 'Medicina Geral'}</small>
+                                <small class="text-muted">${psychologist.especialidade || 'Especialidade não informada'}</small>
                             </div>
                             <div class="col-md-2 text-center">
                                 <h5 class="mb-0 text-primary">${totalSessoes}</h5>
@@ -711,7 +733,7 @@ window.DashboardSessions = {
                         <div class="row align-items-center">
                             <div class="col-md-4">
                                 <h6 class="mb-1">${psychologist.nome}</h6>
-                                <small class="text-muted">${psychologist.especialidade || 'Medicina Geral'}</small>
+                                <small class="text-muted">${psychologist.especialidade || 'Especialidade não informada'}</small>
                             </div>
                             <div class="col-md-2 text-center">
                                 <h5 class="mb-0 text-primary">${totalSessoes}</h5>
