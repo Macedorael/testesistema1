@@ -547,6 +547,18 @@ class SubscriptionManager {
             // Desabilitar todos os botões durante o processamento
             this.disableAllButtons();
             
+            // Verificar autenticação antes de prosseguir
+            console.log('🔐 Verificando autenticação antes da assinatura...');
+            const authCheck = await fetch('/api/me');
+            if (authCheck.status === 401) {
+                console.log('❌ Usuário não autenticado, redirecionando para login');
+                this.showError('Sessão expirada. Redirecionando para login...');
+                setTimeout(() => {
+                    window.location.href = 'entrar.html';
+                }, 2000);
+                return;
+            }
+            
             // Verificar novamente se já tem assinatura antes de criar
             await this.loadCurrentSubscription();
             if (this.currentSubscription) {
@@ -557,6 +569,7 @@ class SubscriptionManager {
                 return;
             }
             
+            console.log('📤 Enviando requisição de assinatura...');
             const response = await fetch('/api/subscriptions/subscribe', {
                 method: 'POST',
                 headers: {
@@ -568,7 +581,20 @@ class SubscriptionManager {
                 })
             });
             
+            console.log('📥 Resposta recebida:', response.status);
+            
+            // Verificar se a resposta é de erro de autenticação
+            if (response.status === 401) {
+                console.log('❌ Erro de autenticação na resposta');
+                this.showError('Sessão expirada. Redirecionando para login...');
+                setTimeout(() => {
+                    window.location.href = 'entrar.html';
+                }, 2000);
+                return;
+            }
+            
             const data = await response.json();
+            console.log('📊 Dados da resposta:', data);
             
             if (data.success) {
                 this.showSuccess('Assinatura criada com sucesso! Redirecionando para o sistema...');
