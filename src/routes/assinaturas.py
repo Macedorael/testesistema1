@@ -148,37 +148,59 @@ def get_my_subscription():
 def create_subscription():
     """Cria uma nova assinatura para o usuário"""
     try:
+        print(f"[DEBUG] Iniciando create_subscription")
         user_id = session.get('user_id')
+        print(f"[DEBUG] user_id da sessão: {user_id}")
+        
         user = User.query.get(user_id)
+        print(f"[DEBUG] Usuário encontrado: {user is not None}")
         
         if not user:
+            print(f"[DEBUG] Usuário não encontrado para ID: {user_id}")
             return jsonify({'error': 'Usuário não encontrado'}), 404
         
         # Verificar se já tem assinatura ativa
-        if user.has_active_subscription():
+        print(f"[DEBUG] Verificando assinatura ativa...")
+        has_active = user.has_active_subscription()
+        print(f"[DEBUG] Tem assinatura ativa: {has_active}")
+        
+        if has_active:
+            print(f"[DEBUG] Usuário já possui assinatura ativa")
             return jsonify({
                 'error': 'Usuário já possui uma assinatura ativa'
             }), 400
         
         data = request.json
+        print(f"[DEBUG] Dados recebidos: {data}")
+        
         plan_type = data.get('plan_type')
         auto_renew = data.get('auto_renew', True)
+        print(f"[DEBUG] plan_type: {plan_type}, auto_renew: {auto_renew}")
         
         # Validar tipo de plano
+        print(f"[DEBUG] Validando tipo de plano...")
+        print(f"[DEBUG] PLAN_PRICES disponíveis: {Subscription.PLAN_PRICES}")
+        
         if plan_type not in Subscription.PLAN_PRICES:
+            print(f"[DEBUG] Tipo de plano inválido: {plan_type}")
             return jsonify({
                 'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
         # Usar transação para evitar condições de corrida
-        with db.session.begin():
+        print(f"[DEBUG] Iniciando operações de banco...")
+        try:
+            print(f"[DEBUG] Dentro da transação")
             # Cancelar todas as assinaturas ativas anteriores com lock
             active_subscriptions = db.session.query(Subscription).filter_by(
                 user_id=user_id,
                 status='active'
             ).filter(Subscription.end_date > datetime.utcnow()).with_for_update().all()
             
+            print(f"[DEBUG] Assinaturas ativas encontradas: {len(active_subscriptions)}")
+            
             for sub in active_subscriptions:
+                print(f"[DEBUG] Cancelando assinatura ID: {sub.id}")
                 sub.cancel()
                 # Registrar cancelamento no histórico
                 SubscriptionHistory.create_history_entry(
@@ -191,20 +213,26 @@ def create_subscription():
                 )
             
             # Criar nova assinatura
+            print(f"[DEBUG] Criando nova assinatura...")
             subscription = Subscription(
                 user_id=user_id,
                 plan_type=plan_type,
                 auto_renew=auto_renew
             )
             
+            print(f"[DEBUG] Assinatura criada em memória")
             db.session.add(subscription)
+            print(f"[DEBUG] Assinatura adicionada à sessão")
             db.session.flush()  # Para obter o ID da assinatura
+            print(f"[DEBUG] Flush executado, ID da assinatura: {subscription.id}")
             
             # Verificar se foi criada corretamente
             if not subscription.id:
+                print(f"[DEBUG] ERRO: Falha ao criar assinatura - ID não gerado")
                 raise Exception("Falha ao criar assinatura")
             
             # Registrar criação no histórico
+            print(f"[DEBUG] Registrando no histórico...")
             SubscriptionHistory.create_history_entry(
                 user_id=user_id,
                 action='created',
@@ -215,13 +243,28 @@ def create_subscription():
                 end_date=subscription.end_date,
                 details=f'Assinatura {plan_type} criada'
             )
+            print(f"[DEBUG] Histórico registrado com sucesso")
+            
+            # Commit das alterações
+            db.session.commit()
+            print(f"[DEBUG] Commit realizado com sucesso")
+            
+        except Exception as e:
+            print(f"[DEBUG] ERRO durante operações de banco: {str(e)}")
+            db.session.rollback()
+            raise e
         
+        print(f"[DEBUG] Operações de banco concluídas com sucesso")
         return jsonify({
             'success': True,
             'message': 'Assinatura criada com sucesso',
             'subscription_id': subscription.id
         })
     except Exception as e:
+        print(f"[DEBUG] ERRO na create_subscription: {str(e)}")
+        print(f"[DEBUG] Tipo do erro: {type(e)}")
+        import traceback
+        print(f"[DEBUG] Traceback completo: {traceback.format_exc()}")
         db.session.rollback()
         return jsonify({'error': 'Erro interno do servidor. Tente novamente.'}), 500
 
