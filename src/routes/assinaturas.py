@@ -170,55 +170,60 @@ def create_subscription():
                 'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
-        # Cancelar todas as assinaturas ativas anteriores
-        active_subscriptions = Subscription.query.filter_by(
-            user_id=user_id,
-            status='active'
-        ).filter(Subscription.end_date > datetime.utcnow()).all()
-        
-        for sub in active_subscriptions:
-            sub.cancel()
-            # Registrar cancelamento no histórico
+        # Usar transação para evitar condições de corrida
+        with db.session.begin():
+            # Cancelar todas as assinaturas ativas anteriores com lock
+            active_subscriptions = db.session.query(Subscription).filter_by(
+                user_id=user_id,
+                status='active'
+            ).filter(Subscription.end_date > datetime.utcnow()).with_for_update().all()
+            
+            for sub in active_subscriptions:
+                sub.cancel()
+                # Registrar cancelamento no histórico
+                SubscriptionHistory.create_history_entry(
+                    user_id=user_id,
+                    action='cancelled',
+                    plan_type=sub.plan_type,
+                    price=sub.price,
+                    subscription_id=sub.id,
+                    details='Assinatura cancelada para criação de nova assinatura'
+                )
+            
+            # Criar nova assinatura
+            subscription = Subscription(
+                user_id=user_id,
+                plan_type=plan_type,
+                auto_renew=auto_renew
+            )
+            
+            db.session.add(subscription)
+            db.session.flush()  # Para obter o ID da assinatura
+            
+            # Verificar se foi criada corretamente
+            if not subscription.id:
+                raise Exception("Falha ao criar assinatura")
+            
+            # Registrar criação no histórico
             SubscriptionHistory.create_history_entry(
                 user_id=user_id,
-                action='cancelled',
-                plan_type=sub.plan_type,
-                price=sub.price,
-                subscription_id=sub.id,
-                details='Assinatura cancelada para criação de nova assinatura'
+                action='created',
+                plan_type=plan_type,
+                price=subscription.price,
+                subscription_id=subscription.id,
+                start_date=subscription.start_date,
+                end_date=subscription.end_date,
+                details=f'Assinatura {plan_type} criada'
             )
         
-        # Criar nova assinatura
-        subscription = Subscription(
-            user_id=user_id,
-            plan_type=plan_type,
-            auto_renew=auto_renew
-        )
-        
-        db.session.add(subscription)
-        db.session.flush()  # Para obter o ID da assinatura
-        
-        # Registrar criação no histórico
-        SubscriptionHistory.create_history_entry(
-            user_id=user_id,
-            action='created',
-            plan_type=plan_type,
-            price=subscription.price,
-            subscription_id=subscription.id,
-            start_date=subscription.start_date,
-            end_date=subscription.end_date,
-            details=f'Assinatura {plan_type} criada'
-        )
-        
-        db.session.commit()
-        
         return jsonify({
-            'sucesso': True,
+            'success': True,
             'message': 'Assinatura criada com sucesso',
             'subscription_id': subscription.id
         })
     except Exception as e:
-        return jsonify({'erro': str(e)}), 500
+        db.session.rollback()
+        return jsonify({'error': 'Erro interno do servidor. Tente novamente.'}), 500
 
 @subscriptions_bp.route('/update', methods=['PUT'])
 @login_required

@@ -547,6 +547,16 @@ class SubscriptionManager {
             // Desabilitar todos os botões durante o processamento
             this.disableAllButtons();
             
+            // Verificar novamente se já tem assinatura antes de criar
+            await this.loadCurrentSubscription();
+            if (this.currentSubscription) {
+                this.showError('Você já possui uma assinatura ativa. Recarregando página...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                return;
+            }
+            
             const response = await fetch('/api/subscriptions/subscribe', {
                 method: 'POST',
                 headers: {
@@ -563,24 +573,37 @@ class SubscriptionManager {
             if (data.success) {
                 this.showSuccess('Assinatura criada com sucesso! Redirecionando para o sistema...');
                 
-                // Redirecionar para o sistema principal após 2 segundos
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 2000);
+                // Aguardar um pouco mais e verificar se a assinatura foi criada
+                setTimeout(async () => {
+                    await this.loadCurrentSubscription();
+                    if (this.currentSubscription) {
+                        window.location.href = '/';
+                    } else {
+                        // Se não conseguiu carregar, recarregar a página
+                        window.location.reload();
+                    }
+                }, 3000);
             } else {
-                this.showError(data.error || 'Erro ao processar assinatura');
-                this.enableAllButtons(); // Reabilitar botões em caso de erro
+                // Se o erro for "já possui assinatura", recarregar a página
+                if (data.error && data.error.includes('já possui')) {
+                    this.showError('Você já possui uma assinatura ativa. Recarregando página...');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    this.showError(data.error || 'Erro ao processar assinatura');
+                    this.enableAllButtons();
+                    this.isProcessing = false;
+                }
             }
         } catch (error) {
             console.error('Erro ao processar assinatura:', error);
-            this.showError('Erro de conexão. Tente novamente.');
-            this.enableAllButtons(); // Reabilitar botões em caso de erro
+            this.showError('Erro de conexão. Recarregando página...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
         } finally {
             this.showLoading(false);
-            // Não resetar isProcessing aqui se o redirecionamento vai acontecer
-            if (!document.querySelector('#successAlert').style.display || document.querySelector('#successAlert').style.display === 'none') {
-                this.isProcessing = false;
-            }
         }
     }
     
