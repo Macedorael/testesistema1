@@ -5,41 +5,305 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Assinatura - Consultório Médico</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .subscription-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .subscription-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
         }
         
         .subscription-header h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 300;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subscription-header p {
+            margin: 10px 0 0 0;
+            font-size: 1rem;
+            opacity: 0.9;
         }
         
         .current-subscription {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border: none;
+            border-radius: 15px;
             padding: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
         
-        .current-subscription h2 {
-            color: #495057;
-            margin-bottom: 15px;
+        .current-subscription::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .current-subscription h3 {
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .subscription-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
+        }
+        
+        .info-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-left: 3px solid #667eea;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        }
+        
+        .info-card h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .info-card .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .plan-name {
+            color: #667eea;
+        }
+        
+        .plan-price {
+            color: #28a745;
+        }
+        
+        .status-active {
+            color: #28a745;
+            background: #d4edda;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .days-remaining {
+            font-weight: 700;
+        }
+        
+        .days-remaining.text-warning {
+            color: #f39c12 !important;
+        }
+        
+        .days-remaining.text-danger {
+            color: #e74c3c !important;
+        }
+        
+        .expiry-date {
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .auto-renew-status {
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .auto-renew-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .auto-renew-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Alertas melhorados */
+        .alert {
+            padding: 20px;
+            margin-bottom: 25px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .alert-warning {
+            color: #856404;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #f39c12;
+        }
+        
+        .alert-danger {
+            color: #721c24;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .alert i {
+            font-size: 1.2rem;
+        }
+        
+        /* Botões melhorados */
+        .subscription-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+        
+        /* Responsividade melhorada */
+        @media (max-width: 768px) {
+            .subscription-container {
+                padding: 15px;
+            }
+            
+            .subscription-header h1 {
+                font-size: 2rem;
+            }
+            
+            .subscription-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .subscription-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-card {
+                padding: 15px;
+            }
+        }
+        
+        /* Animações */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .current-subscription {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .info-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .info-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+        
+        .info-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+        
+        .info-card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+        
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .mb-3 {
+            margin-bottom: 1rem;
         }
         
         .info-item {
@@ -134,51 +398,61 @@
             color: #495057;
         }
         
-        .plan-features li:before {
-            content: "✓";
+        .plan-features li i {
             color: #28a745;
-            font-weight: bold;
-            margin-right: 8px;
+            font-size: 1rem;
+            width: 16px;
         }
         
-        .btn {
-            background: #007bff;
-            color: white;
+        .plan-select-btn {
+            width: 100%;
+            padding: 15px 25px;
             border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 1em;
-            transition: background 0.3s ease;
-            margin: 5px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
-        .btn:hover {
-            background: #0056b3;
+        .plan-select-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
         
-        .btn-success {
-            background: #28a745;
+        .plan-card.current .plan-select-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
         
-        .btn-success:hover {
-            background: #1e7e34;
+        .plan-card.current .plan-select-btn:hover {
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
         }
         
-        .btn-danger {
-            background: #dc3545;
+        /* Seção de planos melhorada */
+        .plans-header {
+            text-align: center;
+            margin-bottom: 40px;
         }
         
-        .btn-danger:hover {
-            background: #c82333;
+        .plans-header h3 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
         
-        .btn-secondary {
-            background: #6c757d;
-        }
-        
-        .btn-secondary:hover {
-            background: #545b62;
+        .plans-header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin: 0;
         }
         
         .actions {
@@ -190,13 +464,6 @@
             display: none;
             text-align: center;
             padding: 20px;
-        }
-        
-        .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            display: none;
         }
         
         .alert-success {
@@ -211,17 +478,22 @@
             color: #721c24;
         }
         
+        /* Seção sem assinatura melhorada */
         .no-subscription {
-            text-align: center;
-            padding: 40px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
         
-        .no-subscription h3 {
-            color: #6c757d;
-            margin-bottom: 15px;
+        .no-subscription .alert {
+            text-align: center;
+        }
+        
+        .no-subscription .alert h4 {
+            font-weight: 600;
+        }
+        
+        /* Melhorias gerais */
+        .section {
+            margin-bottom: 50px;
         }
         
         .auto-renew-toggle {
@@ -240,68 +512,95 @@
 <body>
     <div class="subscription-container">
         <div class="subscription-header">
-            <h1>Escolha seu Plano</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <button onclick="window.location.href='http://localhost:5000/#dashboard'" class="btn btn-secondary" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: all 0.3s ease;">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Sistema
+                </button>
+            </div>
+            <h1><i class="fas fa-crown"></i> Escolha Seu Plano</h1>
             <p>Para acessar o sistema, você precisa de uma assinatura ativa. Escolha o plano que melhor atende às suas necessidades.</p>
         </div>
         
-        <div class="alert alert-success" id="successAlert"></div>
-        <div class="alert alert-error" id="errorAlert"></div>
+        <div class="alert alert-success" id="successAlert" style="display: none;"></div>
+        <div class="alert alert-error" id="errorAlert" style="display: none;"></div>
         <div class="loading" id="loading">Carregando...</div>
         
         <!-- Assinatura Atual -->
         <div id="currentSubscription" style="display: none;">
             <div class="current-subscription">
-                <h2>Sua Assinatura Atual</h2>
+                <h3><i class="fas fa-star"></i> Sua Assinatura Atual</h3>
+                
                 <div class="subscription-info">
-                    <div class="info-item">
-                        <div class="info-label">Plano</div>
-                        <div class="info-value" id="currentPlan">-</div>
+                    <div class="info-card">
+                        <h4><i class="fas fa-tag"></i> Plano</h4>
+                        <p class="value plan-name" id="currentPlan">-</p>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Status</div>
-                        <div class="info-value" id="currentStatus">-</div>
+                    
+                    <div class="info-card">
+                        <h4><i class="fas fa-dollar-sign"></i> Preço</h4>
+                        <p class="value plan-price" id="currentPrice">-</p>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Preço</div>
-                        <div class="info-value" id="currentPrice">-</div>
+                    
+                    <div class="info-card">
+                        <h4><i class="fas fa-check-circle"></i> Status</h4>
+                        <p class="value status-active" id="currentStatus">-</p>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Próxima Cobrança</div>
-                        <div class="info-value" id="nextBilling">-</div>
+                    
+                    <div class="info-card">
+                        <h4><i class="fas fa-clock"></i> Dias Restantes</h4>
+                        <p class="value days-remaining" id="daysRemaining">-</p>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Dias Restantes</div>
-                        <div class="info-value" id="daysRemaining">-</div>
+                    
+                    <div class="info-card">
+                        <h4><i class="fas fa-calendar-alt"></i> Próxima Cobrança</h4>
+                        <p class="value expiry-date" id="nextBilling">-</p>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Renovação Automática</div>
-                        <div class="info-value" id="autoRenewStatus">-</div>
+                    
+                    <div class="info-card">
+                        <h4><i class="fas fa-sync-alt"></i> Renovação Automática</h4>
+                        <p class="value auto-renew-status" id="autoRenewStatus">-</p>
                     </div>
                 </div>
                 
-                <div class="auto-renew-toggle">
-                    <input type="checkbox" id="autoRenewToggle">
-                    <label for="autoRenewToggle">Renovação Automática</label>
-                </div>
+                <!-- Alertas -->
+                <div id="expiryAlert" style="display: none;"></div>
                 
-                <div class="actions">
-                    <button class="btn btn-success" id="renewBtn">Renovar Agora</button>
-                    <button class="btn btn-secondary" id="updateAutoRenewBtn">Atualizar Renovação</button>
-                    <button class="btn btn-danger" id="cancelBtn">Cancelar Assinatura</button>
-                    <button class="btn" id="historyBtn">Ver Histórico</button>
+                <!-- Ações da Assinatura -->
+                <div class="subscription-actions">
+                    <button class="btn btn-primary" id="renewBtn">
+                        <i class="fas fa-sync"></i> Renovar Agora
+                    </button>
+                    <button class="btn btn-warning" id="updateAutoRenewBtn">
+                        <i class="fas fa-toggle-on" id="autoRenewIcon"></i> 
+                        <span id="autoRenewBtnText">Atualizar Renovação</span>
+                    </button>
+                    <button class="btn btn-danger" id="cancelBtn">
+                        <i class="fas fa-times"></i> Cancelar Assinatura
+                    </button>
+                    <button class="btn btn-secondary" id="historyBtn">
+                        <i class="fas fa-history"></i> Ver Histórico
+                    </button>
                 </div>
             </div>
         </div>
         
         <!-- Sem Assinatura -->
         <div id="noSubscription" class="no-subscription" style="display: none;">
-            <h3>Você não possui uma assinatura ativa</h3>
-            <p>Escolha um dos planos abaixo para começar a usar todos os recursos</p>
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <h4 style="margin: 0 0 8px 0;">Você não possui uma assinatura ativa</h4>
+                    <p style="margin: 0;">Escolha um dos planos abaixo para começar a usar todos os recursos do sistema</p>
+                </div>
+            </div>
         </div>
         
         <!-- Planos Disponíveis -->
         <div class="section" id="plansSection" style="display: none;">
-            <h3>Planos Disponíveis</h3>
+            <div class="plans-header">
+                <h3><i class="fas fa-list-alt"></i> Planos Disponíveis</h3>
+                <p>Escolha o plano ideal para suas necessidades</p>
+            </div>
             <div class="plans-grid" id="plansGrid">
                 <!-- Planos serão carregados dinamicamente -->
             </div>

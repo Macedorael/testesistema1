@@ -283,6 +283,8 @@ def update_subscription():
         new_plan_type = data.get('plan_type')
         auto_renew = data.get('auto_renew')
         
+        print(f"[DEBUG UPDATE] Dados recebidos: plan_type={new_plan_type}, auto_renew={auto_renew}")
+        
         # Validar tipo de plano
         if new_plan_type and new_plan_type not in Subscription.PLAN_PRICES:
             return jsonify({
@@ -292,6 +294,9 @@ def update_subscription():
         subscription = user.subscription
         old_plan_type = subscription.plan_type
         old_price = subscription.price
+        old_auto_renew = subscription.auto_renew
+        
+        print(f"[DEBUG UPDATE] Estado anterior: auto_renew={old_auto_renew}")
         
         # Atualizar plano se fornecido
         if new_plan_type and new_plan_type != subscription.plan_type:
@@ -301,7 +306,9 @@ def update_subscription():
         
         # Atualizar auto_renew se fornecido
         if auto_renew is not None:
+            print(f"[DEBUG UPDATE] Atualizando auto_renew de {subscription.auto_renew} para {auto_renew}")
             subscription.auto_renew = auto_renew
+            print(f"[DEBUG UPDATE] auto_renew atualizado: {subscription.auto_renew}")
         
         subscription.updated_at = datetime.utcnow()
         
@@ -310,7 +317,10 @@ def update_subscription():
         if new_plan_type and new_plan_type != old_plan_type:
             details.append(f'Plano alterado de {old_plan_type} para {new_plan_type}')
         if auto_renew is not None:
-            details.append(f'Auto-renovação alterada para {auto_renew}')
+            if auto_renew:
+                details.append('Renovação automática ativada')
+            else:
+                details.append('Renovação automática desativada')
         
         SubscriptionHistory.create_history_entry(
             user_id=user_id,
@@ -323,7 +333,13 @@ def update_subscription():
             details='; '.join(details) if details else 'Assinatura atualizada'
         )
         
+        print(f"[DEBUG UPDATE] Antes do commit: auto_renew={subscription.auto_renew}")
         db.session.commit()
+        print(f"[DEBUG UPDATE] Após commit: auto_renew={subscription.auto_renew}")
+        
+        # Verificar se foi salvo corretamente
+        subscription_check = Subscription.query.get(subscription.id)
+        print(f"[DEBUG UPDATE] Verificação pós-commit: auto_renew={subscription_check.auto_renew}")
         
         return jsonify({
             'success': True,
@@ -333,6 +349,7 @@ def update_subscription():
         
     except Exception as e:
         db.session.rollback()
+        print(f"[ERROR UPDATE] Erro ao atualizar: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @subscriptions_bp.route('/cancel', methods=['POST'])

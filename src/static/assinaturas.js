@@ -75,28 +75,32 @@ class SubscriptionManager {
     async loadCurrentSubscription() {
         try {
             const response = await fetch('/api/subscriptions/my-subscription');
-            const data = await response.json();
             
             if (response.status === 401) {
-                // Usuário não está logado - não tem assinatura
+                // Usuário não está logado
                 this.currentSubscription = null;
-                this.renderCurrentSubscription();
+                this.renderCurrentSubscription(null);
                 return;
             }
             
-            if (data.success) {
-                this.currentSubscription = data.subscription;
-                this.renderCurrentSubscription();
-            } else {
-                // Erro na API - assumir que não tem assinatura
-                this.currentSubscription = null;
-                this.renderCurrentSubscription();
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const data = await response.json();
+            
+            if (data.success && data.subscription) {
+                this.currentSubscription = data.subscription;
+            } else {
+                this.currentSubscription = null;
+            }
+            
+            this.renderCurrentSubscription(this.currentSubscription);
+            
         } catch (error) {
-            console.error('Erro ao carregar assinatura:', error);
-            // Em caso de erro, assumir que não tem assinatura
+            console.error('Erro ao carregar assinatura atual:', error);
             this.currentSubscription = null;
-            this.renderCurrentSubscription();
+            this.renderCurrentSubscription(null);
         }
     }
     
@@ -122,17 +126,17 @@ class SubscriptionManager {
         for (const [planType, plan] of Object.entries(this.plans)) {
             console.log(`🎨 Renderizando plano: ${planType}`, plan);
             
-            const savings = plan.savings ? `<div class="savings">Economize R$ ${plan.savings.toFixed(2)}</div>` : '';
+            const savings = plan.savings ? `<div class="savings compact">Economize R$ ${plan.savings.toFixed(2)}</div>` : '';
             
             plansHTML += `
-                <div class="plan-card ${planType === 'annual' ? 'recommended' : ''}">
-                    ${planType === 'annual' ? '<div class="recommended-badge">Recomendado</div>' : ''}
-                    <h3>${plan.name}</h3>
-                    <div class="price">R$ ${plan.price.toFixed(2)}</div>
-                    <div class="duration">${plan.duration}</div>
+                <div class="plan-card compact ${planType === 'annual' ? 'recommended' : ''}">
+                    ${planType === 'annual' ? '<div class="recommended-badge compact">Recomendado</div>' : ''}
+                    <h3 class="compact">${plan.name}</h3>
+                    <div class="price compact">R$ ${plan.price.toFixed(2)}</div>
+                    <div class="duration compact">${plan.duration}</div>
                     ${savings}
-                    <p class="description">${plan.description}</p>
-                    <button class="btn btn-primary select-plan-btn" data-plan="${planType}">
+                    <p class="description compact">${plan.description}</p>
+                    <button class="btn btn-primary select-plan-btn compact" data-plan="${planType}">
                         Selecionar Plano
                     </button>
                 </div>
@@ -174,11 +178,20 @@ class SubscriptionManager {
         console.log('🎨 Renderização dos planos concluída com sucesso');
     }
     
-    renderCurrentSubscription() {
-        const currentSubDiv = document.getElementById('currentSubscription');
-        if (!currentSubDiv) return;
+    renderCurrentSubscription(subscription) {
+        console.log('renderCurrentSubscription chamada com:', subscription);
         
-        if (this.currentSubscription && this.currentSubscription.status === 'active') {
+        const currentSubDiv = document.getElementById('currentSubscription');
+        const plansDiv = document.getElementById('plansSection');
+        const noSubDiv = document.getElementById('noSubscription');
+        
+        if (subscription && subscription.status === 'active') {
+            // Mostrar seção de assinatura atual
+            currentSubDiv.style.display = 'block';
+            plansDiv.style.display = 'none';
+            noSubDiv.style.display = 'none';
+            
+            // Mapear plan_type para nome do plano
             const planNames = {
                 'monthly': 'Mensal',
                 'quarterly': 'Trimestral',
@@ -186,41 +199,91 @@ class SubscriptionManager {
                 'annual': 'Anual'
             };
             
-            const planName = planNames[this.currentSubscription.plan_type] || this.currentSubscription.plan_type;
-            const expiryDate = new Date(this.currentSubscription.expires_at).toLocaleDateString('pt-BR');
+            // Preencher informações da assinatura
+            document.getElementById('currentPlan').textContent = planNames[subscription.plan_type] || subscription.plan_type || 'N/A';
+            document.getElementById('currentPrice').textContent = subscription.price ? `R$ ${subscription.price.toFixed(2)}` : 'N/A';
             
-            currentSubDiv.innerHTML = `
-                <div class="current-subscription">
-                    <h3>Sua Assinatura Atual</h3>
-                    <div class="subscription-info">
-                        <p><strong>Plano:</strong> ${planName}</p>
-                        <p><strong>Status:</strong> <span class="status-active">Ativo</span></p>
-                        <p><strong>Expira em:</strong> ${expiryDate}</p>
-                        <p><strong>Renovação Automática:</strong> ${this.currentSubscription.auto_renew ? 'Ativada' : 'Desativada'}</p>
-                    </div>
-                    <div class="subscription-actions">
-                        <button onclick="renewSubscription()" class="btn btn-primary">Renovar Assinatura</button>
-                        <button onclick="updateAutoRenew()" class="btn btn-secondary">
-                            ${this.currentSubscription.auto_renew ? 'Desativar' : 'Ativar'} Renovação Automática
-                        </button>
-                        <button onclick="cancelSubscription()" class="btn btn-danger">Cancelar Assinatura</button>
-                        <button onclick="goToSystem()" class="btn btn-success">Ir para o Sistema</button>
-                    </div>
-                </div>
-            `;
+            // Status com estilo melhorado e compacto
+            const statusElement = document.getElementById('currentStatus');
+            statusElement.textContent = subscription.status === 'active' ? 'Ativo' : subscription.status;
+            statusElement.className = subscription.status === 'active' ? 'value status-active compact' : 'value compact';
             
-            // Esconder os planos se há assinatura ativa
-            const plansSection = document.querySelector('.plans-section');
-            if (plansSection) {
-                plansSection.style.display = 'none';
+            // Calcular e mostrar dias restantes usando o campo days_remaining da API
+            const daysRemaining = subscription.days_remaining || 0;
+            const daysElement = document.getElementById('daysRemaining');
+            daysElement.textContent = `${daysRemaining} dias`;
+            
+            // Aplicar cores baseadas nos dias restantes com estilo compacto
+            if (daysRemaining <= 7) {
+                daysElement.className = 'value days-remaining text-danger compact';
+                showExpiryAlert('danger', `Sua assinatura expira em ${daysRemaining} dias!`);
+            } else if (daysRemaining <= 30) {
+                daysElement.className = 'value days-remaining text-warning compact';
+                showExpiryAlert('warning', `Sua assinatura expira em ${daysRemaining} dias.`);
+            } else {
+                daysElement.className = 'value days-remaining compact';
             }
+            
+            // Data de expiração com estilo compacto usando end_date da API
+            if (subscription.end_date) {
+                const expiryDate = new Date(subscription.end_date);
+                const expiryElement = document.getElementById('nextBilling');
+                expiryElement.textContent = expiryDate.toLocaleDateString('pt-BR');
+                expiryElement.className = 'value compact';
+            } else {
+                const expiryElement = document.getElementById('nextBilling');
+                expiryElement.textContent = '-';
+                expiryElement.className = 'value compact';
+            }
+            
+            // Status de renovação automática com estilo compacto
+            const autoRenewElement = document.getElementById('autoRenewStatus');
+            const isAutoRenew = subscription.auto_renew;
+            console.log('Atualizando status de renovação automática:', isAutoRenew);
+            
+            autoRenewElement.textContent = isAutoRenew ? 'Ativada' : 'Desativada';
+            autoRenewElement.className = isAutoRenew ? 'value auto-renew-status auto-renew-active compact' : 'value auto-renew-status auto-renew-inactive compact';
+            
+            // Atualizar texto e ícone do botão de renovação automática
+            const autoRenewBtn = document.getElementById('updateAutoRenewBtn');
+            const autoRenewBtnText = document.getElementById('autoRenewBtnText');
+            const autoRenewIcon = document.getElementById('autoRenewIcon');
+            
+            console.log('Elementos do botão encontrados:', {
+                btn: !!autoRenewBtn,
+                text: !!autoRenewBtnText,
+                icon: !!autoRenewIcon
+            });
+            
+            if (autoRenewBtn && autoRenewBtnText && autoRenewIcon) {
+                if (isAutoRenew) {
+                    autoRenewBtnText.textContent = 'Desativar Renovação Automática';
+                    autoRenewIcon.className = 'fas fa-toggle-off';
+                    autoRenewBtn.className = 'btn btn-danger';
+                    console.log('Botão configurado para DESATIVAR (auto_renew=true)');
+                } else {
+                    autoRenewBtnText.textContent = 'Ativar Renovação Automática';
+                    autoRenewIcon.className = 'fas fa-toggle-on';
+                    autoRenewBtn.className = 'btn btn-success';
+                    console.log('Botão configurado para ATIVAR (auto_renew=false)');
+                }
+            } else {
+                console.error('Elementos do botão não encontrados!');
+            }
+            
+            // Aplicar classes compactas aos botões
+            const buttons = currentSubDiv.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                if (!button.classList.contains('compact')) {
+                    button.classList.add('compact');
+                }
+            });
+            
         } else {
-            currentSubDiv.innerHTML = '';
-            // Mostrar os planos se não há assinatura ativa
-            const plansSection = document.querySelector('.plans-section');
-            if (plansSection) {
-                plansSection.style.display = 'block';
-            }
+            // Esconder seção de assinatura atual e mostrar planos
+            currentSubDiv.style.display = 'none';
+            plansDiv.style.display = 'block';
+            noSubDiv.style.display = 'block';
         }
     }
     
@@ -314,18 +377,18 @@ class SubscriptionManager {
                 align-items: center;
                 z-index: 1000;
             ">
-                <div style="
+                <div class="compact" style="
                     background: white;
-                    padding: 30px;
-                    border-radius: 12px;
-                    max-width: 500px;
+                    padding: 20px;
+                    border-radius: 8px;
+                    max-width: 450px;
                     width: 90%;
                     max-height: 80vh;
                     overflow-y: auto;
                 ">
-                    <h3 style="margin-bottom: 20px; text-align: center; color: #2c3e50;">Escolha seu novo plano</h3>
-                    <p style="text-align: center; color: #6c757d; margin-bottom: 25px;">Selecione o plano que deseja para sua renovação:</p>
-                    <div style="display: grid; gap: 15px;">`;
+                    <h3 class="compact" style="margin-bottom: 15px; text-align: center; color: #2c3e50; font-size: 1.4rem;">Escolha seu novo plano</h3>
+                    <p class="compact" style="text-align: center; color: #6c757d; margin-bottom: 20px; font-size: 0.9rem;">Selecione o plano que deseja para sua renovação:</p>
+                    <div style="display: grid; gap: 12px;">`;
         
         Object.entries(this.plans).forEach(([planType, planInfo]) => {
             const isCurrentPlan = this.currentSubscription.plan_type === planType;
@@ -334,10 +397,10 @@ class SubscriptionManager {
             const isDisabled = isDowngrade;
             
             modalHTML += `
-                <div style="
+                <div class="compact" style="
                     border: 2px solid ${isCurrentPlan ? '#28a745' : (isDisabled ? '#dc3545' : '#e9ecef')};
-                    border-radius: 8px;
-                    padding: 15px;
+                    border-radius: 6px;
+                    padding: 12px;
                     cursor: ${isDisabled ? 'not-allowed' : 'pointer'};
                     transition: all 0.3s ease;
                     background: ${isCurrentPlan ? '#f8fff9' : (isDisabled ? '#f8d7da' : 'white')};
@@ -345,12 +408,12 @@ class SubscriptionManager {
                 " ${!isDisabled ? `onclick="subscriptionManager.selectRenewalPlan('${planType}')" onmouseover="this.style.borderColor='#007bff'" onmouseout="this.style.borderColor='${isCurrentPlan ? '#28a745' : '#e9ecef'}'"` : ''}>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <strong style="color: ${isDisabled ? '#721c24' : '#2c3e50'};">${planNames[planType]}</strong>
-                            ${isCurrentPlan ? '<span style="color: #28a745; font-size: 0.9em; margin-left: 10px;">(Plano Atual)</span>' : ''}
-                            ${isDisabled ? '<span style="color: #721c24; font-size: 0.9em; margin-left: 10px;">(Não disponível - plano inferior)</span>' : ''}
-                            <div style="color: ${isDisabled ? '#721c24' : '#6c757d'}; font-size: 0.9em;">${planInfo.duration_months} ${planInfo.duration_months === 1 ? 'mês' : 'meses'}</div>
+                            <strong class="compact" style="color: ${isDisabled ? '#721c24' : '#2c3e50'}; font-size: 0.95rem;">${planNames[planType]}</strong>
+                            ${isCurrentPlan ? '<span class="compact" style="color: #28a745; font-size: 0.8em; margin-left: 8px;">(Plano Atual)</span>' : ''}
+                            ${isDisabled ? '<span class="compact" style="color: #721c24; font-size: 0.8em; margin-left: 8px;">(Não disponível - plano inferior)</span>' : ''}
+                            <div class="compact" style="color: ${isDisabled ? '#721c24' : '#6c757d'}; font-size: 0.8em;">${planInfo.duration_months} ${planInfo.duration_months === 1 ? 'mês' : 'meses'}</div>
                         </div>
-                        <div style="font-size: 1.2em; font-weight: bold; color: ${isDisabled ? '#721c24' : '#007bff'};">
+                        <div class="compact" style="font-size: 1.1em; font-weight: bold; color: ${isDisabled ? '#721c24' : '#007bff'};">
                             R$ ${planInfo.price.toFixed(2)}
                         </div>
                     </div>
@@ -359,15 +422,15 @@ class SubscriptionManager {
         
         modalHTML += `
                     </div>
-                    <div style="text-align: center; margin-top: 25px;">
-                        <button onclick="subscriptionManager.closePlanModal()" style="
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="compact" onclick="subscriptionManager.closePlanModal()" style="
                             background: #6c757d;
                             color: white;
                             border: none;
-                            padding: 10px 20px;
-                            border-radius: 6px;
+                            padding: 8px 16px;
+                            border-radius: 5px;
                             cursor: pointer;
-                            font-size: 1em;
+                            font-size: 0.9em;
                         ">Cancelar</button>
                     </div>
                 </div>
@@ -454,38 +517,99 @@ class SubscriptionManager {
     }
     
     async updateAutoRenew() {
+        console.log('SubscriptionManager.updateAutoRenew() chamada');
+        console.log('currentSubscription:', this.currentSubscription);
+        
         if (!this.currentSubscription) {
+            console.error('Nenhuma assinatura atual encontrada');
             this.showError('Nenhuma assinatura encontrada');
             return;
         }
-        
-        const autoRenew = document.getElementById('autoRenewToggle').checked;
-        
+
+        if (this.isProcessing) {
+            console.log('Já está processando, ignorando clique');
+            return;
+        }
+
+        this.isProcessing = true;
         this.showLoading(true);
-        
+
         try {
+            // Alternar o estado atual da renovação automática
+            const newAutoRenew = !this.currentSubscription.auto_renew;
+            console.log('Alterando auto_renew de', this.currentSubscription.auto_renew, 'para', newAutoRenew);
+            
             const response = await fetch('/api/subscriptions/update', {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    auto_renew: autoRenew
+                    auto_renew: newAutoRenew
                 })
             });
-            
+
             const data = await response.json();
-            
-            if (data.success) {
-                this.showSuccess('Configuração de renovação atualizada');
-                await this.loadCurrentSubscription();
+            console.log('Resposta da API:', data);
+
+            if (response.ok && data.success) {
+                // ATUALIZAÇÃO IMEDIATA E FORÇADA DO STATUS VISUAL
+                console.log('=== FORÇANDO ATUALIZAÇÃO VISUAL ===');
+                
+                // 1. Atualizar o objeto currentSubscription
+                this.currentSubscription.auto_renew = newAutoRenew;
+                console.log('currentSubscription.auto_renew atualizado para:', this.currentSubscription.auto_renew);
+                
+                // 2. Atualizar DIRETAMENTE o elemento de status
+                const autoRenewElement = document.getElementById('autoRenewStatus');
+                if (autoRenewElement) {
+                    autoRenewElement.textContent = newAutoRenew ? 'Ativada' : 'Desativada';
+                    autoRenewElement.className = newAutoRenew ? 'value auto-renew-status auto-renew-active compact' : 'value auto-renew-status auto-renew-inactive compact';
+                    console.log('Status atualizado diretamente:', autoRenewElement.textContent);
+                } else {
+                    console.error('Elemento autoRenewStatus não encontrado!');
+                }
+                
+                // 3. Atualizar DIRETAMENTE o botão
+                const autoRenewBtn = document.getElementById('updateAutoRenewBtn');
+                const autoRenewBtnText = document.getElementById('autoRenewBtnText');
+                const autoRenewIcon = document.getElementById('autoRenewIcon');
+                
+                if (autoRenewBtn && autoRenewBtnText && autoRenewIcon) {
+                    if (newAutoRenew) {
+                        autoRenewBtnText.textContent = 'Desativar Renovação Automática';
+                        autoRenewIcon.className = 'fas fa-toggle-off';
+                        autoRenewBtn.className = 'btn btn-danger';
+                        console.log('Botão atualizado para DESATIVAR');
+                    } else {
+                        autoRenewBtnText.textContent = 'Ativar Renovação Automática';
+                        autoRenewIcon.className = 'fas fa-toggle-on';
+                        autoRenewBtn.className = 'btn btn-success';
+                        console.log('Botão atualizado para ATIVAR');
+                    }
+                } else {
+                    console.error('Elementos do botão não encontrados!');
+                }
+                
+                // 4. Forçar repaint do DOM
+                autoRenewElement.style.display = 'none';
+                autoRenewElement.offsetHeight; // Trigger reflow
+                autoRenewElement.style.display = '';
+                
+                const action = newAutoRenew ? 'ativada' : 'desativada';
+                this.showSuccess(`Renovação automática ${action} com sucesso`);
+                
+                console.log('=== ATUALIZAÇÃO VISUAL CONCLUÍDA ===');
+                
             } else {
-                this.showError(data.error || 'Erro ao atualizar configuração');
+                console.error('Erro na resposta da API:', data);
+                this.showError(data.message || 'Erro ao atualizar renovação automática');
             }
         } catch (error) {
-            console.error('Erro ao atualizar renovação:', error);
-            this.showError('Erro ao atualizar configuração');
+            console.error('Erro ao atualizar renovação automática:', error);
+            this.showError('Erro ao atualizar renovação automática');
         } finally {
+            this.isProcessing = false;
             this.showLoading(false);
         }
     }
@@ -785,6 +909,14 @@ function renewSubscription() {
 }
 
 function updateAutoRenew() {
+    console.log('updateAutoRenew() chamada');
+    console.log('subscriptionManager:', subscriptionManager);
+    
+    if (!subscriptionManager) {
+        console.error('subscriptionManager não está inicializado');
+        return;
+    }
+    
     subscriptionManager.updateAutoRenew();
 }
 
@@ -793,7 +925,7 @@ function cancelSubscription() {
 }
 
 function goToSystem() {
-    window.location.href = '/';
+    window.location.href = 'index.html';
 }
 
 function logout() {
@@ -810,7 +942,18 @@ function logout() {
 }
 
 function viewHistory() {
-    window.location.href = '/subscription-history.html';
+    window.location.href = 'historico-assinaturas.html';
+}
+
+// Função auxiliar para mostrar alertas de expiração
+function showExpiryAlert(type, message) {
+    const alertDiv = document.getElementById('expiryAlert');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'danger' ? 'exclamation-circle' : 'exclamation-triangle'}"></i>
+        <span>${message}</span>
+    `;
+    alertDiv.style.display = 'block';
 }
 
 // Inicializar quando a página carregar
