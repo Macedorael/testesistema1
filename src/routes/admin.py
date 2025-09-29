@@ -153,7 +153,7 @@ def admin_dashboard():
                 const response = await fetch('/admin/stats');
                 const data = await response.json();
                 
-                if (data.sucesso && data.data) {
+                if (data.success && data.data) {
                     document.getElementById('total-users').textContent = data.data.total_users;
                     document.getElementById('active-subscriptions').textContent = data.data.active_subscriptions;
                 } else {
@@ -175,7 +175,7 @@ def admin_dashboard():
                 const tbody = document.getElementById('users-table-body');
                 tbody.innerHTML = '';
                 
-                if (data.sucesso && data.data) {
+                if (data.success && data.data) {
                     data.data.forEach(user => {
                     const row = document.createElement('tr');
                     
