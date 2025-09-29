@@ -21,35 +21,54 @@ class SubscriptionManager {
     constructor() {
         this.currentSubscription = null;
         this.plans = {};
+        this.isProcessing = false; // Adicionar controle de processamento
         this.init();
     }
     
     async init() {
+        console.log('🔄 Iniciando SubscriptionManager...');
+        
         // Verificar login antes de carregar qualquer coisa
         const isLoggedIn = await checkLoginStatus();
+        console.log('🔐 Status de login:', isLoggedIn);
+        
         if (!isLoggedIn) {
+            console.log('❌ Usuário não logado, parando execução');
             return; // Para a execução se não estiver logado
         }
         
+        console.log('📋 Carregando planos...');
         await this.loadPlans();
+        
+        console.log('📊 Carregando assinatura atual...');
         await this.loadCurrentSubscription();
+        
+        console.log('🎯 Configurando event listeners...');
         this.setupEventListeners();
+        
+        console.log('✅ SubscriptionManager inicializado com sucesso');
     }
     
     async loadPlans() {
+        console.log('📋 Fazendo requisição para /api/subscriptions/plans...');
         try {
             const response = await fetch('/api/subscriptions/plans');
-            const data = await response.json();
+            console.log('📋 Resposta da API plans:', response.status, response.statusText);
             
-            if (data.success) {
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📋 Dados dos planos recebidos:', data);
                 this.plans = data.plans;
+                console.log('📋 Planos armazenados:', this.plans);
                 this.renderPlans();
+                console.log('📋 Planos renderizados com sucesso');
             } else {
-                this.showError('Erro ao carregar planos');
+                console.error('❌ Erro ao carregar planos:', response.status, response.statusText);
+                this.showError('Erro ao carregar planos de assinatura');
             }
         } catch (error) {
-            console.error('Erro ao carregar planos:', error);
-            this.showError('Erro ao carregar planos');
+            console.error('❌ Erro na requisição de planos:', error);
+            this.showError('Erro ao conectar com o servidor');
         }
     }
     
@@ -82,66 +101,84 @@ class SubscriptionManager {
     }
     
     renderPlans() {
-        // Só mostra os planos se o usuário estiver logado e não tiver assinatura ativa
-        if (!this.currentSubscription || this.currentSubscription.status !== 'active') {
-            const plansGrid = document.getElementById('plansGrid');
-            if (!plansGrid) return;
-            
-            plansGrid.innerHTML = '';
-            
-            const planNames = {
-                'monthly': 'Mensal',
-                'quarterly': 'Trimestral',
-                'biannual': 'Semestral',
-                'annual': 'Anual'
-            };
-            
-            const planFeatures = {
-                'monthly': ['Acesso completo ao sistema', 'Suporte por email', 'Backup automático'],
-                'quarterly': ['Acesso completo ao sistema', 'Suporte por email', 'Backup automático', '5% de desconto'],
-                'biannual': ['Acesso completo ao sistema', 'Suporte prioritário', 'Backup automático', '10% de desconto'],
-                'annual': ['Acesso completo ao sistema', 'Suporte prioritário', 'Backup automático', '15% de desconto', 'Recursos premium']
-            };
-            
-            Object.entries(this.plans).forEach(([planType, planInfo]) => {
-                const isCurrentPlan = this.currentSubscription && this.currentSubscription.plan_type === planType;
-                
-                const planCard = document.createElement('div');
-                planCard.className = `plan-card ${isCurrentPlan ? 'current' : ''}`;
-                planCard.onclick = () => this.selectPlan(planType);
-                
-                planCard.innerHTML = `
-                    <div class="plan-name">${planNames[planType]}</div>
-                    <div class="plan-price">R$ ${planInfo.price.toFixed(2)}</div>
-                    <div class="plan-period">por ${planInfo.duration_months} ${planInfo.duration_months === 1 ? 'mês' : 'meses'}</div>
-                    <ul class="plan-features">
-                        ${planFeatures[planType].map(feature => `<li>${feature}</li>`).join('')}
-                    </ul>
-                    <button class="btn ${isCurrentPlan ? 'btn-secondary' : 'btn-primary'}">
-                        ${isCurrentPlan ? 'Plano Atual' : 'Selecionar'}
-                    </button>
-                `;
-                
-                plansGrid.appendChild(planCard);
-            });
+        console.log('🎨 Iniciando renderização dos planos...');
+        const plansContainer = document.getElementById('plansGrid');
+        
+        if (!plansContainer) {
+            console.error('❌ Container de planos não encontrado!');
+            return;
         }
+        
+        console.log('🎨 Container encontrado, planos disponíveis:', this.plans);
+        
+        if (!this.plans || Object.keys(this.plans).length === 0) {
+            console.warn('⚠️ Nenhum plano disponível para renderizar');
+            plansContainer.innerHTML = '<p class="text-center">Nenhum plano disponível no momento.</p>';
+            return;
+        }
+
+        let plansHTML = '';
+        
+        for (const [planType, plan] of Object.entries(this.plans)) {
+            console.log(`🎨 Renderizando plano: ${planType}`, plan);
+            
+            const savings = plan.savings ? `<div class="savings">Economize R$ ${plan.savings.toFixed(2)}</div>` : '';
+            
+            plansHTML += `
+                <div class="plan-card ${planType === 'annual' ? 'recommended' : ''}">
+                    ${planType === 'annual' ? '<div class="recommended-badge">Recomendado</div>' : ''}
+                    <h3>${plan.name}</h3>
+                    <div class="price">R$ ${plan.price.toFixed(2)}</div>
+                    <div class="duration">${plan.duration}</div>
+                    ${savings}
+                    <p class="description">${plan.description}</p>
+                    <button class="btn btn-primary select-plan-btn" data-plan="${planType}">
+                        Selecionar Plano
+                    </button>
+                </div>
+            `;
+        }
+        
+        plansContainer.innerHTML = plansHTML;
+        console.log('🎨 HTML dos planos inserido no container');
+        
+        // Mostrar a seção de planos
+        const plansSection = document.getElementById('plansSection');
+        if (plansSection) {
+            plansSection.style.display = 'block';
+            console.log('🎨 Seção de planos exibida');
+        }
+        
+        // Adicionar event listeners aos botões
+        const planButtons = plansContainer.querySelectorAll('.select-plan-btn');
+        console.log(`🎨 Encontrados ${planButtons.length} botões de plano`);
+        
+        planButtons.forEach(button => {
+            const planType = button.getAttribute('data-plan');
+            console.log(`🎨 Adicionando listener para plano: ${planType}`);
+            
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🎯 Clique no plano: ${planType}`);
+                
+                if (this.isProcessing) {
+                    console.log('⏳ Processamento em andamento, ignorando clique');
+                    return;
+                }
+                
+                this.selectPlanWithDebounce(planType, button);
+            });
+        });
+        
+        console.log('🎨 Renderização dos planos concluída com sucesso');
     }
     
     renderCurrentSubscription() {
-        const currentSubscriptionDiv = document.getElementById('currentSubscription');
-        const noSubscriptionDiv = document.getElementById('noSubscription');
-        const actionsWithSubscription = document.getElementById('actionsWithSubscription');
-        const actionsWithoutSubscription = document.getElementById('actionsWithoutSubscription');
-        const plansSection = document.getElementById('plansSection');
+        const currentSubDiv = document.getElementById('currentSubscription');
+        if (!currentSubDiv) return;
         
         if (this.currentSubscription && this.currentSubscription.status === 'active') {
-            // Usuário tem assinatura ativa
-            currentSubscriptionDiv.style.display = 'block';
-            noSubscriptionDiv.style.display = 'none';
-            actionsWithSubscription.style.display = 'block';
-            actionsWithoutSubscription.style.display = 'none';
-            plansSection.style.display = 'none'; // Oculta planos quando tem assinatura ativa
-            
             const planNames = {
                 'monthly': 'Mensal',
                 'quarterly': 'Trimestral',
@@ -149,33 +186,74 @@ class SubscriptionManager {
                 'annual': 'Anual'
             };
             
-            document.getElementById('currentPlan').textContent = planNames[this.currentSubscription.plan_type] || this.currentSubscription.plan_type;
+            const planName = planNames[this.currentSubscription.plan_type] || this.currentSubscription.plan_type;
+            const expiryDate = new Date(this.currentSubscription.expires_at).toLocaleDateString('pt-BR');
             
-            const statusElement = document.getElementById('currentStatus');
-            statusElement.textContent = this.currentSubscription.status;
-            statusElement.className = `info-value status-${this.currentSubscription.status}`;
+            currentSubDiv.innerHTML = `
+                <div class="current-subscription">
+                    <h3>Sua Assinatura Atual</h3>
+                    <div class="subscription-info">
+                        <p><strong>Plano:</strong> ${planName}</p>
+                        <p><strong>Status:</strong> <span class="status-active">Ativo</span></p>
+                        <p><strong>Expira em:</strong> ${expiryDate}</p>
+                        <p><strong>Renovação Automática:</strong> ${this.currentSubscription.auto_renew ? 'Ativada' : 'Desativada'}</p>
+                    </div>
+                    <div class="subscription-actions">
+                        <button onclick="renewSubscription()" class="btn btn-primary">Renovar Assinatura</button>
+                        <button onclick="updateAutoRenew()" class="btn btn-secondary">
+                            ${this.currentSubscription.auto_renew ? 'Desativar' : 'Ativar'} Renovação Automática
+                        </button>
+                        <button onclick="cancelSubscription()" class="btn btn-danger">Cancelar Assinatura</button>
+                        <button onclick="goToSystem()" class="btn btn-success">Ir para o Sistema</button>
+                    </div>
+                </div>
+            `;
             
-            document.getElementById('currentPrice').textContent = `R$ ${this.currentSubscription.price.toFixed(2)}`;
-            
-            const endDate = new Date(this.currentSubscription.end_date);
-            document.getElementById('nextBilling').textContent = endDate.toLocaleDateString('pt-BR');
-            
-            document.getElementById('daysRemaining').textContent = `${this.currentSubscription.days_remaining || 0} dias`;
-            
-            document.getElementById('autoRenewStatus').textContent = this.currentSubscription.auto_renew ? 'Ativada' : 'Desativada';
-            
-            document.getElementById('autoRenewToggle').checked = this.currentSubscription.auto_renew;
+            // Esconder os planos se há assinatura ativa
+            const plansSection = document.querySelector('.plans-section');
+            if (plansSection) {
+                plansSection.style.display = 'none';
+            }
         } else {
-            // Usuário não tem assinatura ativa
-            currentSubscriptionDiv.style.display = 'none';
-            noSubscriptionDiv.style.display = 'block';
-            actionsWithSubscription.style.display = 'none';
-            actionsWithoutSubscription.style.display = 'block';
-            plansSection.style.display = 'block'; // Mostra planos quando não tem assinatura ativa
+            currentSubDiv.innerHTML = '';
+            // Mostrar os planos se não há assinatura ativa
+            const plansSection = document.querySelector('.plans-section');
+            if (plansSection) {
+                plansSection.style.display = 'block';
+            }
         }
     }
     
+    // Nova função com proteção contra duplo clique
+    async selectPlanWithDebounce(planType, button) {
+        // Verificar se já está processando
+        if (this.isProcessing) {
+            console.log('Já processando uma assinatura...');
+            return;
+        }
+        
+        // Desabilitar botão imediatamente
+        button.disabled = true;
+        button.textContent = 'Processando...';
+        
+        try {
+            await this.selectPlan(planType);
+        } finally {
+            // Reabilitar botão após 3 segundos (tempo suficiente para evitar duplo clique)
+            setTimeout(() => {
+                if (!this.isProcessing) {
+                    button.disabled = false;
+                    button.textContent = 'Selecionar';
+                }
+            }, 3000);
+        }
+    }
+
     async selectPlan(planType) {
+        if (this.isProcessing) {
+            return;
+        }
+        
         if (this.currentSubscription && this.currentSubscription.plan_type === planType) {
             this.showError('Você já possui este plano ativo');
             return;
@@ -191,7 +269,7 @@ class SubscriptionManager {
         const confirmMessage = `Deseja assinar o plano ${planNames[planType]}?`;
         
         if (confirm(confirmMessage)) {
-            this.processSubscription(planType);
+            await this.processSubscription(planType);
         }
     }
     
@@ -456,8 +534,18 @@ class SubscriptionManager {
     
     // Função para processar a assinatura
     async processSubscription(planType) {
+        // Verificar se já está processando
+        if (this.isProcessing) {
+            console.log('Já processando uma assinatura...');
+            return;
+        }
+        
         try {
+            this.isProcessing = true;
             this.showLoading(true);
+            
+            // Desabilitar todos os botões durante o processamento
+            this.disableAllButtons();
             
             const response = await fetch('/api/subscriptions/subscribe', {
                 method: 'POST',
@@ -481,16 +569,45 @@ class SubscriptionManager {
                 }, 2000);
             } else {
                 this.showError(data.error || 'Erro ao processar assinatura');
+                this.enableAllButtons(); // Reabilitar botões em caso de erro
             }
         } catch (error) {
             console.error('Erro ao processar assinatura:', error);
             this.showError('Erro de conexão. Tente novamente.');
+            this.enableAllButtons(); // Reabilitar botões em caso de erro
         } finally {
             this.showLoading(false);
+            // Não resetar isProcessing aqui se o redirecionamento vai acontecer
+            if (!document.querySelector('#successAlert').style.display || document.querySelector('#successAlert').style.display === 'none') {
+                this.isProcessing = false;
+            }
         }
     }
     
-    // Função para processar assinatura de usuário não logado
+    // Função para desabilitar todos os botões
+    disableAllButtons() {
+        const buttons = document.querySelectorAll('.plan-card button');
+        buttons.forEach(button => {
+            button.disabled = true;
+            if (button.textContent === 'Selecionar') {
+                button.textContent = 'Processando...';
+            }
+        });
+    }
+    
+    // Função para reabilitar todos os botões
+    enableAllButtons() {
+        const buttons = document.querySelectorAll('.plan-card button');
+        buttons.forEach(button => {
+            if (!button.id.includes('current')) {
+                button.disabled = false;
+                if (button.textContent === 'Processando...') {
+                    button.textContent = 'Selecionar';
+                }
+            }
+        });
+    }
+
     async processGuestSubscription(planType, email, password) {
         try {
             this.showLoading(true);
@@ -529,7 +646,61 @@ class SubscriptionManager {
     }
     
     setupEventListeners() {
-        // Event listeners já são configurados nos métodos de renderização
+        // Event listeners para botões de ação
+        const renewBtn = document.getElementById('renewBtn');
+        const updateAutoRenewBtn = document.getElementById('updateAutoRenewBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const historyBtn = document.getElementById('historyBtn');
+        const goToSystemBtn = document.getElementById('goToSystemBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        if (renewBtn) {
+            renewBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!this.isProcessing) {
+                    renewSubscription();
+                }
+            });
+        }
+        
+        if (updateAutoRenewBtn) {
+            updateAutoRenewBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!this.isProcessing) {
+                    updateAutoRenew();
+                }
+            });
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!this.isProcessing) {
+                    cancelSubscription();
+                }
+            });
+        }
+        
+        if (historyBtn) {
+            historyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                viewHistory();
+            });
+        }
+        
+        if (goToSystemBtn) {
+            goToSystemBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                goToSystem();
+            });
+        }
+        
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+        }
     }
     
     showLoading(show) {
@@ -594,6 +765,7 @@ function viewHistory() {
 }
 
 // Inicializar quando a página carregar
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async function() {
     subscriptionManager = new SubscriptionManager();
+    await subscriptionManager.init();
 });

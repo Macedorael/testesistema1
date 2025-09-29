@@ -285,10 +285,10 @@
                 </div>
                 
                 <div class="actions">
-                    <button class="btn btn-success" onclick="renewSubscription()">Renovar Agora</button>
-                    <button class="btn btn-secondary" onclick="updateAutoRenew()">Atualizar Renovação</button>
-                    <button class="btn btn-danger" onclick="cancelSubscription()">Cancelar Assinatura</button>
-                    <button class="btn" onclick="viewHistory()">Ver Histórico</button>
+                    <button class="btn btn-success" id="renewBtn">Renovar Agora</button>
+                    <button class="btn btn-secondary" id="updateAutoRenewBtn">Atualizar Renovação</button>
+                    <button class="btn btn-danger" id="cancelBtn">Cancelar Assinatura</button>
+                    <button class="btn" id="historyBtn">Ver Histórico</button>
                 </div>
             </div>
         </div>
@@ -309,11 +309,11 @@
         
         <!-- Botões condicionais baseados no status da assinatura -->
         <div class="actions" id="actionsWithSubscription" style="display: none;">
-            <button class="btn btn-success" onclick="goToSystem()">Voltar para o Sistema</button>
+            <button class="btn btn-success" id="goToSystemBtn">Voltar para o Sistema</button>
         </div>
         
         <div class="actions" id="actionsWithoutSubscription" style="display: none;">
-            <button class="btn btn-danger" onclick="logout()">Sair do Sistema</button>
+            <button class="btn btn-danger" id="logoutBtn">Sair do Sistema</button>
         </div>
     </div>
     
