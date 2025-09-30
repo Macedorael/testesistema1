@@ -17,7 +17,7 @@ class Subscription(db.Model):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamento com User
-    user = db.relationship('User', back_populates='subscription')
+    user = db.relationship('User', back_populates='subscription', lazy='select')
     
     # Preços dos planos (em reais)
     PLAN_PRICES = {
