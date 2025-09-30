@@ -158,10 +158,11 @@ app = Flask(__name__, static_folder=static_path)
 # Configuração da SECRET_KEY
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'consultorio-psicologia-secret-key-2024')
 
-# Configurações de sessão para funcionar com requisições HTTP
-app.config['SESSION_COOKIE_HTTPONLY'] = False
-app.config['SESSION_COOKIE_SECURE'] = False  # Para desenvolvimento local
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# Configurações de sessão para desenvolvimento
+app.config['SESSION_COOKIE_HTTPONLY'] = False  # Permite acesso via JavaScript
+app.config['SESSION_COOKIE_SECURE'] = False    # Para desenvolvimento local (HTTP)
+app.config['SESSION_COOKIE_SAMESITE'] = None   # Permite cookies cross-site
+app.config['SESSION_COOKIE_DOMAIN'] = None     # Permite localhost
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hora
 print("[DEBUG] Configurações de sessão aplicadas para desenvolvimento")
 
@@ -497,6 +498,54 @@ with app.app_context():
             if admin_count == 0:
                 print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário a admin...")
                 # Promover o primeiro usuário a admin se não houver nenhum
+                
+            # População automática de campos obrigatórios para usuários existentes
+            print("[STARTUP] Verificando e populando campos obrigatórios...")
+            
+            # Verificar usuários sem telefone
+            users_without_phone = db.session.execute(
+                text("SELECT COUNT(*) FROM users WHERE telefone IS NULL OR telefone = ''")
+            ).scalar()
+            
+            if users_without_phone > 0:
+                print(f"[STARTUP] Encontrados {users_without_phone} usuário(s) sem telefone")
+                
+                # Popular usuários sem telefone com valor padrão
+                result = db.session.execute(
+                    text("UPDATE users SET telefone = '(00) 00000-0000' WHERE telefone IS NULL OR telefone = ''")
+                )
+                db.session.commit()
+                
+                print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com telefone padrão")
+            else:
+                print("✅ [STARTUP] Todos os usuários já possuem telefone definido")
+            
+            # Verificar usuários sem data de nascimento
+            users_without_birthdate = db.session.execute(
+                text("SELECT COUNT(*) FROM users WHERE data_nascimento IS NULL")
+            ).scalar()
+            
+            if users_without_birthdate > 0:
+                print(f"[STARTUP] Encontrados {users_without_birthdate} usuário(s) sem data de nascimento")
+                
+                # Popular usuários sem data de nascimento com valor padrão
+                result = db.session.execute(
+                    text("UPDATE users SET data_nascimento = '1990-01-01' WHERE data_nascimento IS NULL")
+                )
+                db.session.commit()
+                
+                print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com data de nascimento padrão")
+            else:
+                print("✅ [STARTUP] Todos os usuários já possuem data de nascimento definida")
+            
+            # Verificar se há pelo menos um administrador
+            admin_count = db.session.execute(
+                text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+            ).scalar()
+            
+            if admin_count == 0:
+                print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário...")
+                # Promover o primeiro usuário a admin se não houver nenhum
                 first_user = db.session.execute(
                     text("SELECT id FROM users ORDER BY id LIMIT 1")
                 ).first()
@@ -662,6 +711,18 @@ def home():
     except Exception as e:
         print(f"[ERROR] Erro na rota principal: {e}")
         return f"Erro: {str(e)}", 500
+
+@app.route('/assinaturas')
+def assinaturas():
+    """Rota específica para a página de assinaturas"""
+    print("[DEBUG] Rota /assinaturas acessada")
+    return send_from_directory(app.static_folder, 'assinaturas.html')
+
+@app.route('/historico-assinaturas.html')
+def historico_assinaturas():
+    """Rota específica para a página de histórico de assinaturas"""
+    print("[DEBUG] Rota /historico-assinaturas.html acessada")
+    return send_from_directory(app.static_folder, 'historico-assinaturas.html')
 
 # Rotas de pagamento desabilitadas - funcionalidade removida
 # @app.route('/payment/success')

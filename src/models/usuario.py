@@ -10,10 +10,12 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     role = db.Column(db.String(20), default='user', nullable=False)  # 'user' ou 'admin'
+    telefone = db.Column(db.String(20), nullable=False)  # Campo para telefone (obrigatório)
+    data_nascimento = db.Column(db.Date, nullable=False)  # Campo para data de nascimento (obrigatório)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
-    # subscription = db.relationship('Subscription', back_populates='user', uselist=False)
+    subscription = db.relationship('Subscription', back_populates='user', uselist=False)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -106,6 +108,8 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'role': getattr(self, 'role', None) or 'user',
+            'telefone': self.telefone,
+            'data_nascimento': self.data_nascimento.isoformat() if self.data_nascimento else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'subscription': subscription_info,
             'has_active_subscription': self.has_active_subscription()

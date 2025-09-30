@@ -2113,6 +2113,53 @@ function logout() {
     }
 }
 
+    // Função para configurar campos de data em português
+    configurarCamposDataPortugues();{
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            input.setAttribute('lang', 'pt-BR');
+        });
+    }
+
+
+// Função global para configurar idioma português em campos de data
+function configurarDateInputsPortugues() {
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        input.setAttribute('lang', 'pt-BR');
+        input.setAttribute('locale', 'pt-BR');
+    });
+}
+
+// Configurar quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+    // Definir idioma da página
+    document.documentElement.lang = 'pt-BR';
+    configurarDateInputsPortugues();
+});
+
+// Configurar quando novos elementos forem adicionados dinamicamente
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) { // Element node
+                    const dateInputs = node.querySelectorAll ? node.querySelectorAll('input[type="date"]') : [];
+                    dateInputs.forEach(input => {
+                        input.setAttribute('lang', 'pt-BR');
+                        input.setAttribute('locale', 'pt-BR');
+                    });
+                }
+            });
+        }
+    });
+});
+
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
 
 // Removido: verificação desnecessária de localStorage que causava loop
 // A autenticação é gerenciada pelo backend via sessões

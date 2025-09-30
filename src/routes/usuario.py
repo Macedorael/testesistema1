@@ -74,6 +74,8 @@ def register():
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
+    telefone = data.get("telefone")
+    data_nascimento = data.get("data_nascimento")
     
     # Validações básicas
     if not username or not email or not password:
@@ -87,6 +89,17 @@ def register():
         return jsonify({"error": "A senha deve ter pelo menos 6 caracteres"}), 400
     
     print("[DEBUG] Senha atende aos critérios de comprimento")
+    
+    # Validar data de nascimento se fornecida
+    parsed_data_nascimento = None
+    if data_nascimento:
+        try:
+            from datetime import datetime
+            parsed_data_nascimento = datetime.strptime(data_nascimento, '%Y-%m-%d').date()
+            print(f"[DEBUG] Data de nascimento válida: {parsed_data_nascimento}")
+        except ValueError:
+            print(f"[ERROR] Data de nascimento inválida: {data_nascimento}")
+            return jsonify({"error": "Data de nascimento deve estar no formato YYYY-MM-DD"}), 400
     
     # Verificar se usuário já existe
     print(f"[DEBUG] Verificando se username já existe: {username}")
@@ -117,7 +130,7 @@ def register():
         
         # Criar novo usuário
         print(f"[DEBUG] Criando objeto User para usuário: {username}")
-        user = User(username=username, email=email)
+        user = User(username=username, email=email, telefone=telefone, data_nascimento=parsed_data_nascimento)
         print("[DEBUG] Objeto User criado com sucesso")
         
         print(f"[DEBUG] Gerando hash da senha para usuário: {username}")

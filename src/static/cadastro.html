@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro - Consultório Médico</title>
+    <title>Cadastro - Sistema de Consultório</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/cadastro.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -47,6 +47,24 @@
 
                 <div class="form-row">
                     <div class="input-group">
+                        <label for="telefone">Telefone</label>
+                        <input type="tel" id="telefone" name="telefone" placeholder="(21) 99999-9999" required>
+                        <span class="input-focus"></span>
+                        <small class="password-hint">Formato: (21) 99999-9999</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="data_nascimento">Data de Nascimento</label>
+                        <input type="date" id="data_nascimento" name="data_nascimento" required>
+                        <span class="input-focus"></span>
+                        <small class="password-hint">Ex: 15/03/1990</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
                         <label for="password">Senha</label>
                         <input type="password" id="password" name="password" required>
                         <span class="input-focus"></span>
@@ -83,5 +101,85 @@
     </div>
 
     <script src="js/cadastro.js"></script>
+    <script>
+        // Configurar o campo de data para formato brasileiro
+        document.addEventListener('DOMContentLoaded', function() {
+            // Definir idioma da página
+            document.documentElement.lang = 'pt-BR';
+            
+            const dateInput = document.getElementById('data_nascimento');
+            if (dateInput) {
+                // Configurações para formato brasileiro
+                dateInput.setAttribute('lang', 'pt-BR');
+                dateInput.setAttribute('locale', 'pt-BR');
+                
+                // Converter para input text para controle total do formato
+                dateInput.type = 'text';
+                dateInput.placeholder = ''; // Sem placeholder
+                
+                // Aplicar máscara de data brasileira
+                dateInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length >= 2) {
+                        value = value.substring(0,2) + '/' + value.substring(2);
+                    }
+                    if (value.length >= 5) {
+                        value = value.substring(0,5) + '/' + value.substring(5,9);
+                    }
+                    e.target.value = value;
+                });
+                
+                dateInput.addEventListener('blur', function() {
+                    // Validar formato da data
+                    const value = this.value;
+                    if (value && value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = value.split('/');
+                        const day = parseInt(parts[0]);
+                        const month = parseInt(parts[1]);
+                        const year = parseInt(parts[2]);
+                        
+                        // Validar data
+                        const date = new Date(year, month - 1, day);
+                        if (date.getFullYear() != year || 
+                            date.getMonth() != month - 1 || 
+                            date.getDate() != day) {
+                            this.value = ''; // Limpar se inválida
+                        }
+                    }
+                });
+            }
+            
+            // Validação adicional para campos obrigatórios
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const telefone = document.getElementById('telefone').value.trim();
+                    const dataNascimento = document.getElementById('data_nascimento').value.trim();
+                    
+                    if (!telefone) {
+                        e.preventDefault();
+                        alert('O campo Telefone é obrigatório!');
+                        document.getElementById('telefone').focus();
+                        return false;
+                    }
+                    
+                    if (!dataNascimento) {
+                        e.preventDefault();
+                        alert('O campo Data de Nascimento é obrigatório!');
+                        document.getElementById('data_nascimento').focus();
+                        return false;
+                    }
+                    
+                    // Validar formato da data antes do envio
+                    if (dataNascimento && !dataNascimento.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        e.preventDefault();
+                        alert('Por favor, insira uma data válida no formato dd/mm/aaaa');
+                        document.getElementById('data_nascimento').focus();
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

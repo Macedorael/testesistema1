@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const username = document.getElementById('username').value.trim();
         const email = document.getElementById('email').value.trim();
+        const telefone = document.getElementById('telefone').value.trim();
+        const dataNascimento = document.getElementById('data_nascimento').value;
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
         
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideMessages();
         
         // Validar formulário
-        if (!validateForm(username, email, password, confirmPassword)) {
+        if (!validateForm(username, email, telefone, dataNascimento, password, confirmPassword)) {
             return;
         }
         
@@ -41,16 +43,26 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoading();
         
         try {
+            const requestBody = {
+                username: username,
+                email: email,
+                password: password
+            };
+            
+            // Adicionar campos opcionais apenas se preenchidos
+            if (telefone) {
+                requestBody.telefone = telefone;
+            }
+            if (dataNascimento) {
+                requestBody.data_nascimento = dataNascimento;
+            }
+            
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    username: username,
-                    email: email,
-                    password: password
-                })
+                body: JSON.stringify(requestBody)
             });
             
             const data = await response.json();
@@ -76,10 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function validateForm(username, email, password, confirmPassword) {
-        // Verificar se todos os campos estão preenchidos
+    function validateForm(username, email, telefone, dataNascimento, password, confirmPassword) {
+        // Verificar se todos os campos obrigatórios estão preenchidos
         if (!username || !email || !password || !confirmPassword) {
-            showError('Por favor, preencha todos os campos.');
+            showError('Por favor, preencha todos os campos obrigatórios.');
             return false;
         }
         
@@ -94,6 +106,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!emailRegex.test(email)) {
             showError('Por favor, insira um e-mail válido.');
             return false;
+        }
+        
+        // Validar telefone se preenchido
+        if (telefone && telefone.length > 0) {
+            const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
+            if (!phoneRegex.test(telefone)) {
+                showError('Por favor, insira um telefone válido no formato (11) 99999-9999.');
+                return false;
+            }
+        }
+        
+        // Validar data de nascimento se preenchida
+        if (dataNascimento && dataNascimento.length > 0) {
+            const birthDate = new Date(dataNascimento);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            
+            if (birthDate > today) {
+                showError('A data de nascimento não pode ser no futuro.');
+                return false;
+            }
+            
+            if (age > 120) {
+                showError('Por favor, insira uma data de nascimento válida.');
+                return false;
+            }
         }
         
         // Validar comprimento da senha
@@ -185,6 +223,35 @@ document.addEventListener('DOMContentLoaded', function() {
             // Token é inválido, removê-lo
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+        });
+    }
+    
+    // Máscara para o campo de telefone
+    const telefoneInput = document.getElementById('telefone');
+    if (telefoneInput) {
+        telefoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+            
+            if (value.length <= 11) {
+                if (value.length <= 2) {
+                    value = value.replace(/(\d{0,2})/, '($1');
+                } else if (value.length <= 6) {
+                    value = value.replace(/(\d{2})(\d{0,4})/, '($1) $2');
+                } else if (value.length <= 10) {
+                    value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+                } else {
+                    value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+                }
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Limitar o comprimento máximo
+        telefoneInput.addEventListener('keypress', function(e) {
+            if (this.value.length >= 15 && e.key !== 'Backspace' && e.key !== 'Delete') {
+                e.preventDefault();
+            }
         });
     }
 });

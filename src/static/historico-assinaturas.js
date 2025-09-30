@@ -44,7 +44,7 @@ async function loadSubscriptionHistory(page = 1) {
 // Função para exibir o histórico
 function displayHistory(historyItems) {
     const timeline = document.getElementById('historyTimeline');
-    const emptyState = document.querySelector('.empty-state');
+    const emptyState = document.getElementById('emptyState');
     
     if (!historyItems || historyItems.length === 0) {
         timeline.style.display = 'none';
@@ -77,59 +77,39 @@ function createHistoryItem(item) {
     
     return `
         <div class="timeline-item">
-            <div class="card history-card ${actionClass} mb-3">
-                <div class="card-body">
-                    <div class="d-flex align-items-start">
-                        <div class="action-icon me-3">
-                            <i class="${actionIcon}"></i>
+            <div class="history-card ${actionClass}">
+                <div class="history-content">
+                    <div class="action-icon">
+                        <i class="${actionIcon}"></i>
+                    </div>
+                    <div class="history-details">
+                        <div class="history-title">
+                            ${item.action_description}
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title mb-1">
-                                    ${item.action_description}
-                                </h5>
-                                <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>
-                                    ${formattedDate}
-                                </small>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    ${item.previous_plan_type && item.action === 'renewed' ? `
-                                    <p class="card-text mb-1">
-                                        <strong>Plano Anterior:</strong> ${getPlanName(item.previous_plan_type)}
-                                        <small class="text-muted">(R$ ${item.previous_price.toFixed(2).replace('.', ',')})</small>
-                                    </p>
-                                    <p class="card-text mb-1">
-                                        <strong>Novo Plano:</strong> ${item.plan_name}
-                                        <small class="text-success">(R$ ${item.price.toFixed(2).replace('.', ',')})</small>
-                                    </p>
-                                    ` : `
-                                    <p class="card-text mb-1">
-                                        <strong>Plano:</strong> ${item.plan_name}
-                                    </p>
-                                    <p class="card-text mb-1">
-                                        <strong>Valor:</strong> R$ ${item.price.toFixed(2).replace('.', ',')}
-                                    </p>
-                                    `}
-                                </div>
-                                ${startDate && endDate ? `
-                                <div class="col-md-6">
-                                    <p class="card-text mb-1">
-                                        <strong>Período:</strong> ${startDate} a ${endDate}
-                                    </p>
-                                </div>
-                                ` : ''}
-                            </div>
-                            
+                        
+                        <div class="history-description">
+                            ${item.previous_plan_type && item.action === 'renewed' ? `
+                                <strong>Plano Anterior:</strong> ${getPlanName(item.previous_plan_type)} 
+                                <span class="text-muted">(R$ ${item.previous_price.toFixed(2).replace('.', ',')})</span><br>
+                                <strong>Novo Plano:</strong> ${item.plan_name} 
+                                <span class="text-success">(R$ ${item.price.toFixed(2).replace('.', ',')})</span>
+                            ` : `
+                                <strong>Plano:</strong> ${item.plan_name} • 
+                                <strong>Valor:</strong> R$ ${item.price.toFixed(2).replace('.', ',')}
+                            `}
+                            ${startDate && endDate ? `<br><strong>Período:</strong> ${startDate} a ${endDate}` : ''}
+                        </div>
+                        
+                        <div class="history-meta">
+                            <span class="history-date">
+                                <i class="fas fa-clock"></i>
+                                ${formattedDate}
+                            </span>
                             ${item.details ? `
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
+                                <span class="history-details-info">
+                                    <i class="fas fa-info-circle"></i>
                                     ${item.details}
-                                </small>
-                            </div>
+                                </span>
                             ` : ''}
                         </div>
                     </div>
