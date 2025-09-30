@@ -15,7 +15,8 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
-    subscription = db.relationship('Subscription', back_populates='user', uselist=False, lazy='select')
+    # Removido temporariamente para evitar erro de circular import
+    # subscription = db.relationship('Subscription', back_populates='user', uselist=False, lazy='select')
 
     def __repr__(self):
         return f'<User {self.username}>'

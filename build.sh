@@ -38,6 +38,10 @@ echo "Expected start command: gunicorn --bind 0.0.0.0:\$PORT wsgi:app"
 echo "Running automatic migration..."
 python3 debug/deploy_migration.py || echo "Migration completed or not needed"
 
+# Add telefone and data_nascimento columns BEFORE any model operations
+echo "Adding user columns (telefone and data_nascimento)..."
+python3 add_user_columns.py || echo "User columns migration completed or not needed"
+
 # Initialize database (only create tables if they don't exist - preserves existing data)
 python3 -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database tables created/verified successfully')"
 
