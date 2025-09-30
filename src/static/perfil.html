@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Consultório</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Header -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-person-circle me-2"></i>Meu Perfil
+                        </h4>
+                        <small>Gerencie suas informações pessoais</small>
+                    </div>
+                </div>
+
+                <!-- Profile Form -->
+                <div class="card">
+                    <div class="card-body">
+                        <form id="profileForm">
+                            <div class="row">
+                                <!-- Username -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">
+                                        <i class="bi bi-person me-1"></i>Nome de Usuário
+                                    </label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">
+                                        <i class="bi bi-envelope me-1"></i>Email
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+
+                                <!-- Telefone -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="telefone" class="form-label">
+                                        <i class="bi bi-telephone me-1"></i>Telefone
+                                    </label>
+                                    <input type="tel" class="form-control" id="telefone" name="telefone" placeholder="(11) 99999-9999">
+                                </div>
+
+                                <!-- Data de Nascimento -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="data_nascimento" class="form-label">
+                                        <i class="bi bi-calendar me-1"></i>Data de Nascimento
+                                    </label>
+                                    <input type="text" class="form-control" id="data_nascimento" name="data_nascimento" placeholder="dd/mm/aaaa">
+                                </div>
+
+                                <!-- Role (apenas visualização) -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="role" class="form-label">
+                                        <i class="bi bi-shield me-1"></i>Tipo de Usuário
+                                    </label>
+                                    <input type="text" class="form-control" id="role" name="role" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Botões -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" class="btn btn-secondary" onclick="window.location.href='/#dashboard'">
+                                            <i class="bi bi-arrow-left me-1"></i>Voltar
+                                        </button>
+                                        <div>
+                                            <button type="button" class="btn btn-outline-primary me-2" id="changePasswordBtn">
+                                                <i class="bi bi-key me-1"></i>Alterar Senha
+                                            </button>
+                                            <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                                                <i class="bi bi-check-lg me-1"></i>Salvar Alterações
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Change Password Card (Initially Hidden) -->
+                <div class="card mt-4 d-none" id="changePasswordCard">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-key me-2"></i>Alterar Senha
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="changePasswordForm">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="current_password" class="form-label">Senha Atual</label>
+                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="new_password" class="form-label">Nova Senha</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="confirm_password" class="form-label">Confirmar Nova Senha</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-secondary me-2" id="cancelPasswordBtn">
+                                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-check-lg me-1"></i>Alterar Senha
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="d-none">
+        <div class="d-flex justify-content-center align-items-center position-fixed w-100 h-100" style="top: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 9999;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container">
+        <!-- Toasts will be added here dynamically -->
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/utilitarios.js"></script>
+    <script src="js/perfil.js"></script>
+</body>
+</html>

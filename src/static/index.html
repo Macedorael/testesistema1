@@ -28,8 +28,9 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDashboards" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-speedometer2 me-1"></i>Dashboards
+                        <a class="nav-link dropdown-toggle nav-item-vertical" href="#" id="navbarDropdownDashboards" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-speedometer2"></i>
+                            <span class="nav-text">Dashboards</span>
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdownDashboards">
                             <li><a class="dropdown-item" href="#dashboard" data-page="dashboard">
@@ -45,71 +46,87 @@
                     </li>
 
                     <li class="nav-item" data-permission="patients:read">
-                        <a class="nav-link" href="#patients" data-page="patients">
-                            <i class="bi bi-people me-1"></i>Pacientes
+                        <a class="nav-link nav-item-vertical" href="#patients" data-page="patients">
+                            <i class="bi bi-people"></i>
+                            <span class="nav-text">Pacientes</span>
                         </a>
                     </li>
                     <li class="nav-item" data-permission="appointments:read">
-                        <a class="nav-link" href="#appointments" data-page="appointments">
-                            <i class="bi bi-calendar-check me-1"></i>Agendamentos
+                        <a class="nav-link nav-item-vertical" href="#appointments" data-page="appointments">
+                            <i class="bi bi-calendar-check"></i>
+                            <span class="nav-text">Agendamentos</span>
                         </a>
                     </li>
                     <li class="nav-item" data-permission="payments:read">
-                        <a class="nav-link" href="#payments" data-page="payments">
-                            <i class="bi bi-credit-card me-1"></i>Pagamentos
+                        <a class="nav-link nav-item-vertical" href="#payments" data-page="payments">
+                            <i class="bi bi-credit-card"></i>
+                            <span class="nav-text">Pagamentos</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="especialidades_standalone.html" data-page="especialidades">
-                            <i class="bi bi-tags me-1"></i>Especialidades
+                        <a class="nav-link nav-item-vertical" href="especialidades_standalone.html" data-page="especialidades">
+                            <i class="bi bi-tags"></i>
+                            <span class="nav-text">Especialidades</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#funcionarios" data-page="funcionarios">
-                            <i class="bi bi-person-badge me-1"></i>Funcionários
+                        <a class="nav-link nav-item-vertical" href="#funcionarios" data-page="funcionarios">
+                            <i class="bi bi-person-badge"></i>
+                            <span class="nav-text">Funcionários</span>
                         </a>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="assinaturas.html">
-                            <i class="bi bi-star me-1"></i>Assinaturas
-                        </a>
-                    </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownThemes" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-brush me-1"></i>Temas
+                        <a class="nav-link dropdown-toggle nav-item-vertical" href="#" id="navbarDropdownProfile" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="nav-text">Meu Perfil</span>
                         </a>
-                        <ul class="dropdown-menu theme-dropdown" aria-labelledby="navbarDropdownThemes" id="theme-options-menu">
-                            <li><a class="dropdown-item theme-option active" href="#" data-theme="default" onclick="changeTheme('default')">
-                                <span class="theme-preview" data-theme="default"></span>
-                                <span class="theme-name">Azul</span>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdownProfile">
+                            <li><a class="dropdown-item" href="#perfil" data-page="perfil">
+                                <i class="bi bi-person me-1"></i>Editar Perfil
                             </a></li>
-                            <li><a class="dropdown-item theme-option" href="#" data-theme="green" onclick="changeTheme('green')">
-                                <span class="theme-preview" data-theme="green"></span>
-                                <span class="theme-name">Verde</span>
+                            <li><a class="dropdown-item" href="assinaturas.html">
+                                <i class="bi bi-star me-1"></i>Assinaturas
                             </a></li>
-                            <li><a class="dropdown-item theme-option" href="#" data-theme="purple" onclick="changeTheme('purple')">
-                                <span class="theme-preview" data-theme="purple"></span>
-                                <span class="theme-name">Roxo</span>
-                            </a></li>
-                            <li><a class="dropdown-item theme-option" href="#" data-theme="pink" onclick="changeTheme('pink')">
-                                <span class="theme-preview" data-theme="pink"></span>
-                                <span class="theme-name">Rosa</span>
-                            </a></li>
-                            <li><a class="dropdown-item theme-option" href="#" data-theme="orange" onclick="changeTheme('orange')">
-                                <span class="theme-preview" data-theme="orange"></span>
-                                <span class="theme-name">Laranja</span>
-                            </a></li>
-                            <li><a class="dropdown-item theme-option" href="#" data-theme="dark" onclick="changeTheme('dark')">
-                                <span class="theme-preview" data-theme="dark"></span>
-                                <span class="theme-name">Escuro</span>
-                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-submenu">
+                                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdownThemes" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-brush me-1"></i>Temas
+                                </a>
+                                <ul class="dropdown-menu theme-dropdown" aria-labelledby="navbarDropdownThemes" id="theme-options-menu">
+                                    <li><a class="dropdown-item theme-option active" href="#" data-theme="default" onclick="changeTheme('default')">
+                                        <span class="theme-preview" data-theme="default"></span>
+                                        <span class="theme-name">Azul</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item theme-option" href="#" data-theme="green" onclick="changeTheme('green')">
+                                        <span class="theme-preview" data-theme="green"></span>
+                                        <span class="theme-name">Verde</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item theme-option" href="#" data-theme="purple" onclick="changeTheme('purple')">
+                                        <span class="theme-preview" data-theme="purple"></span>
+                                        <span class="theme-name">Roxo</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item theme-option" href="#" data-theme="pink" onclick="changeTheme('pink')">
+                                        <span class="theme-preview" data-theme="pink"></span>
+                                        <span class="theme-name">Rosa</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item theme-option" href="#" data-theme="orange" onclick="changeTheme('orange')">
+                                        <span class="theme-preview" data-theme="orange"></span>
+                                        <span class="theme-name">Laranja</span>
+                                    </a></li>
+                                    <li><a class="dropdown-item theme-option" href="#" data-theme="dark" onclick="changeTheme('dark')">
+                                        <span class="theme-preview" data-theme="dark"></span>
+                                        <span class="theme-name">Escuro</span>
+                                    </a></li>
+                                </ul>
+                            </li>
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="logout()">
-                            <i class="bi bi-box-arrow-right me-1"></i>Sair
+                        <a class="nav-link nav-item-vertical" href="#" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span class="nav-text">Sair</span>
                         </a>
                     </li>
                 </ul>

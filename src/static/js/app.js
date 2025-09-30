@@ -135,6 +135,10 @@ class App {
                 case 'funcionarios':
                     content = await this.loadFuncionarios();
                     break;
+                case 'perfil':
+                    // Redirecionar para a página de perfil dedicada
+                    window.location.href = '/perfil';
+                    return;
                 default:
                     content = '<div class="alert alert-warning">Página não encontrada</div>';
             }
@@ -2114,7 +2118,7 @@ function logout() {
 }
 
     // Função para configurar campos de data em português
-    configurarCamposDataPortugues();{
+    function configurarCamposDataPortugues() {
         const dateInputs = document.querySelectorAll('input[type="date"]');
         dateInputs.forEach(input => {
             input.setAttribute('lang', 'pt-BR');

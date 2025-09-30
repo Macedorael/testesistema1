@@ -657,6 +657,7 @@ try:
 except Exception as e:
     print(f"[ERROR] Erro ao importar/registrar admin_bp: {e}")
 
+# Definir rotas específicas ANTES da rota catch-all
 @app.route('/')
 def home():
     """Rota principal - redireciona baseado no status de login e assinatura"""
@@ -724,6 +725,12 @@ def historico_assinaturas():
     print("[DEBUG] Rota /historico-assinaturas.html acessada")
     return send_from_directory(app.static_folder, 'historico-assinaturas.html')
 
+@app.route('/perfil')
+def perfil():
+    """Rota específica para a página de perfil do usuário"""
+    print("[DEBUG] Rota /perfil acessada")
+    return send_from_directory(app.static_folder, 'perfil.html')
+
 # Rotas de pagamento desabilitadas - funcionalidade removida
 # @app.route('/payment/success')
 # def payment_success():
@@ -737,11 +744,18 @@ def historico_assinaturas():
 # def checkout():
 #     return send_from_directory(app.static_folder, 'checkout.html')
 
+# IMPORTANTE: A rota catch-all deve ser definida APÓS todos os blueprints
+# para não interceptar as rotas da API
 @app.route('/<path:path>')
 def serve(path):
-    # Não interceptar rotas da API e rotas específicas como medicos, psicologos, funcionarios
-    if path.startswith('api/') or path in ['medicos', 'psicologos', 'funcionarios', 'especialidades']:
+    # Não interceptar rotas da API - deixar os blueprints processarem
+    if path.startswith('api/'):
+        # Se chegou aqui, a rota da API não foi encontrada nos blueprints
         return jsonify({'error': 'Rota da API não encontrada', 'path': path}), 404
+        
+    # Interceptar apenas rotas específicas que não são da API
+    if path in ['medicos', 'psicologos', 'funcionarios', 'especialidades']:
+        return jsonify({'error': 'Rota não encontrada', 'path': path}), 404
         
     print(f"[DEBUG] FUNÇÃO SERVE CHAMADA - Tentando servir arquivo: {path}")
     static_folder_path = app.static_folder

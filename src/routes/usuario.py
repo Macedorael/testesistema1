@@ -445,3 +445,128 @@ def send_password_reset_email(email, username, token):
         print(f"[ERROR] Erro ao enviar email: {e}")
         return False
 
+@user_bp.route("/profile", methods=["GET"])
+@login_required
+def get_profile():
+    """Busca os dados do perfil do usuário atual"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+        
+        return jsonify({
+            "success": True,
+            "user": {
+                "id": current_user.id,
+                "username": current_user.username,
+                "email": current_user.email,
+                "telefone": current_user.telefone,
+                "data_nascimento": current_user.data_nascimento.strftime('%d/%m/%Y') if current_user.data_nascimento else None,
+                "role": current_user.role
+            }
+        })
+    except Exception as e:
+        print(f"[ERROR] Erro ao buscar perfil: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+@user_bp.route("/profile", methods=["PUT"])
+@login_required
+def update_profile():
+    """Atualiza os dados do perfil do usuário atual"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+        
+        data = request.json
+        
+        # Validar campos obrigatórios
+        if not data.get('username') or not data.get('email'):
+            return jsonify({"error": "Nome de usuário e email são obrigatórios"}), 400
+        
+        # Verificar se o email já está em uso por outro usuário
+        existing_user = User.query.filter(User.email == data.get('email'), User.id != current_user.id).first()
+        if existing_user:
+            return jsonify({"error": "Este email já está sendo usado por outro usuário"}), 400
+        
+        # Verificar se o username já está em uso por outro usuário
+        existing_username = User.query.filter(User.username == data.get('username'), User.id != current_user.id).first()
+        if existing_username:
+            return jsonify({"error": "Este nome de usuário já está sendo usado"}), 400
+        
+        # Atualizar dados do usuário
+        current_user.username = data.get('username')
+        current_user.email = data.get('email')
+        current_user.telefone = data.get('telefone', '')
+        
+        # Processar data de nascimento
+        data_nascimento_str = data.get('data_nascimento')
+        if data_nascimento_str:
+            try:
+                # Converter de DD/MM/YYYY para objeto date
+                current_user.data_nascimento = datetime.strptime(data_nascimento_str, '%d/%m/%Y').date()
+            except ValueError:
+                return jsonify({"error": "Formato de data inválido. Use DD/MM/YYYY"}), 400
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Perfil atualizado com sucesso!",
+            "user": {
+                "id": current_user.id,
+                "username": current_user.username,
+                "email": current_user.email,
+                "telefone": current_user.telefone,
+                "data_nascimento": current_user.data_nascimento.strftime('%d/%m/%Y') if current_user.data_nascimento else None,
+                "role": current_user.role
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Erro ao atualizar perfil: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+@user_bp.route("/change-password", methods=["PUT"])
+@login_required
+def change_password():
+    """Altera a senha do usuário atual"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+        
+        data = request.json
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        
+        # Validar campos obrigatórios
+        if not current_password or not new_password or not confirm_password:
+            return jsonify({"error": "Todos os campos são obrigatórios"}), 400
+        
+        # Verificar senha atual
+        if not current_user.check_password(current_password):
+            return jsonify({"error": "Senha atual incorreta"}), 400
+        
+        # Verificar se as novas senhas coincidem
+        if new_password != confirm_password:
+            return jsonify({"error": "As novas senhas não coincidem"}), 400
+        
+        # Validar tamanho da nova senha
+        if len(new_password) < 6:
+            return jsonify({"error": "A nova senha deve ter pelo menos 6 caracteres"}), 400
+        
+        # Atualizar senha
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Senha alterada com sucesso!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Erro ao alterar senha: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+

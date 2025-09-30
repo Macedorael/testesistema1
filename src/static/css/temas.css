@@ -266,6 +266,36 @@ body {
     background: linear-gradient(45deg, #000000, #333333);
 }
 
+/* Estilos para submenu dropdown */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu .dropdown-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-top: -1px;
+    margin-left: -1px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    display: none;
+}
+
+.dropdown-submenu:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-submenu .dropdown-toggle::after {
+    border-left: 0.3em solid;
+    border-right: 0;
+    border-top: 0.3em solid transparent;
+    border-bottom: 0.3em solid transparent;
+    margin-left: auto;
+}
+
 /* Estilos melhorados para o dropdown de temas */
 .theme-dropdown {
     min-width: 180px;
