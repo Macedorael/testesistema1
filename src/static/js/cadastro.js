@@ -54,7 +54,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 requestBody.telefone = telefone;
             }
             if (dataNascimento) {
-                requestBody.data_nascimento = dataNascimento;
+                // Converter DD/MM/YYYY para YYYY-MM-DD para o backend
+                const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+                const match = dataNascimento.match(dateRegex);
+                if (match) {
+                    const day = match[1];
+                    const month = match[2];
+                    const year = match[3];
+                    requestBody.data_nascimento = `${year}-${month}-${day}`;
+                } else {
+                    requestBody.data_nascimento = dataNascimento;
+                }
             }
             
             const response = await fetch('/api/register', {
@@ -119,15 +129,35 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Validar data de nascimento se preenchida
         if (dataNascimento && dataNascimento.length > 0) {
-            const birthDate = new Date(dataNascimento);
+            // Verificar formato DD/MM/YYYY
+            const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            const match = dataNascimento.match(dateRegex);
+            
+            if (!match) {
+                showError('Por favor, insira a data no formato DD/MM/YYYY.');
+                return false;
+            }
+            
+            const day = parseInt(match[1]);
+            const month = parseInt(match[2]);
+            const year = parseInt(match[3]);
+            
+            // Criar data no formato correto (mês é 0-indexado no JavaScript)
+            const birthDate = new Date(year, month - 1, day);
             const today = new Date();
-            const age = today.getFullYear() - birthDate.getFullYear();
+            
+            // Verificar se a data é válida
+            if (birthDate.getDate() !== day || birthDate.getMonth() !== month - 1 || birthDate.getFullYear() !== year) {
+                showError('Por favor, insira uma data válida.');
+                return false;
+            }
             
             if (birthDate > today) {
                 showError('A data de nascimento não pode ser no futuro.');
                 return false;
             }
             
+            const age = today.getFullYear() - birthDate.getFullYear();
             if (age > 120) {
                 showError('Por favor, insira uma data de nascimento válida.');
                 return false;
