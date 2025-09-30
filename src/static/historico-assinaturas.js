@@ -265,6 +265,9 @@ function showError(message) {
 
 // Função de logout
 function logout() {
+    // Define a flag para prevenir verificações automáticas durante o logout
+    window.isLoggingOut = true;
+    
     if (confirm('Tem certeza que deseja sair?')) {
         fetch('/api/logout', {
             method: 'POST',
@@ -273,10 +276,17 @@ function logout() {
                 'Content-Type': 'application/json'
             }
         }).then(() => {
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = '/entrar.html';
         }).catch(() => {
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = '/entrar.html';
         });
+    } else {
+        // Reset a flag se o usuário cancelar
+        window.isLoggingOut = false;
     }
 }
 

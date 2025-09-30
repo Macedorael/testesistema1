@@ -460,18 +460,7 @@ function showAlert(message, type = 'info') {
     }
 }
 
-// Função de logout
-function logout() {
-    if (confirm('Tem certeza que deseja sair?')) {
-        fetch('/api/logout', { method: 'POST' })
-            .then(() => {
-                window.location.href = 'entrar.html';
-            })
-            .catch(() => {
-                window.location.href = 'entrar.html';
-            });
-    }
-}
+// Função de logout removida - usando a função global do app.js
 
 // Objeto global para integração com app.js
 window.Especialidades = {

@@ -3,6 +3,13 @@ window.Dashboard = {
     charts: {},
 
     async init() {
+        // Verificar se não estamos no processo de logout
+        if (window.isLoggingOut) {
+            console.log('[DEBUG] Dashboard.init() cancelado - logout em progresso');
+            return;
+        }
+        
+        console.log('[DEBUG] Dashboard.init() iniciado');
         await this.loadStats();
         await this.loadCharts();
         await this.loadTodaySessions();
@@ -12,6 +19,12 @@ window.Dashboard = {
 
     async loadStats() {
         try {
+            // Verificar se não estamos no processo de logout
+            if (window.isLoggingOut) {
+                console.log('[DEBUG] Dashboard.loadStats() cancelado - logout em progresso');
+                return;
+            }
+            
             const response = await window.app.apiCall('/dashboard/stats');
             const stats = response.data;
             

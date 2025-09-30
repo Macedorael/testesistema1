@@ -929,15 +929,25 @@ function goToSystem() {
 }
 
 function logout() {
+    console.log('Função logout chamada (assinaturas.js)'); // Debug
+    
+    // Prevenir verificações automáticas durante o logout
+    window.isLoggingOut = true;
+    
     if (confirm('Tem certeza que deseja sair do sistema?')) {
         fetch('/api/logout', {
-            method: 'POST'
-        }).then(() => {
-            window.location.href = '/';
-        }).catch(() => {
-            // Mesmo se der erro, redireciona para a tela inicial
-            window.location.href = '/';
+            method: 'POST',
+            credentials: 'include'
+        })
+        .then(() => {
+            window.location.href = 'entrar.html';
+        })
+        .catch(() => {
+            window.location.href = 'entrar.html';
         });
+    } else {
+        // Resetar flag se cancelou
+        window.isLoggingOut = false;
     }
 }
 

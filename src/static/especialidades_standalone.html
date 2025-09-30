@@ -293,16 +293,26 @@
 
         // Função de logout
         function logout() {
-            fetch('/api/logout', { method: 'POST' })
-                .then(() => {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = 'inicial.html';
-                })
-                .catch(error => {
-                    console.error('Erro no logout:', error);
-                    window.location.href = 'inicial.html';
-                });
+            // Define a flag para prevenir verificações automáticas durante o logout
+            window.isLoggingOut = true;
+            
+            if (confirm('Tem certeza que deseja sair do sistema?')) {
+                fetch('/api/logout', { method: 'POST' })
+                    .then(() => {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.href = 'inicial.html';
+                    })
+                    .catch(error => {
+                        console.error('Erro no logout:', error);
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.href = 'inicial.html';
+                    });
+            } else {
+                // Reset a flag se o usuário cancelar
+                window.isLoggingOut = false;
+            }
         }
         
         // Event listener para o botão de confirmação de exclusão

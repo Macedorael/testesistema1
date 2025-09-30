@@ -8,6 +8,13 @@ window.DashboardPayments = {
     },
 
     init() {
+        // Verificar se não estamos no processo de logout
+        if (window.isLoggingOut) {
+            console.log('[DEBUG] DashboardPayments.init() cancelado - logout em progresso');
+            return;
+        }
+        
+        console.log('[DEBUG] DashboardPayments.init() iniciado');
         this.setupEventListeners();
         this.loadDashboard();
     },

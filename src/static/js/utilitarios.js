@@ -3,6 +3,11 @@ window.Utils = {
     
     // Verificação de autenticação
     async verificarAutenticacao() {
+        // Não verificar se estiver fazendo logout
+        if (window.isLoggingOut) {
+            return true;
+        }
+        
         try {
             const response = await fetch('/api/me', {
                 method: 'GET',

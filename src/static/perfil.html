@@ -8,125 +8,132 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <!-- Header -->
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">
-                            <i class="bi bi-person-circle me-2"></i>Meu Perfil
-                        </h4>
+<body class="perfil-page">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="perfil-container">
+                    <!-- Header -->
+                    <div class="perfil-header">
+                        <i class="bi bi-person-circle"></i>
+                        <h4>Meu Perfil</h4>
                         <small>Gerencie suas informações pessoais</small>
                     </div>
-                </div>
 
-                <!-- Profile Form -->
-                <div class="card">
-                    <div class="card-body">
-                        <form id="profileForm">
-                            <div class="row">
-                                <!-- Username -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="username" class="form-label">
-                                        <i class="bi bi-person me-1"></i>Nome de Usuário
-                                    </label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
+                    <!-- Profile Form -->
+                    <div class="perfil-form-card card">
+                        <div class="card-body">
+                            <form id="profileForm">
+                                <div class="row">
+                                    <!-- Username -->
+                                    <div class="col-md-6">
+                                        <div class="perfil-form-group">
+                                            <label for="username" class="form-label">
+                                                <i class="bi bi-person"></i>Nome de Usuário
+                                            </label>
+                                            <input type="text" class="form-control perfil-input" id="username" name="username" required>
+                                        </div>
+                                    </div>
 
-                                <!-- Email -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">
-                                        <i class="bi bi-envelope me-1"></i>Email
-                                    </label>
-                                    <input type="email" class="form-control" id="email" name="email" required>
-                                </div>
+                                    <!-- Email -->
+                                    <div class="col-md-6">
+                                        <div class="perfil-form-group">
+                                            <label for="email" class="form-label">
+                                                <i class="bi bi-envelope"></i>Email
+                                            </label>
+                                            <input type="email" class="form-control perfil-input" id="email" name="email" required>
+                                        </div>
+                                    </div>
 
-                                <!-- Telefone -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="telefone" class="form-label">
-                                        <i class="bi bi-telephone me-1"></i>Telefone
-                                    </label>
-                                    <input type="tel" class="form-control" id="telefone" name="telefone" placeholder="(11) 99999-9999">
-                                </div>
+                                    <!-- Telefone -->
+                                    <div class="col-md-6">
+                                        <div class="perfil-form-group">
+                                            <label for="telefone" class="form-label">
+                                                <i class="bi bi-telephone"></i>Telefone
+                                            </label>
+                                            <input type="tel" class="form-control perfil-input" id="telefone" name="telefone" placeholder="(11) 99999-9999">
+                                        </div>
+                                    </div>
 
-                                <!-- Data de Nascimento -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="data_nascimento" class="form-label">
-                                        <i class="bi bi-calendar me-1"></i>Data de Nascimento
-                                    </label>
-                                    <input type="text" class="form-control" id="data_nascimento" name="data_nascimento" placeholder="dd/mm/aaaa">
-                                </div>
+                                    <!-- Data de Nascimento -->
+                                    <div class="col-md-6">
+                                        <div class="perfil-form-group">
+                                            <label for="data_nascimento" class="form-label">
+                                                <i class="bi bi-calendar"></i>Data de Nascimento
+                                            </label>
+                                            <input type="text" class="form-control perfil-input" id="data_nascimento" name="data_nascimento" placeholder="dd/mm/aaaa">
+                                        </div>
+                                    </div>
 
-                                <!-- Role (apenas visualização) -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="role" class="form-label">
-                                        <i class="bi bi-shield me-1"></i>Tipo de Usuário
-                                    </label>
-                                    <input type="text" class="form-control" id="role" name="role" readonly>
-                                </div>
-                            </div>
-
-                            <!-- Botões -->
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <div class="d-flex justify-content-between">
-                                        <button type="button" class="btn btn-secondary" onclick="window.location.href='/#dashboard'">
-                                            <i class="bi bi-arrow-left me-1"></i>Voltar
-                                        </button>
-                                        <div>
-                                            <button type="button" class="btn btn-outline-primary me-2" id="changePasswordBtn">
-                                                <i class="bi bi-key me-1"></i>Alterar Senha
-                                            </button>
-                                            <button type="submit" class="btn btn-primary" id="saveProfileBtn">
-                                                <i class="bi bi-check-lg me-1"></i>Salvar Alterações
-                                            </button>
+                                    <!-- Role (apenas visualização) -->
+                                    <div class="col-md-12">
+                                        <div class="perfil-form-group">
+                                            <label for="role" class="form-label">
+                                                <i class="bi bi-shield"></i>Tipo de Usuário
+                                            </label>
+                                            <input type="text" class="form-control perfil-input" id="role" name="role" readonly>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
-                <!-- Change Password Card (Initially Hidden) -->
-                <div class="card mt-4 d-none" id="changePasswordCard">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-key me-2"></i>Alterar Senha
-                        </h5>
+                                <!-- Botões -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="d-flex justify-content-between flex-wrap gap-3">
+                                            <button type="button" class="perfil-btn perfil-btn-secondary" onclick="window.location.href='/#dashboard'">
+                                                <i class="bi bi-arrow-left me-2"></i>Voltar
+                                            </button>
+                                            <div class="d-flex gap-3 flex-wrap">
+                                                <button type="button" class="perfil-btn perfil-btn-outline" id="changePasswordBtn">
+                                                    <i class="bi bi-key me-2"></i>Alterar Senha
+                                                </button>
+                                                <button type="submit" class="perfil-btn perfil-btn-primary" id="saveProfileBtn">
+                                                    <i class="bi bi-check-lg me-2"></i>Salvar Alterações
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <form id="changePasswordForm">
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="current_password" class="form-label">Senha Atual</label>
-                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+
+                    <!-- Change Password Card (Initially Hidden) -->
+                    <div class="perfil-password-card card d-none" id="changePasswordCard">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-key me-2"></i>Alterar Senha
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="changePasswordForm">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="current_password" class="form-label text-white">Senha Atual</label>
+                                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="new_password" class="form-label text-white">Nova Senha</label>
+                                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="confirm_password" class="form-label text-white">Confirmar Nova Senha</label>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6">
+                                    </div>
                                 </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="new_password" class="form-label">Nova Senha</label>
-                                    <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                                <div class="d-flex justify-content-end gap-3 flex-wrap">
+                                    <button type="button" class="perfil-btn perfil-btn-secondary" id="cancelPasswordBtn">
+                                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                                    </button>
+                                    <button type="submit" class="perfil-btn" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white;">
+                                        <i class="bi bi-check-lg me-2"></i>Alterar Senha
+                                    </button>
                                 </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="confirm_password" class="form-label">Confirmar Nova Senha</label>
-                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6">
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-end">
-                                <button type="button" class="btn btn-secondary me-2" id="cancelPasswordBtn">
-                                    <i class="bi bi-x-lg me-1"></i>Cancelar
-                                </button>
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="bi bi-check-lg me-1"></i>Alterar Senha
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Loading Spinner -->
     <div id="loading-spinner" class="d-none">

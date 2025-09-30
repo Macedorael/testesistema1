@@ -27,6 +27,11 @@ class App {
     }
 
     async loadCurrentUser() {
+        // Não verificar se estiver fazendo logout
+        if (window.isLoggingOut) {
+            return;
+        }
+        
         try {
             const response = await fetch('/api/me');
             if (response.ok) {
@@ -93,8 +98,19 @@ class App {
             link.classList.remove('active');
         });
         
+        // Remove active class from all dropdown items (dashboards)
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
         // Add active class to clicked link
-        activeLink.classList.add('active');
+        if (activeLink.classList.contains('dropdown-item')) {
+            // Se for um item do dropdown (dashboard), adiciona active apenas nele
+            activeLink.classList.add('active');
+        } else {
+            // Se for um nav-link normal, adiciona active nele
+            activeLink.classList.add('active');
+        }
     }
 
     async loadPage(page, pushState = true) {
@@ -2091,9 +2107,21 @@ async function confirmTransferAndDelete() {
 }
 
 // Função de logout
+// Flag global para prevenir verificações automáticas durante logout
+window.isLoggingOut = false;
+
 function logout() {
+    console.log('Função logout chamada'); // Debug
+    
+    // Prevenir verificações automáticas durante o logout
+    window.isLoggingOut = true;
+    
     // Confirmar se o usuário realmente quer sair
-    if (confirm('Tem certeza que deseja sair do sistema?')) {
+    const confirmResult = confirm('Tem certeza que deseja sair do sistema?');
+    console.log('Resultado da confirmação:', confirmResult); // Debug
+    
+    if (confirmResult) {
+        console.log('Usuário confirmou logout'); // Debug
         // Fazer requisição para a API de logout
         fetch('/api/logout', {
             method: 'POST',
@@ -2101,19 +2129,24 @@ function logout() {
                 'Content-Type': 'application/json'
             }
         }).then(response => {
+            console.log('Resposta da API de logout:', response); // Debug
             // Limpar dados de sessão locais
             localStorage.clear();
             sessionStorage.clear();
             
-            // Redirecionar para a tela inicial (landing page)
-            window.location.href = '/';
+            // Redirecionar para a tela de login
+            window.location.href = 'entrar.html';
         }).catch(error => {
             console.error('Erro no logout:', error);
             // Mesmo se der erro, limpar dados locais e redirecionar
             localStorage.clear();
             sessionStorage.clear();
-            window.location.href = '/';
+            window.location.href = 'entrar.html';
         });
+    } else {
+        console.log('Usuário cancelou logout'); // Debug
+        // Resetar flag se cancelou
+        window.isLoggingOut = false;
     }
 }
 
