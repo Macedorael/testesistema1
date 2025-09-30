@@ -36,7 +36,7 @@ echo "Expected start command: gunicorn --bind 0.0.0.0:\$PORT wsgi:app"
 
 # Execute automatic migration for user_id column in funcionarios table
 echo "Running automatic migration..."
-python3 deploy_migration.py || echo "Migration completed or not needed"
+python3 debug/deploy_migration.py || echo "Migration completed or not needed"
 
 # Initialize database (only create tables if they don't exist - preserves existing data)
 python3 -c "from src.main import app, db; app.app_context().push(); db.create_all(); print('Database tables created/verified successfully')"
@@ -50,7 +50,7 @@ python3 scripts/create_admin_user.py
 
 # Apply bug fix for 'ativo' issue in especialidades (safe - only fixes corrupted data)
 echo "Applying especialidades bug fix..."
-python3 fix_ativo_bug.py || echo "Bug fix completed or no issues found"
+python3 debug/fix_ativo_bug.py || echo "Bug fix completed or no issues found"
 
 # Only populate with sample data if database is empty (first deploy)
 python3 -c "import sys; sys.path.append('.'); from src.main import app, db; from src.models.usuario import User; app.app_context().push(); user_count = User.query.count(); print(f'Found {user_count} existing users'); exit(0 if user_count > 0 else 1)" && echo "Database has existing data - skipping sample data population" || python3 -c "import sys; sys.path.append('.'); from scripts.init_db import create_sample_data; create_sample_data(); print('Sample data populated successfully')"

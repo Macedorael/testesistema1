@@ -5,7 +5,8 @@ Script para corrigir o problema 'ativo' no campo created_at das especialidades
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(__file__))
+# Adicionar o diretório pai ao path para importar src
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.models.usuario import db
 from src.models.especialidade import Especialidade
