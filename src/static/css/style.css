@@ -85,21 +85,7 @@ body {
 }
 
 /* Transição suave para todos os dropdown items */
-.dropdown-item {
-    transition: all 0.3s ease;
-    border-radius: 6px;
-    margin: 2px 4px;
-}
-
-.dropdown-item:hover {
-    background: linear-gradient(135deg, rgba(0, 123, 255, 0.6), rgba(0, 191, 255, 0.6));
-    transform: translateX(6px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4), 0 0 20px rgba(0, 191, 255, 0.3);
-    color: #001f3f;
-    font-weight: 900;
-    border-left: 6px solid #00bfff;
-    border-radius: 8px;
-}
+/* Removido - substituído por efeitos mais suaves abaixo */
 
 /* ===== ESTILOS ESPECÍFICOS PARA PÁGINA DE PERFIL ===== */
 
@@ -288,12 +274,7 @@ body.perfil-page {
     transition: all 0.3s ease;
 }
 
-.card:hover {
-    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 123, 255, 0.3);
-    transform: translateY(-8px) scale(1.03);
-    filter: brightness(1.1) saturate(1.2);
-    font-weight: bold;
-}
+
 
 .card-header {
     background-color: var(--light-color);
@@ -312,12 +293,7 @@ body.perfil-page {
     transition: all 0.3s ease;
 }
 
-.btn:hover {
-    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 123, 255, 0.6);
-    transform: translateY(-5px) scale(1.05);
-    filter: brightness(1.3) saturate(1.5) contrast(1.2);
-    font-weight: bold;
-}
+
 
 .btn-sm {
     padding: 0.25rem 0.5rem;
@@ -345,13 +321,7 @@ body.perfil-page {
     transition: all 0.2s ease;
 }
 
-.table tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.3);
-    transform: scale(1.03);
-    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.5), 0 0 20px rgba(0, 200, 255, 0.3);
-    filter: brightness(1.1) saturate(1.3);
-    font-weight: bold;
-}
+
 
 .table td {
     padding: 0.75rem;
@@ -611,6 +581,190 @@ body.perfil-page {
     to {
         opacity: 1;
     }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Removidas animações slideIn que causam reflow */
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    .btn,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    body {
+        background-color: white;
+    }
+}
+
+/* Loading Component Styles */
+.page-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(2px);
+}
+
+.page-loading.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color, #007bff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: var(--text-color, #333);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Table loading state */
+.table-loading {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+
+/* Efeitos suaves e elegantes para navegação */
+.nav-item-vertical {
+    transition: all 0.3s ease;
+    position: relative;
+    border-radius: 8px;
+    margin: 0 4px;
+}
+
+/* Efeito de hover suave para nav-links */
+.nav-item-vertical:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Efeito de focus elegante para nav-links */
+.nav-item-vertical:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Dropdown items com efeitos suaves */
+.dropdown-item {
+    color: #495057;
+    padding: 8px 16px;
+    border-radius: 6px;
+    margin: 2px 4px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* Efeito de hover suave para dropdown items */
+.dropdown-item:hover {
+    background: linear-gradient(135deg, 
+        rgba(0, 123, 255, 0.1) 0%, 
+        rgba(0, 123, 255, 0.15) 100%);
+    color: #007bff;
+    transform: translateX(4px);
+    border-left: 3px solid #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+/* Efeito de focus suave para dropdown items */
+.dropdown-item:focus {
+    outline: none;
+    background: linear-gradient(135deg, 
+        rgba(0, 123, 255, 0.15) 0%, 
+        rgba(0, 123, 255, 0.2) 100%);
+    color: #0056b3;
+    transform: translateX(6px);
+    border-left: 4px solid #0056b3;
+    box-shadow: 0 3px 10px rgba(0, 123, 255, 0.25);
+}
+
+/* Efeitos para dropdown de temas */
+.theme-option:hover {
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateX(2px);
+}
+
+.theme-option.active {
+    background: rgba(0, 123, 255, 0.15);
+    color: #007bff;
+    font-weight: 500;
+}
+
+/* Animação suave para ícones */
+.nav-item-vertical i,
+.dropdown-item i {
+    transition: transform 0.3s ease;
+}
+
+.nav-item-vertical:hover i,
+.dropdown-item:hover i {
+    transform: scale(1.1);
 }
 
 .fade-in {

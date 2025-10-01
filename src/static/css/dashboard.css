@@ -28,17 +28,7 @@
     display: block;
 }
 
-.sidebar .nav-link:hover,
-.sidebar .nav-link.active {
-    color: white;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.5));
-    text-decoration: none;
-    transform: translateX(8px);
-    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.2);
-    border-left: 8px solid #ffffff;
-    font-weight: 900;
-    border-radius: 0 15px 15px 0;
-}
+/* Removido - substituído por efeitos mais suaves no style.css */
 
 .sidebar .nav-link i {
     margin-right: 8px;
@@ -68,13 +58,6 @@
     transition: all 0.3s;
 }
 
-.btn-primary:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.6), 0 0 30px rgba(0, 200, 255, 0.4);
-    filter: brightness(1.25) saturate(1.4) contrast(1.1);
-    background: linear-gradient(135deg, #007bff, #00bfff);
-    font-weight: bold;
-}
 
 .table {
     margin-bottom: 0;
@@ -94,10 +77,6 @@
     border-top: 1px solid #dee2e6;
 }
 
-.table-hover tbody tr:hover {
-    background-color: rgba(102, 126, 234, 0.05);
-    font-weight: bold;
-}
 
 .modal-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -131,16 +110,7 @@
     padding: 5px 15px;
 }
 
-.btn-outline-primary:hover {
-    background-color: #667eea;
-    border-color: #667eea;
-    transform: translateY(-3px) scale(1.03);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6), 0 0 25px rgba(0, 200, 255, 0.4);
-    filter: brightness(1.2) saturate(1.3);
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(0, 200, 255, 0.1));
-    border-color: #00bfff;
-    font-weight: bold;
-}
+
 
 .btn-outline-danger {
     color: #dc3545;
@@ -149,16 +119,7 @@
     padding: 5px 15px;
 }
 
-.btn-outline-danger:hover {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    transform: translateY(-3px) scale(1.03);
-    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6), 0 0 25px rgba(255, 100, 100, 0.4);
-    filter: brightness(1.2) saturate(1.3);
-    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(255, 100, 100, 0.1));
-    border-color: #ff6464;
-    font-weight: bold;
-}
+
 
 .btn-sm {
     padding: 5px 10px;
