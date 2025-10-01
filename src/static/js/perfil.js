@@ -11,6 +11,11 @@ $(document).ready(function() {
     $('#changePasswordForm').on('submit', handlePasswordSubmit);
     $('#changePasswordBtn').on('click', showChangePasswordForm);
     $('#cancelPasswordBtn').on('click', hideChangePasswordForm);
+    
+    // Event listener para o botão de sair do modal
+    $('#exitToSystemBtn').on('click', function() {
+        window.location.href = '/#dashboard';
+    });
 });
 
 /**
@@ -54,7 +59,6 @@ function populateForm(user) {
     $('#email').val(user.email || '');
     $('#telefone').val(user.telefone || '');
     $('#data_nascimento').val(user.data_nascimento || '');
-    $('#role').val(user.role || '');
 }
 
 /**
@@ -123,6 +127,9 @@ function handleProfileSubmit(e) {
                 showToast(response.message, 'success');
                 // Atualizar os dados no formulário
                 populateForm(response.user);
+                
+                // Mostrar modal de confirmação após salvar
+                $('#confirmationModal').modal('show');
             } else {
                 showToast(response.error || 'Erro ao atualizar perfil', 'error');
             }

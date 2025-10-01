@@ -64,15 +64,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Role (apenas visualização) -->
-                                    <div class="col-md-12">
-                                        <div class="perfil-form-group">
-                                            <label for="role" class="form-label">
-                                                <i class="bi bi-shield"></i>Tipo de Usuário
-                                            </label>
-                                            <input type="text" class="form-control perfil-input" id="role" name="role" readonly>
-                                        </div>
-                                    </div>
+
                                 </div>
 
                                 <!-- Botões -->
@@ -140,6 +132,31 @@
         <div class="d-flex justify-content-center align-items-center position-fixed w-100 h-100" style="top: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 9999;">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação após Salvar -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="confirmationModalLabel">
+                        <i class="bi bi-check-circle me-2"></i>Alterações Salvas!
+                    </h5>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-4">Suas alterações foram salvas com sucesso!</p>
+                    <p class="text-muted">O que você gostaria de fazer agora?</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-pencil me-2"></i>Continuar Editando
+                    </button>
+                    <button type="button" class="btn btn-primary" id="exitToSystemBtn">
+                        <i class="bi bi-house me-2"></i>Voltar ao Sistema
+                    </button>
+                </div>
             </div>
         </div>
     </div>
