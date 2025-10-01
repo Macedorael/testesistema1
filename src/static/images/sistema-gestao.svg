@@ -1,74 +1,154 @@
-<svg width="500" height="400" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="500" height="400" fill="#e3f2fd" rx="10"/>
+  <rect width="800" height="600" fill="#f5f5f5"/>
   
-  <!-- Main container -->
-  <rect x="50" y="50" width="400" height="300" fill="#ffffff" rx="8" stroke="#1976d2" stroke-width="2"/>
+  <!-- Header Azul -->
+  <rect x="0" y="0" width="800" height="80" fill="#4285f4"/>
   
-  <!-- Header -->
-  <rect x="50" y="50" width="400" height="60" fill="#1976d2" rx="8 8 0 0"/>
-  <text x="250" y="85" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Sistema de Gestão</text>
+  <!-- Logo e Título -->
+  <circle cx="30" cy="40" r="12" fill="white"/>
+  <text x="50" y="45" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Consultório</text>
   
-  <!-- Dashboard icons -->
-  <g transform="translate(80, 140)">
-    <!-- Patients icon -->
-    <rect x="0" y="0" width="80" height="60" fill="#f5f5f5" rx="4" stroke="#1976d2"/>
-    <circle cx="40" cy="25" r="12" fill="#1976d2"/>
-    <rect x="28" y="35" width="24" height="15" fill="#1976d2" rx="2"/>
-    <text x="40" y="55" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="10">Pacientes</text>
-  </g>
+  <!-- Menu de Navegação -->
+  <text x="250" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Meu Perfil</text>
+  <text x="320" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Dashboards</text>
+  <text x="390" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Pacientes</text>
+  <text x="450" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Agendamentos</text>
+  <text x="540" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Pagamentos</text>
+  <text x="620" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Especialidades</text>
+  <text x="710" y="35" font-family="Arial, sans-serif" font-size="12" fill="white">Funcionários</text>
   
-  <g transform="translate(210, 140)">
-    <!-- Appointments icon -->
-    <rect x="0" y="0" width="80" height="60" fill="#f5f5f5" rx="4" stroke="#1976d2"/>
-    <rect x="25" y="15" width="30" height="25" fill="none" stroke="#1976d2" stroke-width="2"/>
-    <line x1="30" y1="20" x2="50" y2="20" stroke="#1976d2" stroke-width="1"/>
-    <line x1="30" y1="25" x2="45" y2="25" stroke="#1976d2" stroke-width="1"/>
-    <line x1="30" y1="30" x2="50" y2="30" stroke="#1976d2" stroke-width="1"/>
-    <text x="40" y="55" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="10">Consultas</text>
-  </g>
+  <!-- Ícones do menu -->
+  <circle cx="30" cy="55" r="8" fill="white" fill-opacity="0.8"/>
+  <circle cx="70" cy="55" r="8" fill="white" fill-opacity="0.8"/>
+  <circle cx="110" cy="55" r="8" fill="white" fill-opacity="0.8"/>
+  <circle cx="150" cy="55" r="8" fill="white" fill-opacity="0.8"/>
+  <circle cx="190" cy="55" r="8" fill="white" fill-opacity="0.8"/>
+  <circle cx="230" cy="55" r="8" fill="white" fill-opacity="0.8"/>
+  <circle cx="270" cy="55" r="8" fill="white" fill-opacity="0.8"/>
   
-  <g transform="translate(340, 140)">
-    <!-- Reports icon -->
-    <rect x="0" y="0" width="80" height="60" fill="#f5f5f5" rx="4" stroke="#1976d2"/>
-    <rect x="25" y="15" width="30" height="20" fill="none" stroke="#1976d2" stroke-width="2"/>
-    <line x1="30" y1="20" x2="35" y2="30" stroke="#1976d2" stroke-width="2"/>
-    <line x1="35" y1="30" x2="40" y2="25" stroke="#1976d2" stroke-width="2"/>
-    <line x1="40" y1="25" x2="45" y2="32" stroke="#1976d2" stroke-width="2"/>
-    <line x1="45" y1="32" x2="50" y2="22" stroke="#1976d2" stroke-width="2"/>
-    <text x="40" y="55" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="10">Relatórios</text>
-  </g>
+  <!-- Dashboard Title -->
+  <text x="20" y="110" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#333">Dashboard</text>
   
-  <g transform="translate(80, 220)">
-    <!-- Payments icon -->
-    <rect x="0" y="0" width="80" height="60" fill="#f5f5f5" rx="4" stroke="#1976d2"/>
-    <rect x="25" y="20" width="30" height="18" fill="none" stroke="#1976d2" stroke-width="2" rx="2"/>
-    <circle cx="32" cy="29" r="2" fill="#1976d2"/>
-    <text x="40" y="55" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="10">Pagamentos</text>
-  </g>
+  <!-- Primeira linha de cards -->
+  <!-- Card 1: 4 Total de Pacientes -->
+  <rect x="20" y="130" width="180" height="80" rx="8" fill="#1976d2"/>
+  <circle cx="40" cy="150" r="8" fill="white"/>
+  <text x="60" y="155" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">4</text>
+  <text x="40" y="190" font-family="Arial, sans-serif" font-size="12" fill="white">Total de Pacientes</text>
   
-  <g transform="translate(210, 220)">
-    <!-- Staff icon -->
-    <rect x="0" y="0" width="80" height="60" fill="#f5f5f5" rx="4" stroke="#1976d2"/>
-    <circle cx="35" cy="25" r="8" fill="#1976d2"/>
-    <circle cx="45" cy="25" r="8" fill="#1976d2" opacity="0.7"/>
-    <rect x="27" y="32" width="16" height="10" fill="#1976d2" rx="2"/>
-    <rect x="37" y="32" width="16" height="10" fill="#1976d2" rx="2" opacity="0.7"/>
-    <text x="40" y="55" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="10">Funcionários</text>
-  </g>
+  <!-- Card 2: R$ 600,00 Total Recebido -->
+  <rect x="210" y="130" width="180" height="80" rx="8" fill="#388e3c"/>
+  <circle cx="230" cy="150" r="8" fill="white"/>
+  <text x="250" y="155" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">R$ 600,00</text>
+  <text x="230" y="190" font-family="Arial, sans-serif" font-size="12" fill="white">Total Recebido</text>
   
-  <g transform="translate(340, 220)">
-    <!-- Settings icon -->
-    <rect x="0" y="0" width="80" height="60" fill="#f5f5f5" rx="4" stroke="#1976d2"/>
-    <circle cx="40" cy="29" r="8" fill="none" stroke="#1976d2" stroke-width="2"/>
-    <circle cx="40" cy="29" r="3" fill="#1976d2"/>
-    <line x1="40" y1="15" x2="40" y2="20" stroke="#1976d2" stroke-width="2"/>
-    <line x1="40" y1="38" x2="40" y2="43" stroke="#1976d2" stroke-width="2"/>
-    <line x1="26" y1="29" x2="31" y2="29" stroke="#1976d2" stroke-width="2"/>
-    <line x1="49" y1="29" x2="54" y2="29" stroke="#1976d2" stroke-width="2"/>
-    <text x="40" y="55" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="10">Configurações</text>
-  </g>
+  <!-- Card 3: R$ 5.850,00 A Receber -->
+  <rect x="400" y="130" width="180" height="80" rx="8" fill="#f57c00"/>
+  <circle cx="420" cy="150" r="8" fill="white"/>
+  <text x="440" y="155" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">R$ 5.850,00</text>
+  <text x="420" y="190" font-family="Arial, sans-serif" font-size="12" fill="white">A Receber</text>
   
-  <!-- Bottom text -->
-  <text x="250" y="330" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Consultório de Psicologia</text>
+  <!-- Card 4: 0 (0 restantes) Sessões Hoje -->
+  <rect x="590" y="130" width="180" height="80" rx="8" fill="#1976d2"/>
+  <circle cx="610" cy="150" r="8" fill="white"/>
+  <text x="630" y="155" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white">0 (0 restantes)</text>
+  <text x="610" y="190" font-family="Arial, sans-serif" font-size="12" fill="white">Sessões Hoje</text>
+  
+  <!-- Segunda linha de cards -->
+  <!-- Card 5: 3 Próximas Sessões (7 dias) -->
+  <rect x="20" y="220" width="180" height="80" rx="8" fill="#1976d2"/>
+  <circle cx="40" cy="240" r="8" fill="white"/>
+  <text x="60" y="245" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">3</text>
+  <text x="40" y="280" font-family="Arial, sans-serif" font-size="12" fill="white">Próximas Sessões (7 dias)</text>
+  
+  <!-- Card 6: 0 Sessões Realizadas -->
+  <rect x="210" y="220" width="180" height="80" rx="8" fill="#388e3c"/>
+  <circle cx="230" cy="240" r="8" fill="white"/>
+  <text x="250" y="245" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">0</text>
+  <text x="230" y="280" font-family="Arial, sans-serif" font-size="12" fill="white">Sessões Realizadas</text>
+  
+  <!-- Card 7: 39 Sessões Pendentes -->
+  <rect x="400" y="220" width="180" height="80" rx="8" fill="#f57c00"/>
+  <circle cx="420" cy="240" r="8" fill="white"/>
+  <text x="440" y="245" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">39</text>
+  <text x="420" y="280" font-family="Arial, sans-serif" font-size="12" fill="white">Sessões Pendentes</text>
+  
+  <!-- Card 8: 8 Total de Agendamentos -->
+  <rect x="590" y="220" width="180" height="80" rx="8" fill="#1976d2"/>
+  <circle cx="610" cy="240" r="8" fill="white"/>
+  <text x="630" y="245" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">8</text>
+  <text x="610" y="280" font-family="Arial, sans-serif" font-size="12" fill="white">Total de Agendamentos</text>
+  
+  <!-- Seção de Gráficos -->
+  <!-- Gráfico de Receita Mensal (esquerda) -->
+  <rect x="20" y="320" width="370" height="250" rx="8" fill="white" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="40" y="345" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">Receita Mensal</text>
+  
+  <!-- Linha do gráfico -->
+  <polyline points="50,520 80,500 110,480 140,460 170,440 200,420 230,400 260,380 290,360 320,340 350,320" 
+            fill="none" stroke="#4285f4" stroke-width="3"/>
+  
+  <!-- Pontos do gráfico -->
+  <circle cx="50" cy="520" r="4" fill="#4285f4"/>
+  <circle cx="80" cy="500" r="4" fill="#4285f4"/>
+  <circle cx="110" cy="480" r="4" fill="#4285f4"/>
+  <circle cx="140" cy="460" r="4" fill="#4285f4"/>
+  <circle cx="170" cy="440" r="4" fill="#4285f4"/>
+  <circle cx="200" cy="420" r="4" fill="#4285f4"/>
+  <circle cx="230" cy="400" r="4" fill="#4285f4"/>
+  <circle cx="260" cy="380" r="4" fill="#4285f4"/>
+  <circle cx="290" cy="360" r="4" fill="#4285f4"/>
+  <circle cx="320" cy="340" r="4" fill="#4285f4"/>
+  <circle cx="350" cy="320" r="4" fill="#4285f4"/>
+  
+  <!-- Labels dos meses -->
+  <text x="45" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">JAN</text>
+  <text x="75" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">FEV</text>
+  <text x="105" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">MAR</text>
+  <text x="135" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">ABR</text>
+  <text x="165" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">MAI</text>
+  <text x="195" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">JUN</text>
+  <text x="225" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">JUL</text>
+  <text x="255" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">AGO</text>
+  <text x="285" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">SET</text>
+  <text x="315" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">OUT</text>
+  <text x="345" y="540" font-family="Arial, sans-serif" font-size="10" fill="#666">NOV</text>
+  
+  <!-- Valores do eixo Y -->
+  <text x="30" y="525" font-family="Arial, sans-serif" font-size="9" fill="#666">R$ 0,00</text>
+  <text x="20" y="480" font-family="Arial, sans-serif" font-size="9" fill="#666">R$ 200,00</text>
+  <text x="20" y="440" font-family="Arial, sans-serif" font-size="9" fill="#666">R$ 400,00</text>
+  <text x="20" y="400" font-family="Arial, sans-serif" font-size="9" fill="#666">R$ 600,00</text>
+  <text x="20" y="360" font-family="Arial, sans-serif" font-size="9" fill="#666">R$ 800,00</text>
+  
+  <!-- Gráfico de Pizza - Status das Sessões (direita) -->
+  <rect x="410" y="320" width="370" height="250" rx="8" fill="white" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="430" y="345" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">Status das Sessões</text>
+  
+  <!-- Pizza Chart -->
+  <circle cx="550" cy="430" r="60" fill="#00bcd4" stroke="white" stroke-width="2"/>
+  <path d="M 550 430 L 550 370 A 60 60 0 0 1 610 430 Z" fill="#4caf50" stroke="white" stroke-width="2"/>
+  <path d="M 550 430 L 610 430 A 60 60 0 0 1 580 480 Z" fill="#ff9800" stroke="white" stroke-width="2"/>
+  <path d="M 550 430 L 580 480 A 60 60 0 0 1 520 480 Z" fill="#f44336" stroke="white" stroke-width="2"/>
+  
+  <!-- Legenda do gráfico de pizza -->
+  <circle cx="650" cy="380" r="6" fill="#4caf50"/>
+  <text x="665" y="385" font-family="Arial, sans-serif" font-size="12" fill="#333">Realizadas</text>
+  
+  <circle cx="650" cy="400" r="6" fill="#00bcd4"/>
+  <text x="665" y="405" font-family="Arial, sans-serif" font-size="12" fill="#333">Agendadas</text>
+  
+  <circle cx="650" cy="420" r="6" fill="#f44336"/>
+  <text x="665" y="425" font-family="Arial, sans-serif" font-size="12" fill="#333">Canceladas</text>
+  
+  <circle cx="650" cy="440" r="6" fill="#ff9800"/>
+  <text x="665" y="445" font-family="Arial, sans-serif" font-size="12" fill="#333">Faltou</text>
+  
+  <!-- Browser Window Elements -->
+  <rect x="0" y="0" width="800" height="20" fill="#f1f3f4"/>
+  <circle cx="10" cy="10" r="3" fill="#ff5f56"/>
+  <circle cx="25" cy="10" r="3" fill="#ffbd2e"/>
+  <circle cx="40" cy="10" r="3" fill="#27ca3f"/>
+  <text x="60" y="14" font-family="Arial, sans-serif" font-size="10" fill="#5f6368">Sistema de Consultório - Dashboard</text>
 </svg>

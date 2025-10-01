@@ -102,7 +102,7 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
                 titulo=titulo,
                 data_inicio=sessao.data_sessao,
                 descricao=descricao,
-                local="Consultório Médico"
+                local="Consultório"
             )
             
             links_calendar.append({
@@ -119,7 +119,7 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
                 titulo=titulo_todas,
                 data_inicio=sessoes[0].data_sessao,
                 descricao=descricao_todas,
-                local="Consultório Médico"
+                local="Consultório"
             )
         else:
             link_todas_sessoes = "#"
@@ -315,7 +315,7 @@ def enviar_lembrete_sessao(id_sessao):
             titulo=titulo,
             data_inicio=sessao.data_sessao,
             descricao=descricao,
-            local="Consultório Médico"
+            local="Consultório"
         )
         
         # Construir corpo do email em HTML
@@ -340,7 +340,7 @@ def enviar_lembrete_sessao(id_sessao):
                     <p><strong>Médico:</strong> {nome_doutor}</p>
                     <p><strong>Sessão:</strong> {sessao.numero_sessao} de {agendamento.quantidade_sessoes}</p>
                     <p><strong>Valor:</strong> R$ {float(sessao.valor):.2f}</p>
-                    <p><strong>Local:</strong> Consultório Médico</p>
+                    <p><strong>Local:</strong> Consultório</p>
                 </div>
                 
                 <div style="text-align: center; margin: 30px 0;">
@@ -465,7 +465,7 @@ def enviar_email_atualizacao_agendamento(id_agendamento):
                 titulo=titulo,
                 data_inicio=sessao.data_sessao,
                 descricao=descricao,
-                local="Consultório Médico"
+                local="Consultório"
             )
             
             links_calendar.append({
@@ -743,7 +743,7 @@ def enviar_email_reagendamento_sessao(id_sessao):
             titulo=titulo,
             data_inicio=sessao.data_sessao,
             descricao=descricao,
-            local="Consultório Médico"
+            local="Consultório"
         )
         
         # Formatação das datas

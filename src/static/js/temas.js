@@ -1,4 +1,4 @@
-// Sistema de Temas para o Consultório Médico
+// Sistema de Temas para o Consultório
 
 // Função para mudar o tema
 function changeTheme(themeName) {
