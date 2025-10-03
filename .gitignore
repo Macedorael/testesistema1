@@ -1,36 +1,22 @@
-# Arquivos de ambiente com informações sensíveis
+# Arquivos de ambiente
 .env
+.env.local
+.env.production
+.env.development
 
-# Banco de dados local
-src/database/app.db
-src/database/*.db
+# Bancos de dados locais
 *.db
+*.sqlite
+*.sqlite3
+consultorio.db
 
 # Cache do Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-PYTHONPATH
 
-# Ambiente virtual
+# Ambientes virtuais
 venv/
 env/
 ENV/
@@ -60,20 +46,38 @@ Thumbs.db
 # Arquivos temporários
 *.tmp
 *.temp
-
-# Migrações específicas (se houver)
-src/migrations/versions/
-
-# Arquivos de backup
 *.bak
 *.backup
+
+# Migrações específicas (manter apenas as iniciais)
+migrations/versions/*.py
+!migrations/versions/__init__.py
+
+# Arquivos de backup
+*.backup
+*.bak
 
 # Certificados e chaves
 *.pem
 *.key
 *.crt
-*.p12
+*.cert
 
-# Arquivos de configuração local específicos
-config.local.py
-settings.local.py
+# Configurações locais específicas
+config/local.py
+config/.env.local
+
+# Docker específico
+.env.docker
+docker-compose.override.yml
+.dockerignore
+
+# Volumes de dados
+mysql_data/
+postgres_data/
+
+# Arquivos de produção sensíveis
+config/.env.production
+
+# Instância local
+instance/

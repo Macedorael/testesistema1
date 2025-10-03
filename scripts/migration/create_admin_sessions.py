@@ -73,7 +73,7 @@ def create_admin_sessions():
             # Criar pacientes
             paciente1 = Patient(
                 nome_completo="Carlos Admin Souza",
-                telefone="(11) 99999-1111",
+                telefone="(21) 99999-1111",
                 email="carlos.admin@teste.com",
                 data_nascimento=date(1990, 5, 15),
                 user_id=admin_user.id
@@ -81,7 +81,7 @@ def create_admin_sessions():
             
             paciente2 = Patient(
                 nome_completo="Maria Admin Silva",
-                telefone="(11) 99999-2222",
+                telefone="(21) 99999-2222",
                 email="maria.admin@teste.com",
                 data_nascimento=date(1985, 8, 20),
                 user_id=admin_user.id

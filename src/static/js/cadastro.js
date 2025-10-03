@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (telefone && telefone.length > 0) {
             const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
             if (!phoneRegex.test(telefone)) {
-                showError('Por favor, insira um telefone válido no formato (11) 99999-9999.');
+                showError('Por favor, insira um telefone válido no formato (21) 99999-9999.');
                 return false;
             }
         }

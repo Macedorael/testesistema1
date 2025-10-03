@@ -159,7 +159,7 @@ window.Patients = {
                                     <label for="telefone" class="form-label">Telefone *</label>
                                     <input type="tel" class="form-control" id="telefone" required
                                         value="${isEdit ? this.currentPatient.telefone : ''}"
-                                        placeholder="(11) 99999-9999">
+                                        placeholder="(21) 99999-9999">
                                 </div>
                                 
                                 <div class="mb-3">
@@ -189,7 +189,7 @@ window.Patients = {
                                             <label for="telefone_contato_emergencia" class="form-label">Telefone do Contato</label>
                                             <input type="tel" class="form-control" id="telefone_contato_emergencia"
                                                 value="${isEdit ? (this.currentPatient.telefone_contato_emergencia || '') : ''}"
-                                                placeholder="(11) 99999-9999">
+                                                placeholder="(21) 99999-9999">
                                         </div>
                                     </div>
                                 </div>

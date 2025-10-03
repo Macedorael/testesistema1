@@ -82,35 +82,35 @@ try:
         funcionarios_data = [
             {
                 'nome': 'Dr. João Silva',
-                'telefone': '(11) 99999-1111',
+                'telefone': '(21) 99999-1111',
                 'email': 'joao.silva@consultorio.com',
                 'especialidade': 'Psicologia Clínica',
                 'obs': 'Psicólogo com 10 anos de experiência'
             },
             {
                 'nome': 'Dra. Maria Santos',
-                'telefone': '(11) 99999-2222',
+                'telefone': '(21) 99999-2222',
                 'email': 'maria.santos@consultorio.com',
                 'especialidade': 'Psicologia Infantil',
                 'obs': 'Especialista em terapia infantil'
             },
             {
                 'nome': 'Dr. Pedro Oliveira',
-                'telefone': '(11) 99999-3333',
+                'telefone': '(21) 99999-3333',
                 'email': 'pedro.oliveira@consultorio.com',
                 'especialidade': 'Terapia de Casal',
                 'obs': 'Terapeuta familiar e de casal'
             },
             {
                 'nome': 'Dra. Ana Costa',
-                'telefone': '(11) 99999-4444',
+                'telefone': '(21) 99999-4444',
                 'email': 'ana.costa@consultorio.com',
                 'especialidade': 'Neuropsicologia',
                 'obs': 'Neuropsicóloga clínica'
             },
             {
                 'nome': 'Dr. Carlos Ferreira',
-                'telefone': '(11) 99999-5555',
+                'telefone': '(21) 99999-5555',
                 'email': 'carlos.ferreira@consultorio.com',
                 'especialidade': 'Medicina Geral',
                 'obs': 'Médico clínico geral'
