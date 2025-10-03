@@ -1,0 +1,15 @@
+# Dependências para Sistema de Automação de Deploy
+# Instalar com: pip install -r requirements-automation.txt
+
+# Para webhook-server.py
+flask==2.3.3
+requests==2.31.0
+
+# Para monitor-deploy.py (GitHub API)
+requests==2.31.0
+
+# Para logs e formatação
+colorama==0.4.6
+
+# Para desenvolvimento/debug (opcional)
+python-dotenv==1.0.0

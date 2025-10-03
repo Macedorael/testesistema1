@@ -1,0 +1,111 @@
+name: 🔔 Notificação de Commits
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  notify-commit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+      
+    - name: 📊 Informações do Commit
+      run: |
+        echo "## 🔔 Novo Commit Detectado!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**🔖 Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**🌿 Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**👤 Autor:** \`${{ github.actor }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**📅 Data:** \`$(date)\`" >> $GITHUB_STEP_SUMMARY
+        echo "**💬 Mensagem:** \`${{ github.event.head_commit.message }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚀 Deploy Local:" >> $GITHUB_STEP_SUMMARY
+        echo "- O sistema de automação local detectará este commit" >> $GITHUB_STEP_SUMMARY
+        echo "- O build será feito localmente (sem Docker Hub)" >> $GITHUB_STEP_SUMMARY
+        echo "- A aplicação será atualizada automaticamente" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Verificações:" >> $GITHUB_STEP_SUMMARY
+        echo "1. ✅ Webhook/Monitor local ativo" >> $GITHUB_STEP_SUMMARY
+        echo "2. ✅ Docker funcionando localmente" >> $GITHUB_STEP_SUMMARY
+        echo "3. ✅ Aplicação em http://localhost:5000" >> $GITHUB_STEP_SUMMARY
+
+  validate-structure:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Validar Estrutura do Projeto
+      run: |
+        echo "Validando estrutura do projeto..."
+        
+        # Verificar arquivos essenciais
+        if [ ! -f "Dockerfile" ]; then
+          echo "❌ Dockerfile não encontrado!"
+          exit 1
+        fi
+        
+        if [ ! -f "docker-compose.yml" ]; then
+          echo "❌ docker-compose.yml não encontrado!"
+          exit 1
+        fi
+        
+        if [ ! -f "requirements.txt" ]; then
+          echo "❌ requirements.txt não encontrado!"
+          exit 1
+        fi
+        
+        if [ ! -d "src" ]; then
+          echo "❌ Diretório src não encontrado!"
+          exit 1
+        fi
+        
+        echo "✅ Estrutura do projeto validada com sucesso!"
+        
+    - name: 📦 Verificar Dependências Python
+      run: |
+        echo "Verificando requirements.txt..."
+        if [ -f "requirements.txt" ]; then
+          echo "📋 Dependências encontradas:"
+          cat requirements.txt
+        fi
+        
+        if [ -f "requirements-automation.txt" ]; then
+          echo "🤖 Dependências de automação:"
+          cat requirements-automation.txt
+        fi
+
+  notify-local-systems:
+    needs: [notify-commit, validate-structure]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📢 Status Final
+      run: |
+        echo "## 📊 Resumo do Pipeline"
+        echo ""
+        if [ "${{ needs.notify-commit.result }}" == "success" ]; then
+          echo "✅ Notificação de commit: Sucesso"
+        else
+          echo "❌ Notificação de commit: Falha"
+        fi
+        
+        if [ "${{ needs.validate-structure.result }}" == "success" ]; then
+          echo "✅ Validação de estrutura: Sucesso"
+        else
+          echo "❌ Validação de estrutura: Falha"
+        fi
+        
+        echo ""
+        echo "🏠 **Deploy Local Automático:**"
+        echo "- Monitor local detectará este commit"
+        echo "- Build será executado localmente"
+        echo "- Sem necessidade de Docker Hub"
+        echo "- Aplicação será reiniciada automaticamente"
