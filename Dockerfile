@@ -1,4 +1,4 @@
-# Use uma imagem base do Python
+# Use uma imagem base do Python mais recente e segura
 FROM python:3.11-slim
 
 # Definir diretório de trabalho
