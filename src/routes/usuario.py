@@ -5,6 +5,7 @@ from src.models.password_reset import PasswordResetToken
 from src.utils.auth import login_required, get_current_user
 from datetime import datetime
 from sqlalchemy import text
+import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -402,6 +403,9 @@ def send_password_reset_email(email, username, token):
         smtp_port = int(os.getenv('SMTP_PORT', 587))
         sender_email = os.getenv('SMTP_EMAIL')
         sender_password = os.getenv('SMTP_PASSWORD')
+        # URL base para construir o link de redefinição
+        base_url = os.getenv('BASE_URL', 'http://localhost:5000')
+        reset_link = f"{base_url}/static/resetar-senha.html?token={token}"
         
         # Verificar se as configurações estão disponíveis
         if not sender_email or not sender_password:
@@ -422,6 +426,8 @@ def send_password_reset_email(email, username, token):
             <p>Olá {username},</p>
             <p>Você solicitou a recuperação de sua senha. Use o token abaixo para redefinir sua senha:</p>
             <p><strong>Token: {token}</strong></p>
+            <p>Para sua conveniência, você também pode clicar no link abaixo para ir diretamente para a página de redefinição:</p>
+            <p><a href="{reset_link}" target="_blank" rel="noopener noreferrer">Clique aqui para redefinir sua senha</a></p>
             <p>Este token é válido por 1 hora.</p>
             <p>Se você não solicitou esta recuperação, ignore este email.</p>
         </body>

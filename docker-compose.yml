@@ -35,6 +35,11 @@ services:
       - DATABASE_URL=mysql://consultorio_user:consultorio_pass_123@mysql:3306/consultorio_db
       - SECRET_KEY=consultorio-psicologia-secret-key-docker-2024
       - BASE_URL=http://localhost:5000
+      - EMAIL_ENABLED=true
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_EMAIL=suporte.sistema.consultorio@gmail.com
+      - SMTP_PASSWORD=xkoqtdmtsznzstiw
     depends_on:
       mysql:
         condition: service_healthy
