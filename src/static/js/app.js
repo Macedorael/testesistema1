@@ -90,14 +90,6 @@ class App {
                 this.loadPage(e.state.page, false);
             }
         });
-
-        // Handle hash changes (for external links like "Carga Nova")
-        window.addEventListener('hashchange', (e) => {
-            const hash = window.location.hash.substring(1); // Remove o #
-            if (hash && hash !== this.currentPage) {
-                this.loadPage(hash, false);
-            }
-        });
     }
 
     updateActiveNav(activeLink) {
