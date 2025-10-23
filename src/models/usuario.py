@@ -9,10 +9,11 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    role = db.Column(db.String(20), default='user', nullable=False)  # 'user' ou 'admin'
+    role = db.Column(db.String(20), default='user', nullable=False)  # 'user', 'admin' ou 'patient'
     telefone = db.Column(db.String(20), nullable=False)  # Campo para telefone (obrigatório)
     data_nascimento = db.Column(db.Date, nullable=False)  # Campo para data de nascimento (obrigatório)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    first_login = db.Column(db.Boolean, default=True)  # Indica se é o primeiro login do usuário
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)
     # Removido temporariamente para evitar erro de circular import

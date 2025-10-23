@@ -3,17 +3,30 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
         const response = await fetch('/api/me');
         if (response.ok) {
-            // Usuário já está logado - redirecionar baseado na assinatura
+            const userData = await response.json();
+            
+            // Verificar se é um paciente
+            if (userData.role === 'patient') {
+                // Verificar se é o primeiro login
+                if (userData.first_login) {
+                    window.location.href = '/paciente-primeiro-login.html';
+                } else {
+                    window.location.href = '/paciente-agendamentos.html';
+                }
+                return;
+            }
+            
+            // Para outros usuários, redirecionar baseado na assinatura
             const userResponse = await fetch('/api/subscriptions/my-subscription');
             if (userResponse.ok) {
-                const userData = await userResponse.json();
-                if (userData.success && userData.subscription && userData.subscription.status === 'active') {
-                    window.location.href = '/';
+                const subscriptionData = await userResponse.json();
+                if (subscriptionData.success && subscriptionData.subscription && subscriptionData.subscription.status === 'active') {
+                    window.location.href = '/index.html';
                 } else {
-                    window.location.href = 'assinaturas.html';
+                    window.location.href = '/assinaturas.html';
                 }
             } else {
-                window.location.href = 'assinaturas.html';
+                window.location.href = '/assinaturas.html';
             }
             return;
         }
@@ -57,8 +70,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('userInfo', JSON.stringify(data.user));
                 
-                // Redirecionar baseado no status da assinatura
-                window.location.href = data.redirect || 'index.html';
+                // Redirecionar baseado no status da assinatura (normaliza dashboard -> index)
+                const normalizeRedirect = (path) => {
+                    if (!path) return null;
+                    const p = path.trim();
+                    if (p === '/dashboard.html' || p === 'dashboard.html') return '/index.html';
+                    return p;
+                };
+                const target = normalizeRedirect(data.redirect) || 'index.html';
+                window.location.href = target;
             } else {
                 // Restaurar botão
                 button.textContent = originalText;

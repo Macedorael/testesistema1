@@ -31,8 +31,36 @@ def login():
     # Login bem-sucedido
     session['user_id'] = user.id
     session['username'] = user.username
+    session['role'] = user.role
     
-    # Verificar se o usuário tem uma assinatura ativa
+    # Verificar se é o primeiro login (para pacientes)
+    if user.role == 'patient' and user.first_login:
+        return jsonify({
+            "message": "Primeiro login! É necessário alterar a senha.",
+            "user": {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role
+            },
+            "first_login": True,
+            "redirect": "/paciente-primeiro-login.html"
+        }), 200
+    
+    # Verificar redirecionamento baseado no papel do usuário
+    if user.role == 'patient':
+        return jsonify({
+            "message": "Login bem-sucedido!",
+            "user": {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role
+            },
+            "redirect": "/paciente-agendamentos.html"
+        }), 200
+    
+    # Para usuários normais, verificar assinatura
     active_subscription = Subscription.query.filter_by(
         user_id=user.id,
         status='active'
@@ -46,9 +74,10 @@ def login():
             "user": {
                 'id': user.id,
                 'username': user.username,
-                'email': user.email
+                'email': user.email,
+                'role': user.role
             },
-            "redirect": "/"
+            "redirect": "/dashboard.html"
         }), 200
     else:
         return jsonify({
@@ -56,7 +85,8 @@ def login():
             "user": {
                 'id': user.id,
                 'username': user.username,
-                'email': user.email
+                'email': user.email,
+                'role': user.role
             },
             "redirect": "/assinaturas.html"
         }), 200
@@ -305,15 +335,23 @@ def delete_user(user_id):
 
 @user_bp.route("/me", methods=["GET"])
 @login_required
-def get_current_user_info():
-    user = get_current_user()
-    if user:
+def get_me():
+    """Retorna os dados do usuário atual"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+        
         return jsonify({
-            'id': user.id,
-            'username': user.username,
-            'email': user.email
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "role": current_user.role,
+            "first_login": current_user.first_login
         })
-    return jsonify({"error": "Usuário não encontrado"}), 404
+    except Exception as e:
+        print(f"[ERROR] Erro ao buscar dados do usuário: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/esqueci-senha", methods=["POST"])
 def forgot_password():
@@ -574,5 +612,54 @@ def change_password():
     except Exception as e:
         db.session.rollback()
         print(f"[ERROR] Erro ao alterar senha: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+@user_bp.route("/first-login-change-password", methods=["PUT"])
+@login_required
+def first_login_change_password():
+    """Altera a senha no primeiro login do paciente"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+        
+        # Verificar se é um paciente
+        if current_user.role != 'patient':
+            return jsonify({"error": "Acesso não autorizado"}), 403
+        
+        data = request.json
+        current_password = data.get('current_password')  # Senha padrão 123456
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        
+        # Validar campos obrigatórios
+        if not current_password or not new_password or not confirm_password:
+            return jsonify({"error": "Todos os campos são obrigatórios"}), 400
+        
+        # Verificar senha atual
+        if not current_user.check_password(current_password):
+            return jsonify({"error": "Senha atual incorreta"}), 400
+        
+        # Verificar se as novas senhas coincidem
+        if new_password != confirm_password:
+            return jsonify({"error": "As novas senhas não coincidem"}), 400
+        
+        # Validar tamanho da nova senha
+        if len(new_password) < 6:
+            return jsonify({"error": "A nova senha deve ter pelo menos 6 caracteres"}), 400
+        
+        # Atualizar senha e marcar que não é mais o primeiro login
+        current_user.set_password(new_password)
+        current_user.first_login = False
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Senha alterada com sucesso!",
+            "redirect": "/paciente-agendamentos.html"
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Erro ao alterar senha no primeiro login: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 

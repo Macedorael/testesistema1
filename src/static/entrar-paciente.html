@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Consultório</title>
+    <title>Login do Paciente - Consultório</title>
     <link rel="stylesheet" href="css/entrar.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
     <div class="login-container">
         <h2>Bem-vindo</h2>
         <p class="login-subtitle">Acesse sua conta para continuar</p>
-        <div id="patientBanner" class="patient-banner" aria-live="polite" style="display:none; margin-top:10px; font-weight:600; color:#2f855a; background:#c6f6d5; border:1px solid #9ae6b4; padding:8px 12px; border-radius:8px;">Login do Paciente</div>
+        <div id="patientBanner" class="patient-banner" aria-live="polite" style="margin-top:10px; font-weight:600; color:#2f855a; background:#c6f6d5; border:1px solid #9ae6b4; padding:8px 12px; border-radius:8px;">Login do Paciente</div>
         
         <form id="loginForm">
             <div class="input-group">
@@ -40,7 +40,7 @@
             <div class="login-footer">
                 <a href="esqueci-senha.html" class="forgot-password">Esqueci minha senha</a>
                 <a href="cadastro.html" class="register-link">Não tem conta? Cadastre-se aqui</a>
-            <a href="inicial.html" class="back-home-link">← Voltar ao Início</a>
+                <a href="inicial.html" class="back-home-link">← Voltar ao Início</a>
             </div>
         </form>
         
@@ -85,24 +85,6 @@
 
     <script src="js/entrar.js"></script>
     <script>
-        // Banner "Login do Paciente"
-        (function() {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                if (params.has('paciente')) {
-                    const banner = document.getElementById('patientBanner');
-                    if (banner) {
-                        banner.style.display = 'block';
-                        document.title = 'Login do Paciente - Consultório';
-                    }
-                }
-            } catch (e) {
-                console.warn('Falha ao aplicar banner de paciente:', e);
-            }
-        })();
-
-        // Efeito de loading no botão será tratado pelo entrar.js principal
-
         // Efeito de foco nos inputs
         document.querySelectorAll('.input-group input').forEach(input => {
             input.addEventListener('focus', function() {
@@ -138,4 +120,3 @@
     </script>
 </body>
 </html>
-

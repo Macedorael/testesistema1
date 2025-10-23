@@ -55,6 +55,12 @@ except Exception as e:
     print(f"[ERROR] Erro ao importar pagamento: {e}")
 
 try:
+    from src.models.diario import DiaryEntry
+    print("[DEBUG] Importação de diario model OK")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar diario model: {e}")
+
+try:
     from src.models.password_reset import PasswordResetToken
     print("[DEBUG] Importação de password_reset OK")
 except Exception as e:
@@ -121,6 +127,12 @@ try:
     print("[DEBUG] Importação de dashboard_sessions routes OK")
 except Exception as e:
     print(f"[ERROR] Erro ao importar dashboard_sessions routes: {e}")
+
+try:
+    from src.routes.diarios import diaries_bp
+    print("[DEBUG] Importação de diarios routes OK")
+except Exception as e:
+    print(f"[ERROR] Erro ao importar diarios routes: {e}")
 
 try:
     # Importar após inicialização do Mercado Pago
@@ -289,6 +301,12 @@ try:
     print("[DEBUG] Blueprint dashboard_sessions_bp registrado")
 except Exception as e:
     print(f"[ERROR] Erro ao registrar dashboard_sessions_bp: {e}")
+
+try:
+    app.register_blueprint(diaries_bp, url_prefix='/api')
+    print("[DEBUG] Blueprint diaries_bp registrado")
+except Exception as e:
+    print(f"[ERROR] Erro ao registrar diaries_bp: {e}")
 
 try:
     app.register_blueprint(especialidades_bp, url_prefix='/api')

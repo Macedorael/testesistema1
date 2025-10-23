@@ -43,6 +43,7 @@ body {
     text-align: center !important;
     min-width: 80px;
     padding: 0.5rem 0.75rem !important;
+    background: transparent; /* ensure no default opaque background */
 }
 
 .nav-item-vertical i {
@@ -693,22 +694,38 @@ body.perfil-page {
 .nav-item-vertical {
     transition: all 0.3s ease;
     position: relative;
-    border-radius: 8px;
+    border-radius: 0; /* remove cantos arredondados para ficar igual ao padrão */
     margin: 0 4px;
 }
 
 /* Efeito de hover suave para nav-links */
 .nav-item-vertical:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: transparent; /* sem bloco opaco */
+    transform: none; /* sem movimento */
+    box-shadow: none; /* sem sombra */
 }
 
 /* Efeito de focus elegante para nav-links */
 .nav-item-vertical:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    background: transparent;
+    box-shadow: none;
+}
+.nav-item-vertical:focus-visible {
+    outline: none;
+    background: transparent; /* sem bloco opaco também no foco via teclado */
+    box-shadow: none;
+}
+
+/* Animação suave para ícones */
+.nav-item-vertical i,
+.dropdown-item i {
+    transition: none; /* desabilita animação para ficar igual ao padrão */
+}
+
+.nav-item-vertical:hover i,
+.dropdown-item:hover i {
+    transform: none;
 }
 
 /* Dropdown items com efeitos suaves */
@@ -754,6 +771,279 @@ body.perfil-page {
     background: rgba(0, 123, 255, 0.15);
     color: #007bff;
     font-weight: 500;
+}
+
+/* Animação suave para ícones */
+.nav-item-vertical i,
+.dropdown-item i {
+    transition: transform 0.3s ease;
+}
+
+.nav-item-vertical:hover i,
+.dropdown-item:hover i {
+    transform: scale(1.1);
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Removidas animações slideIn que causam reflow */
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    .btn,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    body {
+        background-color: white;
+    }
+}
+
+/* Loading Component Styles */
+.page-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(2px);
+}
+
+.page-loading.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color, #007bff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: var(--text-color, #333);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Table loading state */
+.table-loading {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+
+/* Forçar estilo padrão do Bootstrap para links no navbar */
+.navbar .nav-link.nav-item-vertical,
+.navbar .nav-link.nav-item-vertical:hover,
+.navbar .nav-link.nav-item-vertical:focus,
+.navbar .nav-link.nav-item-vertical:active {
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    border-radius: 0 !important;
+}
+.nav-item-vertical:focus-visible {
+    outline: none;
+    background: transparent; /* sem bloco opaco também no foco via teclado */
+    box-shadow: none;
+}
+
+/* Animação suave para ícones */
+.nav-item-vertical i,
+.dropdown-item i {
+    transition: transform 0.3s ease;
+}
+
+.nav-item-vertical:hover i,
+.dropdown-item:hover i {
+    transform: scale(1.1);
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Removidas animações slideIn que causam reflow */
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    .btn,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    body {
+        background-color: white;
+    }
+}
+
+/* Loading Component Styles */
+.page-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(2px);
+}
+
+.page-loading.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color, #007bff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: var(--text-color, #333);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Table loading state */
+.table-loading {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+
+/* Hard override to ensure 'Novo Registro' link uses transparent background with no tile */
+#novoRegistroBtn,
+#novoRegistroBtn:hover,
+#novoRegistroBtn:focus,
+#novoRegistroBtn:active {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+}
+
+#novoRegistroBtn i {
+  transform: none !important;
+  transition: none !important;
+}
+.nav-item-vertical:focus-visible {
+    outline: none;
+    background: transparent; /* sem bloco opaco também no foco via teclado */
+    box-shadow: none;
 }
 
 /* Animação suave para ícones */

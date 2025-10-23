@@ -121,7 +121,7 @@ def get_patient(patient_id):
 @patients_bp.route("/patients", methods=["POST"])
 @login_and_subscription_required
 def create_patient():
-    """Cria um novo paciente"""
+    """Cria um novo paciente e uma conta de usuário com senha padrão"""
     try:
         current_user = get_current_user()
         if not current_user:
@@ -161,10 +161,44 @@ def create_patient():
                 "success": False,
                 "message": "Este email já está cadastrado para outro paciente. Por favor, use um email diferente."
             }), 400
+            
+        # Verificar se já existe um usuário com este email
+        from src.models.usuario import User
+        existing_user = User.query.filter_by(email=data["email"]).first()
         
-        # Criar paciente
+        if existing_user:
+            return jsonify({
+                "success": False,
+                "message": "Este email já está cadastrado no sistema. Por favor, use um email diferente."
+            }), 400
+            
+        # Criar usuário para o paciente com senha padrão
+        username = data["email"].split("@")[0]  # Usar parte do email como username
+        
+        # Verificar se o username já existe e adicionar número se necessário
+        base_username = username
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+            
+        # Criar o usuário
+        patient_user = User(
+            username=username,
+            email=data["email"],
+            telefone=data["telefone"],
+            data_nascimento=data_nascimento,
+            role="patient",
+            first_login=True
+        )
+        patient_user.set_password("123456")  # Senha padrão
+        
+        db.session.add(patient_user)
+        db.session.flush()  # Para obter o ID do usuário
+        
+        # Criar paciente vinculado ao usuário
         patient = Patient(
-            user_id=current_user.id,
+            user_id=current_user.id,  # Vinculado ao médico/psicólogo
             nome_completo=data["nome_completo"],
             telefone=data["telefone"],
             email=data["email"],
@@ -180,8 +214,15 @@ def create_patient():
         
         return jsonify({
             "success": True,
-            "message": "Paciente criado com sucesso",
-            "data": patient.to_dict()
+            "message": "Paciente criado com sucesso e conta de acesso gerada",
+            "data": {
+                "patient": patient.to_dict(),
+                "user": {
+                    "username": patient_user.username,
+                    "email": patient_user.email,
+                    "password": "123456"  # Informar a senha padrão na resposta
+                }
+            }
         }), 201
         
     except Exception as e:
@@ -313,7 +354,7 @@ def delete_patient(patient_id):
 @patients_bp.route("/patients/<int:patient_id>/appointments", methods=["GET"])
 @login_and_subscription_required
 def get_patient_appointments(patient_id):
-    """Lista todos os agendamentos de um paciente"""
+    """Lista todos os agendamentos de um paciente específico"""
     try:
         current_user = get_current_user()
         if not current_user:
@@ -321,15 +362,29 @@ def get_patient_appointments(patient_id):
                 "success": False,
                 "message": "Usuário não encontrado"
             }), 401
+        
+        # Verificar se o usuário é um paciente ou um profissional
+        if current_user.role == 'patient':
+            # Se for paciente, verificar se está tentando acessar seus próprios agendamentos
+            patient = Patient.query.filter_by(id=patient_id).first()
+            if not patient or patient.email != current_user.email:
+                return jsonify({
+                    "success": False,
+                    "message": "Acesso não autorizado"
+                }), 403
             
-        patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
-        if not patient:
-            return jsonify({
-                "success": False,
-                "message": "Paciente não encontrado ou não autorizado"
-            }), 404
+            # Para paciente, não filtrar por user_id (pois os agendamentos estão vinculados ao profissional)
+            appointments = Appointment.query.filter_by(patient_id=patient_id).order_by(Appointment.data_primeira_sessao.desc()).all()
+        else:
+            # Se for profissional, verificar se o paciente pertence a ele
+            patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
+            if not patient:
+                return jsonify({
+                    "success": False,
+                    "message": "Paciente não encontrado ou não autorizado"
+                }), 404
             
-        appointments = Appointment.query.filter_by(patient_id=patient_id, user_id=current_user.id).order_by(Appointment.data_primeira_sessao.desc()).all()
+            appointments = Appointment.query.filter_by(patient_id=patient_id, user_id=current_user.id).order_by(Appointment.data_primeira_sessao.desc()).all()
         
         return jsonify({
             "success": True,
@@ -371,6 +426,47 @@ def get_patient_payments(patient_id):
             "success": False,
             "message": f"Erro ao buscar pagamentos: {str(e)}"
         }), 500
+
+
+
+@patients_bp.route("/patients/me", methods=["GET"])
+@login_required
+def get_my_patient_profile():
+    """Retorna o perfil do paciente autenticado (role=patient)"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
+        if current_user.role != 'patient':
+            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
+        
+        patient = Patient.query.filter_by(email=current_user.email).first()
+        if not patient:
+            return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
+        
+        return jsonify({"success": True, "data": patient.to_dict()})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar perfil do paciente: {str(e)}"}), 500
+
+@patients_bp.route("/patients/me/appointments", methods=["GET"])
+@login_required
+def get_my_patient_appointments():
+    """Lista todos os agendamentos do paciente autenticado (role=patient)"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
+        if current_user.role != 'patient':
+            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
+        
+        patient = Patient.query.filter_by(email=current_user.email).first()
+        if not patient:
+            return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
+        
+        appointments = Appointment.query.filter_by(patient_id=patient.id).order_by(Appointment.data_primeira_sessao.desc()).all()
+        return jsonify({"success": True, "data": [a.to_dict() for a in appointments]})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar agendamentos do paciente: {str(e)}"}), 500
 
 
 

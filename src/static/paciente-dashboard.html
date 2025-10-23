@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Área do Paciente - Resumo</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2024">
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2024">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="inicial.html">
+        <i class="bi bi-heart-pulse me-2"></i>
+        Consultório
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPatient">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarPatient">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <a class="btn btn-light btn-sm active" aria-current="page" href="paciente-dashboard.html">
+              <i class="bi bi-speedometer2"></i>
+              Resumo
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-light btn-sm" href="paciente-agendamentos.html">
+              <i class="bi bi-calendar-event"></i>
+              Agendamentos
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-light btn-sm" href="paciente-diarios.html">
+              <i class="bi bi-journal-text"></i>
+              Registros Diários
+            </a>
+          </li>
+          <li class="nav-item ms-lg-2 my-2 my-lg-0">
+            <a id="novoRegistroBtn" class="btn btn-light btn-sm" href="#">
+              <i class="bi bi-journal-plus"></i>
+              Novo Registro Diário
+            </a>
+          </li>
+          <li class="nav-item ms-lg-2">
+            <a id="logoutBtn" class="btn btn-outline-light btn-sm" href="#">
+              <i class="bi bi-box-arrow-right"></i>
+              Sair
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <h1 class="h4 mb-4">Resumo do Paciente</h1>
+
+    <!-- Cards de resumo -->
+    <section id="dashboardOverview" class="mb-4">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h6 mb-0"><i class="bi bi-calendar-check me-2"></i>Próximo Agendamento</h2>
+                <span class="badge rounded-pill text-bg-secondary">Resumo</span>
+              </div>
+              <div id="dashboardLoadingSpinnerAppointments" class="d-none justify-content-center my-2">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visualmente-hidden">Carregando...</span>
+                </div>
+              </div>
+              <div id="nextAppointmentContent" class="small text-muted">Carregando próximo agendamento...</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h6 mb-0"><i class="bi bi-journal-text me-2"></i>Último Registro Diário</h2>
+                <span class="badge rounded-pill text-bg-secondary">Resumo</span>
+              </div>
+              <div id="dashboardLoadingSpinnerDiary" class="d-none justify-content-center my-2">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visualmente-hidden">Carregando...</span>
+                </div>
+              </div>
+              <div id="latestDiaryContent" class="small text-muted">Carregando último registro diário...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navegação rápida removida: uso apenas pelos botões da navbar conforme solicitado -->
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Script da página -->
+  <script src="js/paciente-dashboard.js" defer></script>
+</body>
+</html>

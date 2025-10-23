@@ -27,6 +27,7 @@ class Patient(db.Model):
     user = db.relationship('User', backref='patients', lazy=True)
     appointments = db.relationship('Appointment', backref='patient', lazy=True, cascade='all, delete-orphan')
     payments = db.relationship('Payment', backref='patient', lazy=True, cascade='all, delete-orphan')
+    diary_entries = db.relationship('DiaryEntry', backref='patient', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Patient {self.nome_completo}>'

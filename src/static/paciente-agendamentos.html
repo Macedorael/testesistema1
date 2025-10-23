@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área do Paciente - Agendamentos e Diário</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2024">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=2024">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="inicial.html">
+                <i class="bi bi-heart-pulse me-2"></i>
+                Consultório
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPatient">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarPatient">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light btn-sm" href="paciente-dashboard.html">
+                            <i class="bi bi-speedometer2"></i>
+                            Resumo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-light btn-sm active" aria-current="page" href="paciente-agendamentos.html">
+                            <i class="bi bi-calendar-event"></i>
+                            Agendamentos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light btn-sm" href="paciente-diarios.html">
+                            <i class="bi bi-journal-text"></i>
+                            Registros Diários
+                        </a>
+                    </li>
+                    <li class="nav-item ms-lg-2 my-2 my-lg-0">
+                        <a id="novoRegistroBtn" class="btn btn-light btn-sm" href="#">
+                            <i class="bi bi-journal-plus"></i>
+                            Novo Registro Diário
+                        </a>
+                    </li>
+                    <li class="nav-item ms-lg-2">
+                        <a id="logoutBtn" class="btn btn-outline-light btn-sm" href="#">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Sair
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <!-- Bloco de resumo removido para manter navegação apenas pelo menu (Resumo, Agendamentos, Registros Diários) -->
+
+        <!-- Agendamentos -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h1 id="agendamentosSection" class="h4 mb-0">Meus Agendamentos</h1>
+        </div>
+
+        <!-- Loading dos agendamentos -->
+        <div id="loadingSpinner" class="d-none justify-content-center my-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+        
+        <!-- Sem agendamentos -->
+        <div id="noAppointments" class="alert alert-info" style="display: none;">
+            Você não possui agendamentos registrados.
+        </div>
+        
+        <!-- Lista de agendamentos -->
+        <div id="appointmentsList" class="mt-3"></div>
+
+        <hr class="my-4" />
+
+        <!-- Registros Diários -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 id="diariosSection" class="h5 mb-0">Registros Diários</h2>
+            <!-- Botão "Novo Registro Diário" movido para a navbar -->
+        </div>
+
+        <!-- Loading dos registros diários -->
+        <div id="diaryLoadingSpinner" class="d-none justify-content-center my-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+
+        <!-- Sem registros diários -->
+        <div id="noDiaryEntries" class="alert alert-info" style="display: none;">
+            Nenhum registro diário encontrado.
+        </div>
+
+        <!-- Lista de registros diários -->
+        <div id="diaryList" class="mt-3"></div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Script da página -->
+    <script src="js/paciente-agendamentos.js" defer></script>
+</body>
+</html>
