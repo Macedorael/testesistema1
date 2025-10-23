@@ -15,14 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
         
-        // Remove modal do DOM para evitar conflitos
+        // Não remover o modal do DOM ao fechar. Apenas garantir que está oculto e pronto para reuso.
         const modal = event.target;
-        if (modal && modal.id && modal.id.includes('Modal')) {
-            setTimeout(() => {
-                if (modal.parentNode) {
-                    modal.parentNode.removeChild(modal);
-                }
-            }, 300);
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
         }
     });
     
