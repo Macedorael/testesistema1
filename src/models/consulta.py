@@ -51,6 +51,7 @@ class Appointment(db.Model):
             'patient_id': self.patient_id,
             'funcionario_id': self.funcionario_id,
             'funcionario_nome': self.funcionario.nome if self.funcionario else None,
+            'especialidade_nome': (self.funcionario.especialidade.nome if (self.funcionario and getattr(self.funcionario, 'especialidade', None)) else None),
             'data_primeira_sessao': self.data_primeira_sessao.isoformat() if self.data_primeira_sessao else None,
             'quantidade_sessoes': self.quantidade_sessoes,
             'frequencia': self.frequencia.value if self.frequencia else None,

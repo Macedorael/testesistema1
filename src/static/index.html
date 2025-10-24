@@ -196,6 +196,25 @@
     <script src="js/funcionarios.js"></script>
     <script src="js/utilitarios.js"></script>
     <script src="js/modal-fix.js"></script>
+    <script>
+      // Fecha o menu colapsável em telas pequenas após clique em um item
+      document.addEventListener('DOMContentLoaded', function() {
+        var navbarCollapse = document.getElementById('navbarNav');
+        var toggler = document.querySelector('button[data-bs-target="#navbarNav"]');
+        if (navbarCollapse && toggler) {
+          var selectors = ['.nav-link', '.dropdown-item', '.btn'];
+          navbarCollapse.querySelectorAll(selectors.join(',')).forEach(function(el) {
+            el.addEventListener('click', function() {
+              var togglerVisible = window.getComputedStyle(toggler).display !== 'none';
+              if (togglerVisible) {
+                var bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+                bsCollapse.hide();
+              }
+            });
+          });
+        }
+      });
+    </script>
 </body>
 </html>
 

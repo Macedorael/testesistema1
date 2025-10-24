@@ -81,6 +81,18 @@ class App {
                 e.preventDefault();
                 this.loadPage(page);
                 this.updateActiveNav(e.target.closest('[data-page]'));
+
+                // Auto-close navbar on small screens after selection
+                const navbarCollapse = document.querySelector('.navbar-collapse');
+                if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+                    try {
+                        const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+                        bsCollapse.hide();
+                    } catch (err) {
+                        // Fallback in case Bootstrap is not available
+                        navbarCollapse.classList.remove('show');
+                    }
+                }
             });
         });
 

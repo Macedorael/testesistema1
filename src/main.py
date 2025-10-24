@@ -487,6 +487,22 @@ with app.app_context():
             else:
                 print("✅ [MIGRATION] Coluna 'created_at' já existe")
                 
+            # NOVO: Migrar coluna 'emocao_intensidades' na tabela 'diary_entries'
+            try:
+                diary_columns = inspector.get_columns('diary_entries')
+                diary_column_names = [col['name'] for col in diary_columns]
+                if 'emocao_intensidades' not in diary_column_names:
+                    print("[MIGRATION] Coluna 'emocao_intensidades' não encontrada em 'diary_entries'. Adicionando...")
+                    # Usar TEXT para compatibilidade entre SQLite/PostgreSQL
+                    db.session.execute(text("ALTER TABLE diary_entries ADD COLUMN emocao_intensidades TEXT"))
+                    db.session.commit()
+                    print("✅ [MIGRATION] Coluna 'emocao_intensidades' adicionada em 'diary_entries'")
+                else:
+                    print("✅ [MIGRATION] Coluna 'emocao_intensidades' já existe em 'diary_entries'")
+            except Exception as diary_migration_error:
+                print(f"[WARNING] Erro ao migrar 'diary_entries': {diary_migration_error}")
+                db.session.rollback()
+            
             # População automática de roles para usuários existentes
             print("[STARTUP] Verificando e populando roles de usuários...")
             

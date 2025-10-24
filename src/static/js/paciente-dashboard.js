@@ -70,18 +70,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     <textarea class="form-control" name="pensamento" rows="2" required></textarea>
                     <div class="invalid-feedback">Descreva o pensamento.</div>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Emoção</label>
-                    <input type="text" class="form-control" name="emocao" placeholder="Ex.: Tristeza, Raiva, Medo" required>
-                    <div class="invalid-feedback">Informe a emoção principal.</div>
+                  <div class="col-12">
+                    <label class="form-label">Emoções e Intensidades</label>
+                    <div id="emocoesContainer"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addEmocaoBtn"><i class="bi bi-plus-circle"></i> Adicionar emoção</button>
+                    <div class="form-text">Adicione uma ou mais emoções com intensidade (0-10).</div>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Intensidade Emocional (0-10)</label>
-                    <div class="d-flex align-items-center gap-2">
-                      <input type="range" class="form-range" name="intensidade" id="intensidadeRange" min="0" max="10" step="1" value="5">
-                      <span class="badge text-bg-secondary" id="intensidadeValue">5</span>
-                    </div>
-                  </div>
+
                   <div class="col-12">
                     <label class="form-label">Comportamento</label>
                     <textarea class="form-control" name="comportamento" rows="2" required></textarea>
@@ -113,37 +108,93 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (formEl && !formEl.dataset.bound) {
       formEl.dataset.bound = 'true';
-      const rangeEl = formEl.querySelector('#intensidadeRange');
-      const valueEl = formEl.querySelector('#intensidadeValue');
-      if (rangeEl && valueEl) {
+      const oldFormEl = formEl;
+      const newFormEl = oldFormEl.cloneNode(true);
+      oldFormEl.parentNode.replaceChild(newFormEl, oldFormEl);
+      const emocoesContainer = newFormEl.querySelector('#emocoesContainer');
+      const addEmocaoBtn = newFormEl.querySelector('#addEmocaoBtn');
+      const createEmocaoRow = (defaults = { emocao: '', intensidade: 5 }) => {
+        const row = document.createElement('div');
+        row.className = 'emocao-row row gx-2 align-items-center mb-2';
+        row.innerHTML = `
+          <div class="col-md-4">
+            <select class="form-select emocao-select">
+              <option value="">Selecione...</option>
+              <option value="Alegria">Alegria</option>
+              <option value="Tristeza">Tristeza</option>
+              <option value="Raiva">Raiva</option>
+              <option value="Medo">Medo</option>
+              <option value="Ansiedade">Ansiedade</option>
+              <option value="Nojo">Nojo</option>
+              <option value="Surpresa">Surpresa</option>
+              <option value="Calma">Calma</option>
+              <option value="OUTRAS">Outras</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-none emocao-custom-wrapper">
+            <input type="text" class="form-control emocao-custom" placeholder="Descreva a emoção">
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <input type="range" class="form-range intensidade-range" min="0" max="10" step="1" value="${defaults.intensidade}">
+              <span class="badge text-bg-secondary intensidade-value">${defaults.intensidade}</span>
+            </div>
+          </div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-emocao" title="Remover"><i class="bi bi-trash"></i></button>
+          </div>`;
+        const selectEl = row.querySelector('.emocao-select');
+        const customWrapper = row.querySelector('.emocao-custom-wrapper');
+        const customInput = row.querySelector('.emocao-custom');
+        const rangeEl = row.querySelector('.intensidade-range');
+        const valueEl = row.querySelector('.intensidade-value');
+        const removeBtn = row.querySelector('.remove-emocao');
+        const toggleCustom = () => {
+          if (selectEl.value === 'OUTRAS') { customWrapper.classList.remove('d-none'); }
+          else { customWrapper.classList.add('d-none'); customInput.value = ''; }
+        };
+        selectEl.addEventListener('change', toggleCustom); toggleCustom();
         rangeEl.addEventListener('input', () => { valueEl.textContent = rangeEl.value; });
-      }
-
-      formEl.addEventListener('submit', (ev) => {
+        removeBtn.addEventListener('click', () => { row.remove(); });
+        return row;
+      };
+      if (emocoesContainer) { emocoesContainer.appendChild(createEmocaoRow()); }
+      if (addEmocaoBtn) { addEmocaoBtn.addEventListener('click', () => { emocoesContainer.appendChild(createEmocaoRow()); }); }
+      newFormEl.addEventListener('submit', (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        if (!formEl.checkValidity()) {
-          formEl.classList.add('was-validated');
+        if (!newFormEl.checkValidity()) {
+          newFormEl.classList.add('was-validated');
           return;
         }
-
-        const data = new FormData(formEl);
+        const rows = Array.from(newFormEl.querySelectorAll('.emocao-row'));
+        if (rows.length === 0) { alert('Adicione pelo menos uma emoção.'); return; }
+        const invalidRow = rows.find(r => {
+          const s = r.querySelector('.emocao-select');
+          const c = r.querySelector('.emocao-custom');
+          return !s.value || (s.value === 'OUTRAS' && !c.value.trim());
+        });
+        if (invalidRow) { alert('Preencha todas as emoções e intensidades.'); return; }
         const nowISO = new Date().toISOString();
+        const pares = rows.map(r => {
+          const s = r.querySelector('.emocao-select');
+          const c = r.querySelector('.emocao-custom');
+          const range = r.querySelector('.intensidade-range');
+          const emocao = s.value === 'OUTRAS' ? c.value.trim() : s.value;
+          return { emocao, intensidade: Number(range.value) };
+        }).filter(p => p.emocao);
+        const primeira = pares[0] || { emocao: '', intensidade: 0 };
         const payload = {
-          situacao: data.get('situacao'),
-          pensamento: data.get('pensamento'),
-          emocao: data.get('emocao'),
-          intensidade: Number(data.get('intensidade') || 0),
-          comportamento: data.get('comportamento'),
-          consequencia: data.get('consequencia') || '',
+          situacao: newFormEl.querySelector('[name="situacao"]').value,
+          pensamento: newFormEl.querySelector('[name="pensamento"]').value,
+          emocao: primeira.emocao || '',
+          intensidade: primeira.intensidade || 0,
+          emocao_intensidades: pares,
+          comportamento: newFormEl.querySelector('[name="comportamento"]').value,
+          consequencia: newFormEl.querySelector('[name="consequencia"]').value || '',
           data_registro: nowISO
         };
-
-        fetch('/api/patients/me/diary-entries', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
+        fetch('/api/patients/me/diary-entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .then(async (res) => {
             if (!res.ok) {
               const err = await res.json().catch(() => ({ message: 'Erro desconhecido' }));
@@ -151,12 +202,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return res.json();
           })
-          .then((resp) => {
+          .then(() => {
             registroModal.hide();
             alert('Registro salvo com sucesso!');
-            formEl.reset();
-            formEl.classList.remove('was-validated');
-            if (valueEl && rangeEl) { valueEl.textContent = rangeEl.value; }
+            newFormEl.reset();
+            newFormEl.classList.remove('was-validated');
+            if (emocoesContainer) { emocoesContainer.innerHTML = ''; emocoesContainer.appendChild(createEmocaoRow()); }
             loadDiarySummary();
           })
           .catch((error) => {
@@ -229,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateDashboardNextAppointmentLocal(targetEl, appointments) {
     if (!targetEl) return;
     const now = new Date();
-    let candidate = null; // {date, profissional}
+    let candidate = null; // {date, especialidade, profissional}
     appointments.forEach(appt => {
       const sessions = Array.isArray(appt.sessions) ? appt.sessions : [];
       const futureSessionDates = sessions.map(s => new Date(s.data_sessao)).filter(d => !isNaN(d) && d > now);
@@ -237,12 +288,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const apptBaseDate = appt.data_primeira_sessao ? new Date(appt.data_primeira_sessao) : null;
       const apptFutureDate = apptBaseDate && apptBaseDate > now ? apptBaseDate : null;
       const chosen = nextSession || apptFutureDate || null;
-      if (chosen) { if (!candidate || chosen < candidate.date) { candidate = { date: chosen, profissional: appt.funcionario_nome || 'N/A' }; } }
+      if (chosen) {
+        if (!candidate || chosen < candidate.date) {
+          candidate = { date: chosen, especialidade: appt.especialidade_nome || 'N/A', profissional: appt.funcionario_nome || 'N/A' };
+        }
+      }
     });
     if (!candidate) { targetEl.textContent = 'Nenhum próximo agendamento encontrado.'; return; }
     const dateStr = candidate.date.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = candidate.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    targetEl.innerHTML = `<i class="bi bi-calendar-event"></i> ${dateStr} às ${timeStr} <span class="ms-2 badge rounded-pill text-bg-secondary">Profissional: ${escapeHtml(candidate.profissional)}</span>`;
+    targetEl.innerHTML = `<i class=\"bi bi-calendar-event\"></i> ${dateStr} às ${timeStr} <span class=\"ms-2 fw-bold\">${escapeHtml(candidate.especialidade)} ${escapeHtml(candidate.profissional)}</span>`;
   }
 
   function updateDashboardLatestDiaryLocal(targetEl, entry) {
@@ -252,9 +307,23 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!d) { targetEl.textContent = 'Nenhum registro diário encontrado.'; return; }
     const dateStr = d.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const intensidade = typeof entry.intensidade === 'number' ? entry.intensidade : Number(entry.intensidade || 0);
-    const emocao = escapeHtml(entry.emocao || '—');
-    targetEl.innerHTML = `<i class="bi bi-clock"></i> ${dateStr} às ${timeStr} <span class="ms-2 badge rounded-pill ${intensidade>=7?'text-bg-danger':(intensidade>=4?'text-bg-warning':'text-bg-success')}">Intensidade: ${intensidade}</span><div class="mt-1"><span class="small text-muted">Emoção: </span><span class="fw-normal">${emocao}</span></div>`;
+    const parsePairs = (val) => {
+      if (Array.isArray(val)) return val;
+      if (!val) return [];
+      try { return JSON.parse(val); } catch (_) { return []; }
+    };
+    const pairs = parsePairs(entry.emocao_intensidades);
+    const legacyInt = typeof entry.intensidade === 'number' ? entry.intensidade : Number(entry.intensidade || 0);
+    const maxInt = pairs.length ? Math.max(...pairs.map(p => Number(p.intensidade || 0))) : legacyInt;
+    const badges = pairs.length
+      ? pairs.map(p => {
+          const inten = Number(p.intensidade || 0);
+          const cls = inten >= 7 ? 'text-bg-danger' : (inten >= 4 ? 'text-bg-warning' : 'text-bg-info');
+          return `<span class="badge ${cls} me-1">${escapeHtml(p.emocao)} (${inten})</span>`;
+        }).join('')
+      : `<span class="badge text-bg-info">${escapeHtml(entry.emocao || '—')}</span>`;
+    const summaryCls = maxInt >= 7 ? 'text-bg-danger' : (maxInt >= 4 ? 'text-bg-warning' : 'text-bg-success');
+    targetEl.innerHTML = `<i class="bi bi-clock"></i> ${dateStr} às ${timeStr} <span class="ms-2 badge rounded-pill ${summaryCls}">Intensidade máx: ${maxInt}</span><div class="mt-1"><span class="small text-muted">Emoções: </span>${badges}</div>`;
   }
 
   function escapeHtml(text) {

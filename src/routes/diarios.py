@@ -5,6 +5,7 @@ from src.models.paciente import Patient
 from src.models.diario import DiaryEntry
 from datetime import datetime
 import logging
+import json
 
 # Logger específico
 logger = logging.getLogger('diarios')
@@ -51,17 +52,42 @@ def create_my_diary_entry():
             return jsonify({'success': False, 'message': 'Paciente não encontrado'}), 404
 
         data = request.get_json() or {}
-        required_fields = ['situacao', 'pensamento', 'emocao', 'intensidade', 'comportamento', 'consequencia']
-        for field in required_fields:
+        # Campos base obrigatórios
+        base_required = ['situacao', 'pensamento', 'comportamento', 'consequencia']
+        for field in base_required:
             if data.get(field) in (None, ''):
                 return jsonify({'success': False, 'message': f'Campo obrigatório: {field}'}), 400
 
-        try:
-            intensidade = int(data['intensidade'])
-        except (ValueError, TypeError):
-            return jsonify({'success': False, 'message': 'Intensidade deve ser um número inteiro'}), 400
+        # Normalizar entradas de emoções+intensidades (lista) ou legado (único)
+        pairs = []
+        if isinstance(data.get('emocao_intensidades'), list) and len(data['emocao_intensidades']) > 0:
+            for idx, item in enumerate(data['emocao_intensidades']):
+                if not isinstance(item, dict):
+                    return jsonify({'success': False, 'message': f'emocao_intensidades[{idx}] deve ser um objeto'}), 400
+                emocao_val = item.get('emocao')
+                intensidade_val = item.get('intensidade')
+                if emocao_val in (None, ''):
+                    return jsonify({'success': False, 'message': f'Campo obrigatório: emocao em emocao_intensidades[{idx}]'}), 400
+                try:
+                    intensidade_int = int(intensidade_val)
+                except (ValueError, TypeError):
+                    return jsonify({'success': False, 'message': f'Intensidade inválida em emocao_intensidades[{idx}]'}), 400
+                if intensidade_int < 0 or intensidade_int > 100:
+                    return jsonify({'success': False, 'message': f'Intensidade deve estar entre 0 e 100 em emocao_intensidades[{idx}]'}), 400
+                pairs.append({'emocao': emocao_val, 'intensidade': intensidade_int})
+        else:
+            # Fallback: campos únicos legado
+            if data.get('emocao') in (None, '') or data.get('intensidade') in (None, ''):
+                return jsonify({'success': False, 'message': 'Informe pelo menos uma emoção e intensidade'}), 400
+            try:
+                intensidade_int = int(data['intensidade'])
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Intensidade deve ser um número inteiro'}), 400
+            if intensidade_int < 0 or intensidade_int > 100:
+                return jsonify({'success': False, 'message': 'Intensidade deve estar entre 0 e 100'}), 400
+            pairs.append({'emocao': data['emocao'], 'intensidade': intensidade_int})
 
-        # data_registro opcional (ISO8601); se vier, validar
+        # data_registro opcional (ISO8601)
         data_registro = datetime.utcnow()
         if data.get('data_registro'):
             try:
@@ -69,13 +95,17 @@ def create_my_diary_entry():
             except Exception:
                 return jsonify({'success': False, 'message': 'data_registro inválida. Use ISO 8601'}), 400
 
+        first_emocao = pairs[0]['emocao']
+        first_intensidade = pairs[0]['intensidade']
+
         entry = DiaryEntry(
-            user_id=patient.user_id,  # isolado pelo profissional dono do paciente
+            user_id=patient.user_id,
             patient_id=patient.id,
             situacao=data['situacao'],
             pensamento=data['pensamento'],
-            emocao=data['emocao'],
-            intensidade=intensidade,
+            emocao=first_emocao,
+            intensidade=first_intensidade,
+            emocao_intensidades=json.dumps(pairs),
             comportamento=data['comportamento'],
             consequencia=data['consequencia'],
             data_registro=data_registro
@@ -125,15 +155,40 @@ def create_patient_diary_entry(patient_id):
             return jsonify({'success': False, 'message': 'Paciente não encontrado ou não autorizado'}), 404
 
         data = request.get_json() or {}
-        required_fields = ['situacao', 'pensamento', 'emocao', 'intensidade', 'comportamento', 'consequencia']
-        for field in required_fields:
+        # Campos base obrigatórios
+        base_required = ['situacao', 'pensamento', 'comportamento', 'consequencia']
+        for field in base_required:
             if data.get(field) in (None, ''):
                 return jsonify({'success': False, 'message': f'Campo obrigatório: {field}'}), 400
 
-        try:
-            intensidade = int(data['intensidade'])
-        except (ValueError, TypeError):
-            return jsonify({'success': False, 'message': 'Intensidade deve ser um número inteiro'}), 400
+        # Normalizar entradas de emoções+intensidades (lista) ou legado (único)
+        pairs = []
+        if isinstance(data.get('emocao_intensidades'), list) and len(data['emocao_intensidades']) > 0:
+            for idx, item in enumerate(data['emocao_intensidades']):
+                if not isinstance(item, dict):
+                    return jsonify({'success': False, 'message': f'emocao_intensidades[{idx}] deve ser um objeto'}), 400
+                emocao_val = item.get('emocao')
+                intensidade_val = item.get('intensidade')
+                if emocao_val in (None, ''):
+                    return jsonify({'success': False, 'message': f'Campo obrigatório: emocao em emocao_intensidades[{idx}]'}), 400
+                try:
+                    intensidade_int = int(intensidade_val)
+                except (ValueError, TypeError):
+                    return jsonify({'success': False, 'message': f'Intensidade inválida em emocao_intensidades[{idx}]'}), 400
+                if intensidade_int < 0 or intensidade_int > 100:
+                    return jsonify({'success': False, 'message': f'Intensidade deve estar entre 0 e 100 em emocao_intensidades[{idx}]'}), 400
+                pairs.append({'emocao': emocao_val, 'intensidade': intensidade_int})
+        else:
+            # Fallback: campos únicos legado
+            if data.get('emocao') in (None, '') or data.get('intensidade') in (None, ''):
+                return jsonify({'success': False, 'message': 'Informe pelo menos uma emoção e intensidade'}), 400
+            try:
+                intensidade_int = int(data['intensidade'])
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'message': 'Intensidade deve ser um número inteiro'}), 400
+            if intensidade_int < 0 or intensidade_int > 100:
+                return jsonify({'success': False, 'message': 'Intensidade deve estar entre 0 e 100'}), 400
+            pairs.append({'emocao': data['emocao'], 'intensidade': intensidade_int})
 
         data_registro = datetime.utcnow()
         if data.get('data_registro'):
@@ -142,13 +197,17 @@ def create_patient_diary_entry(patient_id):
             except Exception:
                 return jsonify({'success': False, 'message': 'data_registro inválida. Use ISO 8601'}), 400
 
+        first_emocao = pairs[0]['emocao']
+        first_intensidade = pairs[0]['intensidade']
+
         entry = DiaryEntry(
             user_id=current_user.id,
             patient_id=patient.id,
             situacao=data['situacao'],
             pensamento=data['pensamento'],
-            emocao=data['emocao'],
-            intensidade=intensidade,
+            emocao=first_emocao,
+            intensidade=first_intensidade,
+            emocao_intensidades=json.dumps(pairs),
             comportamento=data['comportamento'],
             consequencia=data['consequencia'],
             data_registro=data_registro

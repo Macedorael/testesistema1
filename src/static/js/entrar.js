@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (userData.first_login) {
                     window.location.href = '/paciente-primeiro-login.html';
                 } else {
-                    window.location.href = '/paciente-agendamentos.html';
+                    window.location.href = '/paciente-dashboard.html';
                 }
                 return;
             }

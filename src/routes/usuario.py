@@ -57,7 +57,7 @@ def login():
                 'email': user.email,
                 'role': user.role
             },
-            "redirect": "/paciente-agendamentos.html"
+            "redirect": "/paciente-dashboard.html"
         }), 200
     
     # Para usuários normais, verificar assinatura
@@ -656,7 +656,7 @@ def first_login_change_password():
         return jsonify({
             "success": True,
             "message": "Senha alterada com sucesso!",
-            "redirect": "/paciente-agendamentos.html"
+            "redirect": "/paciente-dashboard.html"
         })
     except Exception as e:
         db.session.rollback()

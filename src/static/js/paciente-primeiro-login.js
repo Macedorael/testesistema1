@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Verificar se é o primeiro login
             if (!userData.first_login) {
                 // Se não for o primeiro login, redirecionar para a página de agendamentos
-                window.location.href = '/paciente-agendamentos.html';
+                window.location.href = '/paciente-dashboard.html';
                 throw new Error('Não é o primeiro login');
             }
         })
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Redirecionar após 2 segundos
                 setTimeout(() => {
-                    window.location.href = data.redirect || '/paciente-agendamentos.html';
+                    window.location.href = data.redirect || '/paciente-dashboard.html';
                 }, 2000);
             }
         })

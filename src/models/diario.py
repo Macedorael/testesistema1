@@ -1,5 +1,6 @@
 from src.models.usuario import db
 from datetime import datetime
+import json
 
 class DiaryEntry(db.Model):
     __tablename__ = 'diary_entries'
@@ -17,6 +18,9 @@ class DiaryEntry(db.Model):
     intensidade = db.Column(db.Integer, nullable=False)  # 0-10
     comportamento = db.Column(db.Text, nullable=False)
     consequencia = db.Column(db.Text, nullable=False)
+    
+    # Nova coluna para múltiplas emoções+intensidades (armazenadas como JSON em TEXT)
+    emocao_intensidades = db.Column(db.Text, nullable=True)
 
     data_registro = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
@@ -40,6 +44,7 @@ class DiaryEntry(db.Model):
             'intensidade': self.intensidade,
             'comportamento': self.comportamento,
             'consequencia': self.consequencia,
+            'emocao_intensidades': json.loads(self.emocao_intensidades) if self.emocao_intensidades else [],
             'data_registro': self.data_registro.isoformat() if self.data_registro else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

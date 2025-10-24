@@ -68,17 +68,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     <textarea class="form-control" name="pensamento" rows="2" required></textarea>
                     <div class="invalid-feedback">Descreva o pensamento.</div>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Emoção</label>
-                    <input type="text" class="form-control" name="emocao" placeholder="Ex.: Tristeza, Raiva, Medo" required>
-                    <div class="invalid-feedback">Informe a emoção principal.</div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Intensidade Emocional (0-10)</label>
-                    <div class="d-flex align-items-center gap-2">
-                      <input type="range" class="form-range" name="intensidade" id="intensidadeRange" min="0" max="10" step="1" value="5">
-                      <span class="badge text-bg-secondary" id="intensidadeValue">5</span>
-                    </div>
+                  <div class="col-12">
+                    <label class="form-label">Emoções e Intensidades</label>
+                    <div id="emocoesContainer"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addEmocaoBtn">
+                      <i class="bi bi-plus-circle"></i> Adicionar emoção
+                    </button>
+                    <div class="form-text">Adicione uma ou mais emoções com intensidade (0-10).</div>
                   </div>
                   <div class="col-12">
                     <label class="form-label">Comportamento</label>
@@ -111,17 +107,102 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (formEl && !formEl.dataset.bound) {
       formEl.dataset.bound = 'true';
-      const rangeEl = formEl.querySelector('#intensidadeRange');
-      const valueEl = formEl.querySelector('#intensidadeValue');
-      if (rangeEl && valueEl) {
+
+      const emocoesContainer = formEl.querySelector('#emocoesContainer');
+      const addEmocaoBtn = formEl.querySelector('#addEmocaoBtn');
+
+      const createEmocaoRow = (defaults = { emocao: '', intensidade: 5 }) => {
+        const row = document.createElement('div');
+        row.className = 'emocao-row row gx-2 align-items-center mb-2';
+        row.innerHTML = `
+          <div class="col-md-4">
+            <select class="form-select emocao-select">
+              <option value="">Selecione...</option>
+              <option value="Alegria">Alegria</option>
+              <option value="Tristeza">Tristeza</option>
+              <option value="Raiva">Raiva</option>
+              <option value="Medo">Medo</option>
+              <option value="Ansiedade">Ansiedade</option>
+              <option value="Nojo">Nojo</option>
+              <option value="Surpresa">Surpresa</option>
+              <option value="Calma">Calma</option>
+              <option value="OUTRAS">Outras</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-none emocao-custom-wrapper">
+            <input type="text" class="form-control emocao-custom" placeholder="Descreva a emoção">
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <input type="range" class="form-range intensidade-range" min="0" max="10" step="1" value="${defaults.intensidade}">
+              <span class="badge text-bg-secondary intensidade-value">${defaults.intensidade}</span>
+            </div>
+          </div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-emocao" title="Remover"><i class="bi bi-trash"></i></button>
+          </div>
+        `;
+
+        const selectEl = row.querySelector('.emocao-select');
+        const customWrapper = row.querySelector('.emocao-custom-wrapper');
+        const customInput = row.querySelector('.emocao-custom');
+        const rangeEl = row.querySelector('.intensidade-range');
+        const valueEl = row.querySelector('.intensidade-value');
+        const removeBtn = row.querySelector('.remove-emocao');
+
+        // Inicializar valores
+        if (defaults.emocao) {
+          selectEl.value = defaults.emocao;
+        }
+        const toggleCustom = () => {
+          if (selectEl.value === 'OUTRAS') {
+            customWrapper.classList.remove('d-none');
+          } else {
+            customWrapper.classList.add('d-none');
+            customInput.value = '';
+          }
+        };
+        selectEl.addEventListener('change', toggleCustom);
+        toggleCustom();
+
         rangeEl.addEventListener('input', () => { valueEl.textContent = rangeEl.value; });
-      }
+        removeBtn.addEventListener('click', () => { row.remove(); });
+
+        return row;
+      };
+
+      // Adicionar primeira linha automaticamente
+      emocoesContainer.appendChild(createEmocaoRow());
+      addEmocaoBtn.addEventListener('click', () => {
+        emocoesContainer.appendChild(createEmocaoRow());
+      });
 
       formEl.addEventListener('submit', (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
+
+        // Validação do formulário base
         if (!formEl.checkValidity()) {
           formEl.classList.add('was-validated');
+          return;
+        }
+
+        // Coletar pares de emoção+intensidade
+        const rows = Array.from(formEl.querySelectorAll('.emocao-row'));
+        const pairs = [];
+        for (const row of rows) {
+          const selectEl = row.querySelector('.emocao-select');
+          const customInput = row.querySelector('.emocao-custom');
+          const rangeEl = row.querySelector('.intensidade-range');
+          const emocaoSelecionada = selectEl.value;
+          const emocaoCustom = (customInput?.value || '').trim();
+          const emocaoFinal = emocaoSelecionada === 'OUTRAS' ? emocaoCustom : emocaoSelecionada;
+          if (!emocaoFinal) continue; // permitir linhas vazias serem ignoradas
+          pairs.push({ emocao: emocaoFinal, intensidade: Number(rangeEl.value || 0) });
+        }
+
+        if (pairs.length === 0) {
+          alert('Adicione pelo menos uma emoção com intensidade.');
           return;
         }
 
@@ -130,8 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const payload = {
           situacao: data.get('situacao'),
           pensamento: data.get('pensamento'),
-          emocao: data.get('emocao'),
-          intensidade: Number(data.get('intensidade') || 0),
+          emocao_intensidades: pairs,
           comportamento: data.get('comportamento'),
           consequencia: data.get('consequencia') || '',
           data_registro: nowISO
@@ -154,7 +234,9 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Registro salvo com sucesso!');
             formEl.reset();
             formEl.classList.remove('was-validated');
-            if (valueEl && rangeEl) { valueEl.textContent = rangeEl.value; }
+            // Resetar container de emoções
+            emocoesContainer.innerHTML = '';
+            emocoesContainer.appendChild(createEmocaoRow());
             loadDiaryEntries();
           })
           .catch((error) => {
@@ -213,8 +295,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const d = createdISO ? new Date(createdISO) : null;
     const formattedDate = d ? d.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Data não informada';
     const formattedTime = d ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-    const intensidade = typeof entry.intensidade === 'number' ? entry.intensidade : Number(entry.intensidade || 0);
-    const badgeClass = intensidade >= 7 ? 'text-bg-danger' : (intensidade >= 4 ? 'text-bg-warning' : 'text-bg-success');
+
+    const parsePairs = (val) => {
+      if (Array.isArray(val)) return val;
+      if (!val) return [];
+      try { return JSON.parse(val); } catch (_) { return []; }
+    };
+    const pairs = parsePairs(entry.emocao_intensidades);
+    const legacyInt = typeof entry.intensidade === 'number' ? entry.intensidade : Number(entry.intensidade || 0);
+    const intensidadeMax = pairs.length ? Math.max(...pairs.map(p => Number(p.intensidade || 0))) : legacyInt;
+    const badgeClassFor = (v) => { const i = Number(v || 0); return i >= 7 ? 'text-bg-danger' : (i >= 4 ? 'text-bg-warning' : 'text-bg-success'); };
+    const headerBadgeClass = badgeClassFor(intensidadeMax);
+
     const card = document.createElement('div');
     card.className = 'card shadow-sm mb-3';
     card.innerHTML = `
@@ -224,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="fw-normal">${formattedDate}</div>
             <div class="text-muted"><i class="bi bi-clock"></i> ${formattedTime}</div>
           </div>
-          <span class="badge rounded-pill ${badgeClass}">Intensidade: ${intensidade}</span>
+          <span class="badge rounded-pill ${headerBadgeClass}">Intensidade máx: ${intensidadeMax}</span>
         </div>
         <div class="row gy-2 mt-2">
           <div class="col-12">
@@ -235,11 +327,13 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="small text-muted">Pensamento</div>
             <div class="fw-normal">${escapeHtml(entry.pensamento) || '—'}</div>
           </div>
-          <div class="col-md-6">
-            <div class="small text-muted">Emoção</div>
-            <div class="fw-normal">${escapeHtml(entry.emocao) || '—'}</div>
+          <div class="col-12">
+            <div class="small text-muted">Emoções</div>
+            <div class="fw-normal d-flex flex-wrap gap-2">
+              ${pairs.length ? pairs.map(p => `<span class="badge rounded-pill ${badgeClassFor(p.intensidade)}">${escapeHtml(p.emocao)}: ${p.intensidade}</span>`).join('') : (escapeHtml(entry.emocao) || '—')}
+            </div>
           </div>
-          <div class="col-md-6">
+          <div class="col-12">
             <div class="small text-muted">Comportamento</div>
             <div class="fw-normal">${escapeHtml(entry.comportamento) || '—'}</div>
           </div>
