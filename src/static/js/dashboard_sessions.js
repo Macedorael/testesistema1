@@ -221,7 +221,7 @@ window.DashboardSessions = {
             if (data.success) {
                 this.currentData.psychologistsList = data.data;
                 this.renderPsychologistsList();
-                // Verificar se há funcionários e controlar visibilidade das seções
+// Verificar se há profissionais e controlar visibilidade das seções
                 this.togglePsychologistSections();
             }
         } catch (error) {
@@ -232,7 +232,7 @@ window.DashboardSessions = {
     togglePsychologistSections() {
         const hasPsychologists = this.currentData.psychologistsList && this.currentData.psychologistsList.length > 0;
         
-        // Seções que devem ser ocultadas quando não há funcionários
+// Seções que devem ser ocultadas quando não há profissionais
         const sectionsToToggle = [];
         
         // Encontrar seções por texto do título
@@ -263,7 +263,7 @@ window.DashboardSessions = {
             }
         });
         
-        console.log(`Seções de funcionários ${hasPsychologists ? 'exibidas' : 'ocultadas'} - ${this.currentData.psychologistsList?.length || 0} funcionários encontrados`);
+                console.log(`Seções de profissionais ${hasPsychologists ? 'exibidas' : 'ocultadas'} - ${this.currentData.psychologistsList?.length || 0} profissionais encontrados`);
     },
 
     renderPsychologistsList() {

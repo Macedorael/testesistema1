@@ -2,6 +2,7 @@
 window.Patients = {
     patients: [],
     currentPatient: null,
+    isSaving: false,
 
     async init() {
         await this.loadPatients();
@@ -65,7 +66,10 @@ window.Patients = {
                         ${patients.map(patient => `
                             <tr>
                                 <td>
-                                    <div class="fw-bold">${patient.nome_completo}</div>
+                                    <div class="fw-bold d-flex align-items-center gap-2">
+                                        <span>${patient.nome_completo}</span>
+                                        ${patient.ativo === false ? '<span class="badge bg-secondary">Inativo</span>' : '<span class="badge bg-success">Ativo</span>'}
+                                    </div>
                                     ${patient.observacoes ? `<small class="text-muted">${patient.observacoes.substring(0, 50)}${patient.observacoes.length > 50 ? '...' : ''}</small>` : ''}
                                 </td>
                                 <td>${window.app.formatPhone(patient.telefone)}</td>
@@ -79,6 +83,13 @@ window.Patients = {
                                         <button class="btn btn-outline-secondary" onclick="Patients.editPatient(${patient.id})" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </button>
+                                        ${patient.ativo === false
+                                            ? `<button class="btn btn-outline-success" onclick="Patients.toggleActive(${patient.id}, true)" title="Ativar">
+                                                    <i class="bi bi-toggle2-on"></i>
+                                               </button>`
+                                            : `<button class="btn btn-outline-warning" onclick="Patients.toggleActive(${patient.id}, false)" title="Desativar">
+                                                    <i class="bi bi-toggle2-off"></i>
+                                               </button>`}
                                         <button class="btn btn-outline-danger" onclick="Patients.deletePatient(${patient.id})" title="Excluir">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -228,7 +239,7 @@ window.Patients = {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="button" class="btn btn-primary" onclick="Patients.savePatient()">
+                            <button id="savePatientBtn" type="button" class="btn btn-primary" onclick="Patients.savePatient()">
                                 ${isEdit ? 'Atualizar' : 'Salvar'}
                             </button>
                         </div>
@@ -279,7 +290,24 @@ window.Patients = {
     },
 
     async savePatient() {
+        if (this.isSaving) return; // evita cliques repetidos
+        const saveBtn = document.getElementById('savePatientBtn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.dataset.originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Salvando...';
+        }
+        this.isSaving = true;
         const form = document.getElementById('patientForm');
+        if (form && !form.reportValidity()) {
+            // Restabelece estado do botão se validação falhar
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = saveBtn.dataset.originalText || 'Salvar';
+            }
+            this.isSaving = false;
+            return;
+        }
         
         const patientData = {
             nome_completo: document.getElementById('nome_completo').value,
@@ -327,6 +355,12 @@ window.Patients = {
         } catch (error) {
             console.error('Error saving patient:', error);
             window.app.showError(error.message || 'Erro ao salvar paciente');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = saveBtn.dataset.originalText || 'Salvar';
+            }
+            this.isSaving = false;
         }
     },
 
@@ -343,6 +377,9 @@ window.Patients = {
     },
 
     showPatientDetailsModal(patient) {
+        const statusBadge = (patient.ativo === false)
+            ? '<span class="badge bg-secondary ms-2">Inativo</span>'
+            : '<span class="badge bg-success ms-2">Ativo</span>';
         const modalHtml = `
             <div class="modal fade" id="patientDetailsModal" tabindex="-1">
                 <div class="modal-dialog modal-xl">
@@ -351,6 +388,7 @@ window.Patients = {
                             <h5 class="modal-title">
                                 <i class="bi bi-person-circle me-2"></i>
                                 ${patient.nome_completo}
+                                ${statusBadge}
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
@@ -462,12 +500,19 @@ window.Patients = {
                             <div class="row mt-3">
                                 <div class="col-12">
                                     <div class="d-flex gap-2">
-                                        <button class="btn btn-outline-primary" onclick="Appointments.showCreateModalForPatient(${patient.id})">
+                                        <button class="btn btn-outline-primary" ${patient.ativo === false ? 'disabled' : ''} onclick="Appointments.showCreateModalForPatient(${patient.id})">
                                             <i class="bi bi-calendar-plus me-1"></i>Novo Agendamento
                                         </button>
                                         <button class="btn btn-outline-primary" onclick="Patients.viewDiaryEntries(${patient.id})">
                                             <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
                                         </button>
+                                        ${patient.ativo === false
+                                            ? `<button class="btn btn-success" onclick="Patients.toggleActive(${patient.id}, true)">
+                                                    <i class="bi bi-toggle2-on me-1"></i>Ativo
+                                               </button>`
+                                            : `<button class="btn btn-warning" onclick="Patients.toggleActive(${patient.id}, false)">
+                                                    <i class="bi bi-toggle2-off me-1"></i>Inativo
+                                               </button>`}
                                     </div>
                                 </div>
                             </div>
@@ -495,6 +540,35 @@ window.Patients = {
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('patientDetailsModal'));
         modal.show();
+    },
+
+    async toggleActive(patientId, newStatus) {
+        try {
+            const patient = this.patients.find(p => p.id === patientId);
+            const name = patient ? patient.nome_completo : 'o paciente';
+            const actionText = newStatus ? 'ativar' : 'desativar';
+            if (!confirm(`Tem certeza que deseja ${actionText} ${name}?`)) {
+                return;
+            }
+            const resp = await window.app.apiCall(`/patients/${patientId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ ativo: !!newStatus })
+            });
+            window.app.showSuccess(resp.message || 'Status atualizado');
+            // Recarregar lista
+            await this.loadPatients();
+            // Se o modal de detalhes estiver aberto, atualizar seu conteúdo
+            const openModal = document.getElementById('patientDetailsModal');
+            if (openModal) {
+                try {
+                    const fresh = await window.app.apiCall(`/patients/${patientId}`);
+                    this.showPatientDetailsModal(fresh.data);
+                } catch (_) {}
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar status do paciente:', error);
+            window.app.showError(error.message || 'Erro ao atualizar status do paciente');
+        }
     },
 
     async viewDiaryEntries(patientId) {

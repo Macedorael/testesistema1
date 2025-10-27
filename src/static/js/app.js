@@ -313,12 +313,12 @@ class App {
                 </div>
             </div>
             
-            <!-- Modal para Criar/Editar Funcionário -->
+            <!-- Modal para Criar/Editar Profissional -->
             <div class="modal fade" id="funcionarioModal" tabindex="-1">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="modalTitle">Novo Funcionário</h5>
+                            <h5 class="modal-title" id="modalTitle">Novo Profissional</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
@@ -378,7 +378,7 @@ class App {
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <p>Tem certeza que deseja excluir este funcionário?</p>
+                            <p>Tem certeza que deseja excluir este profissional?</p>
                             <p class="text-muted">Esta ação não pode ser desfeita.</p>
                         </div>
                         <div class="modal-footer">
@@ -405,8 +405,8 @@ class App {
             // Carregar e renderizar funcionários
             await this.loadAndRenderFuncionarios();
         } catch (error) {
-            console.error('Erro ao inicializar página de funcionários:', error);
-            this.showError('Erro ao carregar dados dos funcionários');
+        console.error('Erro ao inicializar página de profissionais:', error);
+            this.showError('Erro ao carregar dados dos profissionais');
         }
     }
     
@@ -447,7 +447,7 @@ class App {
                     window.location.href = 'entrar.html';
                     return;
                 }
-                throw new Error('Erro ao carregar funcionários');
+            throw new Error('Erro ao carregar profissionais');
             }
             
             const data = await response.json();
@@ -463,8 +463,8 @@ class App {
             
             this.renderFuncionariosTable(funcionarios);
         } catch (error) {
-            console.error('Erro ao carregar funcionários:', error);
-            this.showError('Erro ao carregar funcionários: ' + error.message);
+            console.error('Erro ao carregar profissionais:', error);
+            this.showError('Erro ao carregar profissionais: ' + error.message);
         }
     }
     
@@ -478,7 +478,7 @@ class App {
                 <tr>
                     <td colspan="7" class="text-center text-muted">
                         <i class="bi bi-person-badge" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                        <p>Nenhum funcionário cadastrado</p>
+                        <p>Nenhum profissional cadastrado</p>
                     </td>
                 </tr>
             `;
@@ -604,13 +604,13 @@ class App {
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header bg-warning text-dark">
-                            <h5 class="modal-title">Funcionário possui agendamentos</h5>
+                            <h5 class="modal-title">Profissional possui agendamentos</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
                             <div class="alert alert-warning">
                                 <i class="bi bi-exclamation-triangle"></i>
-                                <strong>Atenção!</strong> O funcionário <span id="funcionarioNomeTransfer"></span> possui agendamentos ativos.
+                                <strong>Atenção!</strong> O profissional <span id="funcionarioNomeTransfer"></span> possui agendamentos ativos.
                             </div>
                             
                             <div class="mb-3">
@@ -623,14 +623,14 @@ class App {
                             <div class="mb-3">
                                 <label for="novoFuncionario" class="form-label">Transferir agendamentos para:</label>
                                 <select class="form-control" id="novoFuncionario">
-                                    <option value="">Selecione um funcionário</option>
+                                    <option value="">Selecione um profissional</option>
                                     <!-- Opções serão carregadas via JavaScript -->
                                 </select>
                             </div>
                             
                             <p class="text-muted">
                                 <i class="bi bi-info-circle"></i>
-                                Todos os agendamentos serão transferidos para o funcionário selecionado e o funcionário atual será excluído.
+                                Todos os agendamentos serão transferidos para o profissional selecionado e o profissional atual será excluído.
                             </p>
                         </div>
                         <div class="modal-footer">
@@ -1363,7 +1363,7 @@ class App {
                                 <input type="hidden" id="especialidadeId">
                                 <div class="mb-3">
                                     <label for="nome" class="form-label">Nome *</label>
-                                    <input type="text" class="form-control" id="nome" required>
+                                    <input type="text" class="form-control" id="nome" placeholder="Ex: Psicologia Clínica, Terapia Cognitiva, Neuropsicologia..." required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="descricao" class="form-label">Descrição</label>
@@ -1408,10 +1408,10 @@ class App {
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h2>
-                            <i class="bi bi-person-badge me-2"></i>Funcionários
+                            <i class="bi bi-person-badge me-2"></i>Profissionais
                         </h2>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#funcionarioModal">
-                            <i class="bi bi-plus-lg me-1"></i>Novo Funcionário
+                            <i class="bi bi-plus-lg me-1"></i>Novo Profissional
                         </button>
                     </div>
                 </div>
@@ -1424,7 +1424,7 @@ class App {
                         <span class="input-group-text">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" class="form-control" id="funcionario-search" placeholder="Buscar funcionários...">
+                        <input type="text" class="form-control" id="funcionario-search" placeholder="Buscar profissionais...">
                     </div>
                 </div>
             </div>
@@ -1457,12 +1457,12 @@ class App {
                 </div>
             </div>
             
-            <!-- Modal para Criar/Editar Funcionário -->
+            <!-- Modal para Criar/Editar Profissional -->
             <div class="modal fade" id="funcionarioModal" tabindex="-1">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="modalTitle">Novo Funcionário</h5>
+                            <h5 class="modal-title" id="modalTitle">Novo Profissional</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
@@ -1522,7 +1522,7 @@ class App {
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <p>Tem certeza que deseja excluir este funcionário?</p>
+                            <p>Tem certeza que deseja excluir este profissional?</p>
                             <p class="text-muted">Esta ação não pode ser desfeita.</p>
                         </div>
                         <div class="modal-footer">
@@ -1603,12 +1603,12 @@ document.addEventListener("DOMContentLoaded", function() {
     window.app = new App();
 });
 
-// Funções globais para funcionários
+// Funções globais para profissionais
 function editFuncionario(id) {
     const funcionario = window.funcionarios?.find(f => f.id === id);
     
     if (!funcionario) {
-        window.app.showError('Funcionário não encontrado');
+        window.app.showError('Profissional não encontrado');
         return;
     }
     
@@ -1619,7 +1619,7 @@ function editFuncionario(id) {
     document.getElementById('email').value = funcionario.email || '';
     document.getElementById('especialidade').value = funcionario.especialidade_id || '';
     document.getElementById('obs').value = funcionario.obs || '';
-    document.getElementById('modalTitle').textContent = 'Editar Funcionário';
+    document.getElementById('modalTitle').textContent = 'Editar Profissional';
     
     // Abrir modal
     const modal = new bootstrap.Modal(document.getElementById('funcionarioModal'));
@@ -1632,11 +1632,11 @@ function deleteFuncionario(id) {
     const funcionario = window.funcionarios?.find(f => f.id === id);
     
     if (!funcionario) {
-        window.app.showError('Funcionário não encontrado');
+        window.app.showError('Profissional não encontrado');
         return;
     }
     
-    const nomeFuncionario = funcionario.nome || 'funcionário selecionado';
+    const nomeFuncionario = funcionario.nome || 'profissional selecionado';
     
     // Criar popup de confirmação jQuery
     const popupHtml = `
@@ -1668,7 +1668,7 @@ function deleteFuncionario(id) {
                 ">⚠️</div>
                 <h4 style="margin-bottom: 15px; color: #333;">Confirmar Exclusão</h4>
                 <p style="margin-bottom: 25px; color: #666;">
-                    Tem certeza que deseja excluir o funcionário <strong>${nomeFuncionario}</strong>?
+                    Tem certeza que deseja excluir o profissional <strong>${nomeFuncionario}</strong>?
                     <br><small>Esta ação não pode ser desfeita.</small>
                 </p>
                 <div style="display: flex; gap: 10px; justify-content: center;">
@@ -1714,7 +1714,7 @@ function deleteFuncionario(id) {
         }
     });
     
-    console.log('Popup de confirmação criado para funcionário:', nomeFuncionario);
+    console.log('Popup de confirmação criado para profissional:', nomeFuncionario);
 }
 
 async function saveFuncionario() {
@@ -1751,7 +1751,7 @@ async function saveFuncionario() {
         const result = await response.json();
         
         if (!response.ok) {
-            throw new Error(result.error || 'Erro ao salvar funcionário');
+            throw new Error(result.error || 'Erro ao salvar profissional');
         }
         
         // Fechar modal
@@ -1762,23 +1762,23 @@ async function saveFuncionario() {
         await window.app.loadAndRenderFuncionarios();
         
         window.app.showToast(
-            funcionarioId ? 'Funcionário atualizado com sucesso!' : 'Funcionário criado com sucesso!',
+            funcionarioId ? 'Profissional atualizado com sucesso!' : 'Profissional criado com sucesso!',
             'success'
         );
         
         // Resetar formulário
         form.reset();
         document.getElementById('funcionarioId').value = '';
-        document.getElementById('modalTitle').textContent = 'Novo Funcionário';
+        document.getElementById('modalTitle').textContent = 'Novo Profissional';
     } catch (error) {
         console.error('Erro:', error);
-        window.app.showError('Erro ao salvar funcionário: ' + error.message);
+        window.app.showError('Erro ao salvar profissional: ' + error.message);
     }
 }
 
-// Função executeDeleteFromApp para funcionários (chamada pelo popup jQuery)
+// Função executeDeleteFromApp para profissionais (chamada pelo popup jQuery)
 function executeDeleteFromApp(funcionarioId) {
-    console.log('executeDeleteFromApp chamada para funcionário ID:', funcionarioId);
+    console.log('executeDeleteFromApp chamada para profissional ID:', funcionarioId);
     
     // Mostrar loading
     const loadingPopup = `
@@ -1809,7 +1809,7 @@ function executeDeleteFromApp(funcionarioId) {
                     animation: spin 1s linear infinite;
                     margin: 0 auto 15px;
                 "></div>
-                <p>Excluindo funcionário...</p>
+                <p>Excluindo profissional...</p>
             </div>
         </div>
         <style>
@@ -1831,10 +1831,10 @@ function executeDeleteFromApp(funcionarioId) {
         },
         success: function(data, textStatus, xhr) {
             $('#loadingPopup').remove();
-            console.log('Funcionário excluído com sucesso:', data);
+            console.log('Profissional excluído com sucesso:', data);
             
             // Mostrar popup de sucesso
-            showSuccessPopupApp('✅ Funcionário excluído com sucesso!');
+            showSuccessPopupApp('✅ Profissional excluído com sucesso!');
             
             // Recarregar lista após um breve delay
             setTimeout(() => {
@@ -1847,14 +1847,14 @@ function executeDeleteFromApp(funcionarioId) {
         },
         error: function(xhr, textStatus, errorThrown) {
             $('#loadingPopup').remove();
-            console.log('Erro ao excluir funcionário - Status:', xhr.status);
+            console.log('Erro ao excluir profissional - Status:', xhr.status);
             console.log('Resposta do servidor:', xhr.responseText);
             
-            let errorMessage = 'Erro ao excluir funcionário';
+            let errorMessage = 'Erro ao excluir profissional';
             
             if (xhr.status === 409) {
-                // Funcionário possui agendamentos - mostrar mensagem clara
-                errorMessage = 'Este funcionário possui agendamentos ativos e não pode ser excluído. Para excluir este funcionário, primeiro transfira ou cancele todos os agendamentos associados a ele.';
+                // Profissional possui agendamentos - mostrar mensagem clara
+                errorMessage = 'Este profissional possui agendamentos ativos e não pode ser excluído. Para excluir este profissional, primeiro transfira ou cancele todos os agendamentos associados a ele.';
             } else if (xhr.responseText) {
                 try {
                     const response = JSON.parse(xhr.responseText);
@@ -2015,7 +2015,7 @@ async function showTransferModal(data) {
             agendamentosList.appendChild(item);
         });
         
-        // Carregar lista de funcionários disponíveis
+// Carregar lista de profissionais disponíveis
         await loadFuncionariosForTransfer();
         
         // Armazenar dados para transferência
@@ -2056,7 +2056,7 @@ async function loadFuncionariosForTransfer() {
         if (!select) {
             throw new Error('Elemento novoFuncionario não encontrado no DOM');
         }
-        select.innerHTML = '<option value="">Selecione um funcionário</option>';
+    select.innerHTML = '<option value="">Selecione um profissional</option>';
         
         funcionarios.forEach(funcionario => {
             // Não incluir o funcionário que está sendo excluído
@@ -2069,8 +2069,8 @@ async function loadFuncionariosForTransfer() {
         });
         
     } catch (error) {
-        console.error('Erro ao carregar funcionários:', error);
-        window.app.showError('Erro ao carregar lista de funcionários');
+        console.error('Erro ao carregar profissionais:', error);
+        window.app.showError('Erro ao carregar lista de profissionais');
     }
 }
 
@@ -2078,7 +2078,7 @@ async function confirmTransferAndDelete() {
     const novoFuncionarioId = document.getElementById('novoFuncionario').value;
     
     if (!novoFuncionarioId) {
-        window.app.showError('Por favor, selecione um funcionário para transferir os agendamentos');
+        window.app.showError('Por favor, selecione um profissional para transferir os agendamentos');
         return;
     }
     

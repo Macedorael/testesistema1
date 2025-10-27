@@ -7,6 +7,7 @@ from src.models.diario import DiaryEntry
 from src.utils.auth import login_required, login_and_subscription_required, get_current_user
 from datetime import datetime
 from sqlalchemy import func, and_
+from sqlalchemy.exc import IntegrityError
 import logging
 
 # Configurar logger específico para pacientes
@@ -31,8 +32,12 @@ def get_patients():
                 "message": "Usuário não encontrado"
             }), 401
             
-        logger.debug(f"[GET /patients] Buscando pacientes para user_id: {current_user.id}")
-        patients = Patient.query.filter_by(user_id=current_user.id).order_by(Patient.nome_completo).all()
+        only_active = request.args.get('only_active') in ['1', 'true', 'True']
+        logger.debug(f"[GET /patients] Buscando pacientes para user_id: {current_user.id} | only_active={only_active}")
+        query = Patient.query.filter_by(user_id=current_user.id)
+        if only_active:
+            query = query.filter(Patient.ativo == True)
+        patients = query.order_by(Patient.nome_completo).all()
         logger.info(f"[GET /patients] Encontrados {len(patients)} pacientes")
         
         patients_data = [patient.to_dict() for patient in patients]
@@ -122,7 +127,9 @@ def get_patient(patient_id):
 @patients_bp.route("/patients", methods=["POST"])
 @login_and_subscription_required
 def create_patient():
-    """Cria um novo paciente e uma conta de usuário com senha padrão"""
+    """Cria um novo paciente e uma conta de usuário com senha padrão.
+    Idempotente: múltiplas requisições iguais (ex.: duplo clique) retornam sucesso com o mesmo recurso.
+    """
     try:
         current_user = get_current_user()
         if not current_user:
@@ -151,23 +158,35 @@ def create_patient():
                 "message": "Formato de data inválido. Use YYYY-MM-DD"
             }), 400
         
-        # Verificar se já existe um paciente com o mesmo email para este usuário
+        # Se o paciente já existe para este usuário, tratar como idempotente
         existing_patient = Patient.query.filter_by(
             user_id=current_user.id,
             email=data["email"]
         ).first()
-        
         if existing_patient:
             return jsonify({
-                "success": False,
-                "message": "Este email já está cadastrado para outro paciente. Por favor, use um email diferente."
-            }), 400
+                "success": True,
+                "message": "Paciente já criado anteriormente",
+                "data": {
+                    "patient": existing_patient.to_dict()
+                }
+            }), 200
             
         # Verificar se já existe um usuário com este email
         from src.models.usuario import User
         existing_user = User.query.filter_by(email=data["email"]).first()
-        
         if existing_user:
+            # Se já existe um usuário e também já existe o paciente (corrida), devolver idempotente.
+            existing_patient = Patient.query.filter_by(user_id=current_user.id, email=data["email"]).first()
+            if existing_patient:
+                return jsonify({
+                    "success": True,
+                    "message": "Paciente já criado anteriormente",
+                    "data": {
+                        "patient": existing_patient.to_dict()
+                    }
+                }), 200
+            # Caso contrário, é realmente um conflito de email
             return jsonify({
                 "success": False,
                 "message": "Este email já está cadastrado no sistema. Por favor, use um email diferente."
@@ -212,7 +231,7 @@ def create_patient():
         
         db.session.add(patient)
         db.session.commit()
-        
+
         return jsonify({
             "success": True,
             "message": "Paciente criado com sucesso e conta de acesso gerada",
@@ -221,11 +240,29 @@ def create_patient():
                 "user": {
                     "username": patient_user.username,
                     "email": patient_user.email,
-                    "password": "123456"  # Informar a senha padrão na resposta
+                    "password": "123456"
                 }
             }
         }), 201
-        
+
+    except IntegrityError:
+        # Tratar corrida de duplo clique: retornar o recurso existente
+        db.session.rollback()
+        try:
+            from src.models.usuario import User
+            existing_patient = Patient.query.filter_by(user_id=get_current_user().id, email=request.get_json().get("email")).first()
+            if existing_patient:
+                return jsonify({
+                    "success": True,
+                    "message": "Paciente já criado anteriormente",
+                    "data": {"patient": existing_patient.to_dict()}
+                }), 200
+        except Exception:
+            pass
+        return jsonify({
+            "success": False,
+            "message": "Conflito de dados ao criar paciente. Tente novamente."
+        }), 409
     except Exception as e:
         db.session.rollback()
         return jsonify({
@@ -290,6 +327,8 @@ def update_patient(patient_id):
         patient.email = data["email"]
         patient.data_nascimento = data_nascimento
         patient.observacoes = data.get("observacoes", "")
+        if 'ativo' in data:
+            patient.ativo = bool(data.get('ativo'))
         patient.nome_contato_emergencia = data.get("nome_contato_emergencia")
         patient.telefone_contato_emergencia = data.get("telefone_contato_emergencia")
         patient.grau_parentesco_emergencia = data.get("grau_parentesco_emergencia")
@@ -351,6 +390,32 @@ def delete_patient(patient_id):
             "success": False,
             "message": f"Erro ao excluir paciente: {str(e)}"
         }), 500
+
+@patients_bp.route("/patients/<int:patient_id>/status", methods=["PATCH"])
+@login_and_subscription_required
+def toggle_patient_status(patient_id):
+    """Ativa ou desativa um paciente"""
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
+
+        patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
+        if not patient:
+            return jsonify({"success": False, "message": "Paciente não encontrado ou não autorizado"}), 404
+
+        data = request.get_json() or {}
+        if 'ativo' not in data:
+            return jsonify({"success": False, "message": "Campo 'ativo' é obrigatório"}), 400
+
+        patient.ativo = bool(data.get('ativo'))
+        patient.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Status atualizado com sucesso", "data": patient.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Erro ao atualizar status: {str(e)}"}), 500
 
 @patients_bp.route("/patients/<int:patient_id>/appointments", methods=["GET"])
 @login_and_subscription_required

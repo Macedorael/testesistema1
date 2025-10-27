@@ -29,8 +29,9 @@ window.Appointments = {
     async loadPatients() {
         try {
             LoadingManager.show('appointments-loading', 'Carregando pacientes...');
-            const response = await window.app.apiCall('/patients');
-            this.patients = response.data;
+            // Carregar apenas pacientes ativos para criação de agendamentos
+            const response = await window.app.apiCall('/patients?only_active=1');
+            this.patients = response.data || [];
             this.populatePatientFilters();
         } catch (error) {
             console.error('Error loading patients:', error);
@@ -59,8 +60,8 @@ window.Appointments = {
     populatePatientFilters() {
         const patientFilter = document.getElementById('patient-filter');
         if (patientFilter) {
-            const options = this.patients.map(patient => 
-                `<option value="${patient.id}">${patient.nome_completo}</option>`
+            const options = (this.patients || []).map(patient => 
+                `<option value="${patient.id}">${patient.nome_completo}${patient.ativo === false ? ' (Inativo)' : ''}</option>`
             ).join('');
             patientFilter.innerHTML = '<option value="">Todos os pacientes</option>' + options;
         }
@@ -198,9 +199,26 @@ window.Appointments = {
         this.showAppointmentModal();
     },
 
-    showAppointmentModal(preselectedPatientId = null) {
+    async showAppointmentModal(preselectedPatientId = null) {
         const isEdit = this.currentAppointment !== null;
         const title = isEdit ? 'Editar Agendamento' : 'Novo Agendamento';
+        // Garantir que o paciente do agendamento (caso inativo) apareça no select ao editar
+        if (isEdit && this.currentAppointment?.patient_id) {
+            const exists = (this.patients || []).some(p => p.id === this.currentAppointment.patient_id);
+            if (!exists) {
+                try {
+                    const resp = await window.app.apiCall(`/patients/${this.currentAppointment.patient_id}`);
+                    if (resp && resp.data) {
+                        const p = resp.data;
+                        if (!this.patients) this.patients = [];
+                        // Evitar duplicados
+                        if (!this.patients.some(x => x.id === p.id)) this.patients.push(p);
+                    }
+                } catch (e) {
+                    console.warn('Não foi possível carregar paciente inativo vinculado ao agendamento.', e);
+                }
+            }
+        }
         
         const modalHtml = `
             <div class="modal fade" id="appointmentModal" tabindex="-1">
@@ -218,11 +236,11 @@ window.Appointments = {
                                             <label for="patient_id" class="form-label">Paciente *</label>
                                             <select class="form-select" id="patient_id" required>
                                                 <option value="">Selecione um paciente</option>
-                                                ${this.patients.map(patient => `
+                                                ${(this.patients || []).map(patient => `
                                                     <option value="${patient.id}" 
                                                         ${isEdit && this.currentAppointment.patient_id === patient.id ? 'selected' : ''}
                                                         ${preselectedPatientId === patient.id ? 'selected' : ''}>
-                                                        ${patient.nome_completo}
+                                                        ${patient.nome_completo}${patient.ativo === false ? ' (Inativo)' : ''}
                                                     </option>
                                                 `).join('')}
                                             </select>

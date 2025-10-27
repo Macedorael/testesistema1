@@ -14,6 +14,7 @@ class Patient(db.Model):
     email = db.Column(db.String(120), nullable=False)
     data_nascimento = db.Column(db.Date, nullable=False)
     observacoes = db.Column(db.Text)
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
     
     # Novos campos para contato de emergência
     nome_contato_emergencia = db.Column(db.String(200), nullable=True)
@@ -41,6 +42,7 @@ class Patient(db.Model):
             'email': self.email,
             'data_nascimento': self.data_nascimento.isoformat() if self.data_nascimento else None,
             'observacoes': self.observacoes,
+            'ativo': bool(self.ativo) if self.ativo is not None else True,
             'nome_contato_emergencia': self.nome_contato_emergencia,
             'telefone_contato_emergencia': self.telefone_contato_emergencia,
             'grau_parentesco_emergencia': self.grau_parentesco_emergencia,

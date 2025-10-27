@@ -502,6 +502,31 @@ with app.app_context():
             except Exception as diary_migration_error:
                 print(f"[WARNING] Erro ao migrar 'diary_entries': {diary_migration_error}")
                 db.session.rollback()
+
+            # NOVO: Migrar coluna 'ativo' na tabela 'patients'
+            try:
+                patient_columns = inspector.get_columns('patients')
+                patient_column_names = [col['name'] for col in patient_columns]
+                if 'ativo' not in patient_column_names:
+                    print("[MIGRATION] Coluna 'ativo' não encontrada em 'patients'. Adicionando...")
+
+                    db_url = os.getenv('DATABASE_URL', '')
+                    is_postgres = 'postgresql' in db_url or 'postgres' in db_url
+
+                    if is_postgres:
+                        db.session.execute(text("ALTER TABLE patients ADD COLUMN ativo BOOLEAN DEFAULT TRUE NOT NULL"))
+                        db.session.execute(text("UPDATE patients SET ativo = TRUE WHERE ativo IS NULL"))
+                    else:
+                        db.session.execute(text("ALTER TABLE patients ADD COLUMN ativo BOOLEAN DEFAULT 1 NOT NULL"))
+                        db.session.execute(text("UPDATE patients SET ativo = 1 WHERE ativo IS NULL"))
+
+                    db.session.commit()
+                    print("✅ [MIGRATION] Coluna 'ativo' adicionada em 'patients'")
+                else:
+                    print("✅ [MIGRATION] Coluna 'ativo' já existe em 'patients'")
+            except Exception as patients_migration_error:
+                print(f"[WARNING] Erro ao migrar 'patients': {patients_migration_error}")
+                db.session.rollback()
             
             # População automática de roles para usuários existentes
             print("[STARTUP] Verificando e populando roles de usuários...")
