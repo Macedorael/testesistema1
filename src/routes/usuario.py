@@ -17,6 +17,10 @@ def login():
     data = request.json
     email = data.get("email")
     password = data.get("password")
+    # Escopo opcional para restringir login por página:
+    # 'patient' => apenas pacientes
+    # 'professional' => apenas usuários profissionais (user/admin)
+    login_scope = (data.get("login_scope") or "").strip().lower()
 
     user = User.query.filter_by(email=email).first()
 
@@ -27,11 +31,35 @@ def login():
     # Verificar se a senha está correta
     if not user.check_password(password):
         return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
-    
+
     # Login bem-sucedido
     session['user_id'] = user.id
     session['username'] = user.username
     session['role'] = user.role
+
+    # Enforçar restrição por escopo da página
+    if login_scope == 'patient' and user.role != 'patient':
+        # Usuário não é paciente tentando logar na página de paciente
+        return jsonify({
+            "error": "Esta página é exclusiva para pacientes. Use o login normal.",
+            "user": {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role
+            }
+        }), 403
+    if login_scope == 'professional' and user.role == 'patient':
+        # Paciente tentando logar na página de profissionais
+        return jsonify({
+            "error": "Use a Área do Paciente para acessar.",
+            "user": {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role
+            }
+        }), 403
     
     # Verificar se é o primeiro login (para pacientes)
     if user.role == 'patient' and user.first_login:
@@ -58,6 +86,19 @@ def login():
                 'role': user.role
             },
             "redirect": "/paciente-dashboard.html"
+        }), 200
+    
+    # Redirecionamento para administradores: dashboard administrativo
+    if getattr(user, 'role', None) == 'admin':
+        return jsonify({
+            "message": "Login bem-sucedido!",
+            "user": {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role
+            },
+            "redirect": "/admin/dashboard"
         }), 200
     
     # Para usuários normais, verificar assinatura

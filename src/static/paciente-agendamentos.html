@@ -17,52 +17,62 @@
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="inicial.html">
-                <i class="bi bi-heart-pulse me-2"></i>
-                Consultório
+  <!-- Title Navbar (centralizado, igual ao user) -->
+  <nav class="navbar navbar-dark bg-primary" id="main-title-navbar">
+    <div class="container-fluid justify-content-center">
+      <a class="navbar-brand fw-bold" href="inicial.html" id="main-title" style="font-size: 30px !important; font-weight: bold !important; line-height: 1.2 !important;">
+        <i class="bi bi-heart-pulse me-2"></i>
+        Consultório
+      </a>
+    </div>
+  </nav>
+
+  <!-- Menu Navbar (botões à esquerda, sair à direita, mesma cor) -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPatient">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarPatient">
+        <!-- Botões do lado esquerdo -->
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a id="novoRegistroBtn" class="nav-link nav-item-vertical" href="#">
+              <i class="bi bi-journal-plus"></i>
+              <span class="nav-text">Novo Registro Diário</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPatient">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarPatient">
-                <ul class="navbar-nav ms-auto align-items-lg-center">
-                    <li class="nav-item">
-                        <a class="btn btn-outline-light btn-sm" href="paciente-dashboard.html">
-                            <i class="bi bi-speedometer2"></i>
-                            Resumo
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-light btn-sm active" aria-current="page" href="paciente-agendamentos.html">
-                            <i class="bi bi-calendar-event"></i>
-                            Agendamentos
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-outline-light btn-sm" href="paciente-diarios.html">
-                            <i class="bi bi-journal-text"></i>
-                            Registros Diários
-                        </a>
-                    </li>
-                    <li class="nav-item ms-lg-2 my-2 my-lg-0">
-                        <a id="novoRegistroBtn" class="btn btn-light btn-sm" href="#">
-                            <i class="bi bi-journal-plus"></i>
-                            Novo Registro Diário
-                        </a>
-                    </li>
-                    <li class="nav-item ms-lg-2">
-                        <a id="logoutBtn" class="btn btn-outline-light btn-sm" href="#">
-                            <i class="bi bi-box-arrow-right"></i>
-                            Sair
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-item-vertical" href="paciente-dashboard.html">
+              <i class="bi bi-speedometer2"></i>
+              <span class="nav-text">Resumo</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-item-vertical active" aria-current="page" href="paciente-agendamentos.html">
+              <i class="bi bi-calendar-event"></i>
+              <span class="nav-text">Agendamentos</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-item-vertical" href="paciente-diarios.html">
+              <i class="bi bi-journal-text"></i>
+              <span class="nav-text">Registros Diários</span>
+            </a>
+          </li>
+        </ul>
+        <!-- Sair no canto direito -->
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a id="logoutBtn" class="nav-link nav-item-vertical" href="#">
+              <i class="bi bi-box-arrow-right"></i>
+              <span class="nav-text">Sair</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
     <main class="container py-4">
         <!-- Bloco de resumo removido para manter navegação apenas pelo menu (Resumo, Agendamentos, Registros Diários) -->
@@ -87,28 +97,7 @@
         <!-- Lista de agendamentos -->
         <div id="appointmentsList" class="mt-3"></div>
 
-        <hr class="my-4" />
-
-        <!-- Registros Diários -->
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h2 id="diariosSection" class="h5 mb-0">Registros Diários</h2>
-            <!-- Botão "Novo Registro Diário" movido para a navbar -->
-        </div>
-
-        <!-- Loading dos registros diários -->
-        <div id="diaryLoadingSpinner" class="d-none justify-content-center my-3">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando...</span>
-            </div>
-        </div>
-
-        <!-- Sem registros diários -->
-        <div id="noDiaryEntries" class="alert alert-info" style="display: none;">
-            Nenhum registro diário encontrado.
-        </div>
-
-        <!-- Lista de registros diários -->
-        <div id="diaryList" class="mt-3"></div>
+        <!-- Seção de registros diários removida para exibir apenas agendamentos -->
     </main>
 
     <!-- Bootstrap JS -->

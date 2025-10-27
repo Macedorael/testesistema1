@@ -320,8 +320,8 @@ def admin_dashboard():
 def get_stats():
     """Retorna estatísticas gerais do sistema"""
     try:
-        # Total de usuários
-        total_users = User.query.count()
+        # Total de usuários (exclui pacientes)
+        total_users = User.query.filter(User.role != 'patient').count()
         
         # Assinaturas ativas
         active_subscriptions = Subscription.query.filter_by(status='active').filter(
@@ -350,7 +350,8 @@ def get_users():
     try:
         from src.models.historico_assinatura import SubscriptionHistory
         
-        users = User.query.all()
+        # Listar apenas usuários não-pacientes
+        users = User.query.filter(User.role != 'patient').all()
         users_data = []
         
         for user in users:

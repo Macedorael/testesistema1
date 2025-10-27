@@ -462,17 +462,20 @@ window.Patients = {
                             <div class="row mt-3">
                                 <div class="col-12">
                                     <div class="d-flex gap-2">
-                                        <button class="btn btn-primary" onclick="Appointments.showCreateModalForPatient(${patient.id})">
+                                        <button class="btn btn-outline-primary" onclick="Appointments.showCreateModalForPatient(${patient.id})">
                                             <i class="bi bi-calendar-plus me-1"></i>Novo Agendamento
                                         </button>
-                                        <button class="btn btn-outline-secondary" onclick="Patients.editPatient(${patient.id})">
-                                            <i class="bi bi-pencil me-1"></i>Editar
+                                        <button class="btn btn-outline-primary" onclick="Patients.viewDiaryEntries(${patient.id})">
+                                            <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer">
+                            <button class="btn btn-outline-secondary" onclick="Patients.editPatient(${patient.id})">
+                                <i class="bi bi-pencil me-1"></i>Editar
+                            </button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                         </div>
                     </div>
@@ -491,6 +494,92 @@ window.Patients = {
         
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('patientDetailsModal'));
+        modal.show();
+    },
+
+    async viewDiaryEntries(patientId) {
+        try {
+            const response = await window.app.apiCall(`/patients/${patientId}/diary-entries`);
+            const entries = response.data || [];
+            const patient = this.patients.find(p => p.id === patientId);
+            this.showDiaryEntriesModal(patient, entries);
+        } catch (error) {
+            console.error('Erro ao carregar pensamentos:', error);
+            window.app.showError('Erro ao carregar pensamentos do paciente');
+        }
+    },
+
+    showDiaryEntriesModal(patient, entries) {
+        const patientName = patient ? patient.nome_completo : 'Paciente';
+        const modalHtml = `
+            <div class="modal fade" id="diaryEntriesModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-journal-text me-2"></i>Pensamentos de ${patientName}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${entries.length === 0 ? `
+                                <div class="text-muted">Nenhum pensamento registrado.</div>
+                            ` : `
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Data</th>
+                                                <th>Situação</th>
+                                                <th>Pensamento</th>
+                                                <th>Emoções</th>
+                                                <th>Comportamento</th>
+                                                <th>Consequência</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${entries.map(e => {
+                                                const dIso = e.data_registro || e.created_at;
+                                                const dataStr = dIso ? window.app.formatDateTime(dIso) : '-';
+                                                let emoccoes = '';
+                                                try {
+                                                    const arr = typeof e.emocao_intensidades === 'string'
+                                                        ? JSON.parse(e.emocao_intensidades)
+                                                        : (e.emocao_intensidades || []);
+                                                    emoccoes = Array.isArray(arr) && arr.length
+                                                        ? arr.map(p => `${p.emocao} (${p.intensidade})`).join(', ')
+                                                        : (e.emocao ? `${e.emocao} (${e.intensidade ?? '-'})` : '-');
+                                                } catch (_) {
+                                                    emoccoes = e.emocao ? `${e.emocao} (${e.intensidade ?? '-'})` : '-';
+                                                }
+                                                return `
+                                                    <tr>
+                                                        <td>${dataStr}</td>
+                                                        <td>${e.situacao || '-'}</td>
+                                                        <td>${e.pensamento || '-'}</td>
+                                                        <td>${emoccoes}</td>
+                                                        <td>${e.comportamento || '-'}</td>
+                                                        <td>${e.consequencia || '-'}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const existingModal = document.getElementById('diaryEntriesModal');
+        if (existingModal) existingModal.remove();
+        document.getElementById('modals-container').innerHTML = modalHtml;
+        const modal = new bootstrap.Modal(document.getElementById('diaryEntriesModal'));
         modal.show();
     },
 

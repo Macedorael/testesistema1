@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Detectar contexto da página para restringir login por papel
+    const urlParams = new URLSearchParams(window.location.search);
+    const isPatientLoginPage = (
+        window.location.pathname.endsWith('entrar-paciente.html') ||
+        urlParams.has('paciente')
+    );
+    const loginScope = isPatientLoginPage ? 'patient' : 'professional';
     // Verificar se o usuário já está logado via API (mais confiável que localStorage)
     try {
         const response = await fetch('/api/me');
@@ -60,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email, password, login_scope: loginScope })
             });
             
             const data = await response.json();
@@ -85,7 +92,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 button.disabled = false;
                 
                 // Exibir mensagem de erro específica
-                errorMessage.textContent = data.error || 'Erro ao fazer login';
+                // Mensagens claras quando o papel não corresponde ao contexto
+                if (response.status === 403 && data && data.error) {
+                    errorMessage.textContent = data.error;
+                } else {
+                    errorMessage.textContent = data.error || 'Erro ao fazer login';
+                }
                 errorMessage.classList.add('show');
                 
                 // Remover a classe 'show' após 5 segundos
