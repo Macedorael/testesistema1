@@ -47,13 +47,18 @@ window.Dashboard = {
 
     renderStatsCards(stats) {
         const statsContainer = document.getElementById('stats-cards');
+        if (!statsContainer) {
+            console.warn('Elemento #stats-cards não encontrado');
+            return;
+        }
         
         const statsCards = [
             {
                 title: 'Total de Pacientes',
                 value: stats.general.total_patients,
                 icon: 'people',
-                color: 'primary'
+                color: 'primary',
+                page: 'patients'
             },
             {
                 title: 'Total Recebido',
@@ -99,9 +104,11 @@ window.Dashboard = {
             }
         ];
 
-        const cardsHtml = statsCards.map(card => `
+        const cardsHtml = statsCards.map(card => {
+            const clickableAttr = card.page ? ` role="button" style="cursor:pointer" onclick="window.app.loadPage('${card.page}')" ` : '';
+            return `
             <div class="col-lg-3 col-md-6 mb-4">
-                <div class="stats-card ${card.color}">
+                <div class="stats-card ${card.color}"${clickableAttr}>
                     <div class="d-flex align-items-center">
                         <div class="stats-icon me-3">
                             <i class="bi bi-${card.icon}"></i>
@@ -113,7 +120,8 @@ window.Dashboard = {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         statsContainer.innerHTML = cardsHtml;
     },
@@ -425,13 +433,19 @@ window.Dashboard = {
             this.renderRecentPayments(payments);
         } catch (error) {
             console.error('Error loading recent payments:', error);
-            document.getElementById('recent-payments').innerHTML = 
-                '<div class="text-muted">Erro ao carregar pagamentos recentes</div>';
+            const container = document.getElementById('recent-payments');
+            if (container) {
+                container.innerHTML = '<div class="text-muted">Erro ao carregar pagamentos recentes</div>';
+            }
         }
     },
 
     renderRecentPayments(payments) {
         const container = document.getElementById('recent-payments');
+        if (!container) {
+            console.warn('Elemento #recent-payments não encontrado');
+            return;
+        }
         
         if (payments.length === 0) {
             container.innerHTML = '<div class="text-muted">Nenhum pagamento registrado</div>';

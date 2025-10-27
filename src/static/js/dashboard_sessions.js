@@ -1,5 +1,6 @@
 // Dashboard Sessions JavaScript
 window.DashboardSessions = {
+    initialized: false,
     currentData: {
         stats: {},
         rescheduled: [],
@@ -20,7 +21,10 @@ window.DashboardSessions = {
         }
         
         console.log('[DEBUG] DashboardSessions.init() iniciado');
-        this.setupEventListeners();
+        if (!this.initialized) {
+            this.setupEventListeners();
+            this.initialized = true;
+        }
         this.loadDashboard();
     },
 

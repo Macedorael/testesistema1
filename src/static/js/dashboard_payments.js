@@ -1,5 +1,6 @@
 // Dashboard Payments JavaScript
 window.DashboardPayments = {
+    initialized: false,
     currentData: {
         stats: {},
         modalidades: [],
@@ -15,7 +16,10 @@ window.DashboardPayments = {
         }
         
         console.log('[DEBUG] DashboardPayments.init() iniciado');
-        this.setupEventListeners();
+        if (!this.initialized) {
+            this.setupEventListeners();
+            this.initialized = true;
+        }
         this.loadDashboard();
     },
 
@@ -74,6 +78,15 @@ window.DashboardPayments = {
             }
         } catch (error) {
             console.error('Erro ao carregar estatísticas:', error);
+            // Fallback visual
+            const totalRecebidoEl = document.getElementById('total-recebido');
+            if (totalRecebidoEl) totalRecebidoEl.textContent = this.formatCurrency(0);
+            const totalReceberEl = document.getElementById('total-receber');
+            if (totalReceberEl) totalReceberEl.textContent = this.formatCurrency(0);
+            const totalPagamentosEl = document.getElementById('total-pagamentos');
+            if (totalPagamentosEl) totalPagamentosEl.textContent = '0';
+            const sessoesPendentesEl = document.getElementById('sessoes-pendentes');
+            if (sessoesPendentesEl) sessoesPendentesEl.textContent = '0';
             throw error;
         }
     },
@@ -92,6 +105,10 @@ window.DashboardPayments = {
             }
         } catch (error) {
             console.error('Erro ao carregar modalidades:', error);
+            const container = document.getElementById('modalidades-container');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500">Erro ao carregar modalidades.</p>';
+            }
             throw error;
         }
     },
@@ -109,6 +126,10 @@ window.DashboardPayments = {
             }
         } catch (error) {
             console.error('Erro ao carregar pagamentos recentes:', error);
+            const container = document.getElementById('recent-payments-container');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500">Erro ao carregar pagamentos recentes.</p>';
+            }
             throw error;
         }
     },
@@ -126,6 +147,10 @@ window.DashboardPayments = {
             }
         } catch (error) {
             console.error('Erro ao carregar sessões pendentes:', error);
+            const container = document.getElementById('pending-sessions-container');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500">Erro ao carregar sessões pendentes.</p>';
+            }
             throw error;
         }
     },

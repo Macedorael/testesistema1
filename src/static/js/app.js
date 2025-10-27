@@ -171,7 +171,8 @@ class App {
                     content = '<div class="alert alert-warning">Página não encontrada</div>';
             }
 
-            document.getElementById('main-content').innerHTML = content;
+            // Usar helper seguro para evitar erro quando o container não existir
+            this.safeSetHtml('main-content', content);
             
             // Initialize page-specific functionality
             this.initPageFunctionality(page);
@@ -182,6 +183,17 @@ class App {
         } finally {
             this.hideLoading();
         }
+    }
+
+    // Helper para definir innerHTML com segurança
+    safeSetHtml(elementId, html) {
+        const el = document.getElementById(elementId);
+        if (!el) {
+            console.warn(`[safeSetHtml] Elemento #${elementId} não encontrado`);
+            return false;
+        }
+        el.innerHTML = html;
+        return true;
     }
 
     initPageFunctionality(page) {
