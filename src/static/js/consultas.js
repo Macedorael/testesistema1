@@ -680,6 +680,9 @@ window.Appointments = {
                                         <button class="btn btn-outline-info btn-sm" onclick="Appointments.updateSessionStatus(${session.id}, 'reagendada')" title="Marcar como reagendada">
                                             <i class="bi bi-arrow-clockwise"></i>
                                         </button>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="Appointments.showPeriodThoughts(${this.currentAppointmentId}, ${session.id})" title="Ver pensamentos do período">
+                                            <i class="bi bi-journal-text"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -875,6 +878,11 @@ window.Appointments = {
                 message = 'Por favor, aguarde enquanto atualizamos o agendamento...';
                 spinnerColor = 'text-warning';
                 break;
+            case 'fetch':
+                title = 'Carregando Pensamentos do Período';
+                message = 'Por favor, aguarde enquanto buscamos os registros...';
+                spinnerColor = 'text-primary';
+                break;
             default:
                 title = 'Processando Agendamento';
                 message = 'Por favor, aguarde enquanto criamos seu agendamento...';
@@ -902,6 +910,234 @@ window.Appointments = {
         if (loadingScreen) {
             loadingScreen.remove();
         }
+    },
+
+    async showPeriodThoughts(appointmentId, sessionId) {
+        try {
+            // Mostrar loading enquanto busca os dados
+            this.showLoadingScreen('fetch');
+            
+            // Buscar dados da consulta para obter o patient_id
+            const appointment = this.appointments.find(app => app.id === appointmentId) || { id: appointmentId };
+            if (!appointment) {
+                window.app.showError('Consulta não encontrada');
+                return;
+            }
+
+            // Garantir que temos as sessões atuais do modal
+            const modalEl = document.getElementById('appointmentDetailsModal');
+            if (modalEl) {
+                const modalAppointmentId = Number(modalEl.getAttribute('data-appointment-id'));
+                if (modalAppointmentId === appointmentId) {
+                    // Reusar dados renderizados no modal: extrair do HTML não é viável; confiar no appointment atual passado
+                }
+            }
+
+            // Calcular período: da sessão anterior até a atual
+            const sessions = appointment.sessions || [];
+            const sortedSessions = [...sessions].sort((a, b) => new Date(a.data_sessao) - new Date(b.data_sessao));
+            const currentSessionIndex = sortedSessions.findIndex(s => s.id === sessionId);
+            
+            if (currentSessionIndex === -1) {
+                // Fallback: se não temos sessions anexadas ao objeto em memória, refazer o fetch do appointment
+                try {
+                    const fresh = await window.app.apiCall(`/appointments/${appointmentId}`);
+                    appointment.patient_id = fresh.data.patient_id;
+                    appointment.patient_name = fresh.data.patient_name;
+                    const fsessions = fresh.data.sessions || [];
+                    const sorted = [...fsessions].sort((a, b) => new Date(a.data_sessao) - new Date(b.data_sessao));
+                    const idx = sorted.findIndex(s => s.id === sessionId);
+                    if (idx === -1) {
+                        throw new Error('Sessão não encontrada no agendamento');
+                    }
+                    const currentDate = new Date(sorted[idx].data_sessao);
+                    let startDate;
+                    if (idx > 0) {
+                        startDate = new Date(sorted[idx - 1].data_sessao);
+                    } else {
+                        startDate = new Date(currentDate);
+                        startDate.setDate(startDate.getDate() - 7);
+                    }
+                    const startDateStr = startDate.toISOString().split('T')[0];
+                    const endDateStr = currentDate.toISOString().split('T')[0];
+                    const response = await window.app.apiCall(`/patients/${fresh.data.patient_id}/diary-entries/period?start_date=${startDateStr}&end_date=${endDateStr}`);
+                    this.showPeriodThoughtsModal(response.data, startDateStr, endDateStr, fresh.data.patient_name);
+                    return;
+                } finally {
+                    this.hideLoadingScreen();
+                }
+            }
+
+            let startDate;
+            if (currentSessionIndex > 0) {
+                // Usar data da sessão anterior
+                startDate = new Date(sortedSessions[currentSessionIndex - 1].data_sessao);
+            } else {
+                // Para a primeira sessão, usar 7 dias antes
+                const currentDate = new Date(sortedSessions[currentSessionIndex].data_sessao);
+                startDate = new Date(currentDate);
+                startDate.setDate(startDate.getDate() - 7);
+            }
+
+            // Formatar datas para a API (YYYY-MM-DD)
+            const startDateStr = startDate.toISOString().split('T')[0];
+            const endDateStr = new Date(sortedSessions[currentSessionIndex].data_sessao).toISOString().split('T')[0];
+
+            // Fazer chamada para a API
+            const response = await window.app.apiCall(`/patients/${appointment.patient_id}/diary-entries/period?start_date=${startDateStr}&end_date=${endDateStr}`);
+            
+            this.showPeriodThoughtsModal(response.data, startDateStr, endDateStr, appointment.patient_name);
+
+        } catch (error) {
+            console.error('Error loading period thoughts:', error);
+            window.app.showError(error.message || 'Erro ao carregar pensamentos do período');
+        } finally {
+            this.hideLoadingScreen();
+        }
+    },
+
+    showPeriodThoughtsModal(diaryEntries, startDate, endDate, patientName) {
+        const modalHtml = `
+            <div class="modal fade" id="periodThoughtsModal" tabindex="-1" aria-labelledby="periodThoughtsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="periodThoughtsModalLabel">
+                                <i class="bi bi-journal-text me-2"></i>
+                                Pensamentos do Período - ${patientName}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar-range me-1"></i>
+                                    Período: ${window.app.formatDate(startDate)} até ${window.app.formatDate(endDate)}
+                                </small>
+                            </div>
+                            ${this.renderDiaryEntries(diaryEntries)}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remove modal anterior se existir
+        const existingModal = document.getElementById('periodThoughtsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Adiciona novo modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Mostra o modal
+        const modal = new bootstrap.Modal(document.getElementById('periodThoughtsModal'));
+        modal.show();
+
+        // Remove modal do DOM quando fechado
+        document.getElementById('periodThoughtsModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    },
+
+    renderDiaryEntries(entries) {
+        if (!entries || entries.length === 0) {
+            return `
+                <div class="text-center py-4">
+                    <i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-2">Nenhum pensamento registrado neste período</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="diary-entries">
+                ${entries.map(entry => {
+                    const pairs = Array.isArray(entry.emocao_intensidades) ? entry.emocao_intensidades : [];
+                    const maxIntensity = pairs.length > 0
+                        ? Math.max(...pairs.map(p => Number(p.intensidade) || 0))
+                        : (Number(entry.intensidade) || 0);
+                    const emotionsBadges = pairs.length > 0
+                        ? pairs.map(p => `
+                            <span class="badge bg-${this.getEmotionColor(p.emocao)} me-2">${p.emocao || 'Emoção'}: ${p.intensidade || 0}</span>
+                          `).join('')
+                        : `<span class="badge bg-${this.getEmotionColor(entry.emocao)} me-2">${entry.emocao || 'Emoção'}: ${entry.intensidade || 0}</span>`;
+                    return `
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-calendar3 me-1"></i>
+                                <strong>${window.app.formatDateTime(entry.data_registro)}</strong>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">Intensidade máx: ${maxIntensity}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-emoji-smile me-1"></i>
+                                    Emoções
+                                </h6>
+                                <div>${emotionsBadges}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-chat-quote me-1"></i>
+                                        Pensamento
+                                    </h6>
+                                    <p class="card-text">${entry.pensamento || 'Não informado'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-activity me-1"></i>
+                                        Comportamento
+                                    </h6>
+                                    <p class="card-text">${entry.comportamento || 'Não informado'}</p>
+                                </div>
+                            </div>
+                            ${entry.consequencia ? `
+                                <div class="mt-2">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-arrow-right-circle me-1"></i>
+                                        Consequência
+                                    </h6>
+                                    <p class="card-text">${entry.consequencia}</p>
+                                </div>
+                            ` : ''}
+                            ${entry.situacao ? `
+                                <div class="mt-2">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        Situação
+                                    </h6>
+                                    <p class="card-text">${entry.situacao}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
+        `;
+    },
+
+    getEmotionColor(emotion) {
+        const emotionColors = {
+            'alegria': 'success',
+            'tristeza': 'primary',
+            'raiva': 'danger',
+            'medo': 'warning',
+            'ansiedade': 'info',
+            'nojo': 'secondary',
+            'surpresa': 'light'
+        };
+        return emotionColors[emotion?.toLowerCase()] || 'secondary';
     }
 };
 

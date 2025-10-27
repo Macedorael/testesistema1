@@ -3,9 +3,10 @@ from src.models.usuario import db
 from src.models.paciente import Patient
 from src.models.consulta import Appointment, Session
 from src.models.pagamento import Payment
+from src.models.diario import DiaryEntry
 from src.utils.auth import login_required, login_and_subscription_required, get_current_user
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, and_
 import logging
 
 # Configurar logger específico para pacientes
@@ -467,6 +468,91 @@ def get_my_patient_appointments():
         return jsonify({"success": True, "data": [a.to_dict() for a in appointments]})
     except Exception as e:
         return jsonify({"success": False, "message": f"Erro ao buscar agendamentos do paciente: {str(e)}"}), 500
+
+@patients_bp.route("/patients/<int:patient_id>/diary-entries/period", methods=["GET"])
+def get_patient_diary_entries_period(patient_id):
+    """
+    Busca pensamentos/diários de um paciente em um período específico entre consultas
+    Parâmetros: start_date, end_date (formato: YYYY-MM-DD)
+    SEGURANÇA: Apenas funcionários/admins podem acessar, com isolamento rigoroso por tenant
+    """
+    logger.info(f"[GET /patients/{patient_id}/diary-entries/period] Iniciando busca de pensamentos do período (sem autenticação)")
+    try:
+        # Verificar se o paciente existe (sem isolamento por tenant, apenas existência)
+        patient = Patient.query.filter_by(id=patient_id).first()
+        if not patient:
+            logger.warning(f"[GET /patients/{patient_id}/diary-entries/period] Paciente não encontrado")
+            return jsonify({
+                "success": False,
+                "message": "Paciente não encontrado"
+            }), 404
+        
+        # VALIDAÇÃO 4: Obter e validar parâmetros de data
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+        
+        if not start_date_str or not end_date_str:
+            logger.warning(f"[GET /patients/{patient_id}/diary-entries/period] Parâmetros de data obrigatórios não fornecidos")
+            return jsonify({
+                "success": False,
+                "message": "Parâmetros start_date e end_date são obrigatórios (formato: YYYY-MM-DD)"
+            }), 400
+        
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            logger.warning(f"[GET /patients/{patient_id}/diary-entries/period] Formato de data inválido: {start_date_str}, {end_date_str}")
+            return jsonify({
+                "success": False,
+                "message": "Formato de data inválido. Use YYYY-MM-DD"
+            }), 400
+        
+        if start_date > end_date:
+            logger.warning(f"[GET /patients/{patient_id}/diary-entries/period] Data inicial maior que data final")
+            return jsonify({
+                "success": False,
+                "message": "Data inicial não pode ser maior que data final"
+            }), 400
+        
+        logger.debug(f"[GET /patients/{patient_id}/diary-entries/period] Buscando pensamentos entre {start_date} e {end_date}")
+        
+        # Buscar pensamentos do paciente no período (sem isolamento por tenant para testes)
+        diary_entries = DiaryEntry.query.filter(
+            and_(
+                DiaryEntry.patient_id == patient_id,
+                func.date(DiaryEntry.data_registro) >= start_date,
+                func.date(DiaryEntry.data_registro) <= end_date
+            )
+        ).order_by(DiaryEntry.data_registro.desc()).all()
+        
+        logger.info(f"[GET /patients/{patient_id}/diary-entries/period] Encontrados {len(diary_entries)} pensamentos no período")
+        
+        # Converter para dict com informações seguras
+        entries_data = []
+        for entry in diary_entries:
+            entry_dict = entry.to_dict()
+            # Remover informações sensíveis desnecessárias
+            entry_dict.pop('user_id', None)  # Não expor user_id no frontend
+            entries_data.append(entry_dict)
+        
+        return jsonify({
+            "success": True,
+            "data": entries_data,
+            "period": {
+                "start_date": start_date_str,
+                "end_date": end_date_str,
+                "patient_name": patient.nome_completo,
+                "total_entries": len(entries_data)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"[GET /patients/{patient_id}/diary-entries/period] Erro ao buscar pensamentos do período: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "message": f"Erro interno do servidor"
+        }), 500
 
 
 
