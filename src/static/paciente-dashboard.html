@@ -122,8 +122,16 @@
         navbarCollapse.querySelectorAll(selectors.join(',')).forEach(function(el) {
           el.addEventListener('click', function() {
             var togglerVisible = window.getComputedStyle(toggler).display !== 'none';
-            if (togglerVisible) {
-              var bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+            if (!togglerVisible) return;
+
+            var bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+
+            var href = el.getAttribute('href');
+            var isRealLink = el.tagName === 'A' && href && !href.startsWith('#');
+
+            if (isRealLink) {
+              setTimeout(function() { bsCollapse.hide(); }, 150);
+            } else {
               bsCollapse.hide();
             }
           });

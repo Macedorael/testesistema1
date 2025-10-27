@@ -197,7 +197,7 @@
     <script src="js/utilitarios.js"></script>
     <script src="js/modal-fix.js"></script>
     <script>
-      // Fecha o menu colapsável em telas pequenas após clique em um item
+      // Fecha o menu colapsável em telas pequenas após seleção, mas NÃO ao abrir dropdowns
       document.addEventListener('DOMContentLoaded', function() {
         var navbarCollapse = document.getElementById('navbarNav');
         var toggler = document.querySelector('button[data-bs-target="#navbarNav"]');
@@ -206,8 +206,22 @@
           navbarCollapse.querySelectorAll(selectors.join(',')).forEach(function(el) {
             el.addEventListener('click', function() {
               var togglerVisible = window.getComputedStyle(toggler).display !== 'none';
-              if (togglerVisible) {
-                var bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+              if (!togglerVisible) return;
+
+              // Evita fechar o menu quando o usuário está apenas abrindo um dropdown
+              if (el.classList.contains('dropdown-toggle')) {
+                return;
+              }
+
+              var bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
+
+              var href = el.getAttribute('href');
+              var isRealLink = el.tagName === 'A' && href && !href.startsWith('#');
+
+              // Para links reais, aguarda um pouco para não interferir na navegação
+              if (isRealLink) {
+                setTimeout(function() { bsCollapse.hide(); }, 150);
+              } else {
                 bsCollapse.hide();
               }
             });

@@ -29,17 +29,18 @@ with app.app_context():
         print(f"[OK] User criado: id={user.id}, email={user.email}, role={user.role}")
     else:
         print(f"[SKIP] Usuário já existe: id={user.id}, email={user.email}, role={user.role}")
-        # Garantir role e first_login corretos
+        # Garantir role, senha e first_login corretos
         updated = False
         if user.role != "patient":
             user.role = "patient"
             updated = True
-        if user.first_login is False:
-            user.first_login = True
-            updated = True
+        # Forçar redefinição da senha e exigir primeiro login
+        user.set_password(PAIENT_PASSWORD)
+        user.first_login = True
+        updated = True
         if updated:
             db.session.add(user)
-            print("[UPDATE] Ajustado role/first_login do usuário para paciente e primeiro login")
+            print("[UPDATE] Ajustado role/senha/first_login do usuário para paciente, senha reiniciada e primeiro login")
 
     # Vincular Patient ao profissional (owner)
     patient = Patient.query.filter_by(email=PAIENT_EMAIL).first()

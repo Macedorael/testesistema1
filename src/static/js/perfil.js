@@ -14,7 +14,7 @@ $(document).ready(function() {
     
     // Event listener para o botão de sair do modal
     $('#exitToSystemBtn').on('click', function() {
-        window.location.href = '/#dashboard';
+        window.location.href = '/paciente-dashboard.html';
     });
 });
 
