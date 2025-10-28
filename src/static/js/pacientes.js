@@ -506,6 +506,9 @@ window.Patients = {
                                         <button class="btn btn-outline-primary" onclick="Patients.viewDiaryEntries(${patient.id})">
                                             <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
                                         </button>
+                                        <button class="btn btn-outline-primary" onclick="Patients.showEmotionsChart(${patient.id})">
+                                            <i class="bi bi-graph-up-arrow me-1"></i>Gráfico de Emoções
+                                        </button>
                                         ${patient.ativo === false
                                             ? `<button class="btn btn-success" onclick="Patients.toggleActive(${patient.id}, true)">
                                                     <i class="bi bi-toggle2-on me-1"></i>Ativo
@@ -596,6 +599,11 @@ window.Patients = {
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
+                            <div class="d-flex justify-content-end mb-3">
+                                <button type="button" class="btn btn-primary" onclick="Patients.showEmotionsChart(${patient ? patient.id : 'null'})">
+                                    <i class="bi bi-graph-up-arrow me-1"></i>Gráfico de Emoções
+                                </button>
+                            </div>
                             ${entries.length === 0 ? `
                                 <div class="text-muted">Nenhum pensamento registrado.</div>
                             ` : `
@@ -655,6 +663,215 @@ window.Patients = {
         document.getElementById('modals-container').innerHTML = modalHtml;
         const modal = new bootstrap.Modal(document.getElementById('diaryEntriesModal'));
         modal.show();
+    },
+
+    showEmotionsChart(patientId) {
+        if (!patientId) {
+            window.app.showError('Paciente inválido para gráfico de emoções');
+            return;
+        }
+
+        const currentYear = new Date().getFullYear();
+        const modalHtml = `
+            <div class="modal fade" id="emotionsChartModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-graph-up-arrow me-2"></i>Gráfico de Emoções</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Ano</label>
+                                    <select class="form-select" id="emotionsYear"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Período</label>
+                                    <select class="form-select" id="emotionsPeriod">
+                                        <option value="day">Dia</option>
+                                        <option value="week" selected>Semana</option>
+                                        <option value="month">Mês</option>
+                                        <option value="year">Ano</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Métrica</label>
+                                    <select class="form-select" id="emotionsMetric">
+                                        <option value="avg" selected>Média</option>
+                                        <option value="max">Máximo</option>
+                                        <option value="sum">Soma</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="position-relative" id="emotionsChartWrapper">
+                                <div id="emotionsLoading" class="d-none" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.6);">
+                                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div>
+                                </div>
+                                <canvas id="emotionsChart" height="120"></canvas>
+                                <div id="emotionsNoData" class="text-muted d-none mt-2">Sem dados para o período.</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-primary" id="emotionsExportBtn"><i class="bi bi-download me-1"></i>Exportar PNG</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        const container = document.getElementById('modals-container');
+        if (!container) {
+            window.app.showError('Container de modais não encontrado');
+            return;
+        }
+        container.innerHTML = modalHtml;
+        const modalEl = document.getElementById('emotionsChartModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        // Popular anos (últimos 5 anos)
+        const yearSel = modalEl.querySelector('#emotionsYear');
+        for (let y = currentYear; y >= currentYear - 4; y--) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === currentYear) opt.selected = true;
+            yearSel.appendChild(opt);
+        }
+
+        const metricSel = modalEl.querySelector('#emotionsMetric');
+        const periodSel = modalEl.querySelector('#emotionsPeriod');
+        const loadingEl = modalEl.querySelector('#emotionsLoading');
+        const noDataEl = modalEl.querySelector('#emotionsNoData');
+        const canvasEl = modalEl.querySelector('#emotionsChart');
+        const exportBtn = modalEl.querySelector('#emotionsExportBtn');
+
+        const setLoading = (on) => {
+            if (on) {
+                loadingEl.classList.remove('d-none');
+            } else {
+                loadingEl.classList.add('d-none');
+            }
+        };
+
+        const formatLabelBR = (key, period) => {
+            try {
+                if (period === 'day') {
+                    const [y, m, d] = key.split('-').map(Number);
+                    const dt = new Date(y, (m || 1) - 1, d || 1);
+                    return dt.toLocaleDateString('pt-BR');
+                }
+                if (period === 'month') {
+                    const [y, m] = key.split('-').map(Number);
+                    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                    const mm = Math.max(1, Math.min(12, m || 1));
+                    return `${months[mm - 1]}/${y}`;
+                }
+                if (period === 'year') {
+                    return String(key);
+                }
+                const [y, w] = key.split('-');
+                return `Semana ${String(Number(w || 1)).padStart(2,'0')}/${y}`;
+            } catch (_) {
+                return key;
+            }
+        };
+
+        const renderChart = (labelsRaw, datasets) => {
+            if (!window.Chart) {
+                noDataEl.classList.remove('d-none');
+                noDataEl.textContent = 'Biblioteca de gráficos não disponível.';
+                return;
+            }
+            noDataEl.classList.toggle('d-none', datasets && datasets.length > 0);
+            const ctx = canvasEl.getContext('2d');
+            // Destruir gráfico anterior se existir
+            if (this._emotionsChart) {
+                try { this._emotionsChart.destroy(); } catch (e) {}
+            }
+            const palette = [
+                '#0d6efd','#dc3545','#198754','#ffc107','#6610f2','#20c997','#fd7e14','#6c757d','#0dcaf0','#8b5cf6'
+            ];
+            const chartDatasets = (datasets || []).map((ds, i) => ({
+                label: ds.emotion,
+                data: ds.values,
+                borderColor: palette[i % palette.length],
+                backgroundColor: palette[i % palette.length],
+                tension: 0.25,
+                spanGaps: true
+            }));
+            // Ajustar escala do eixo Y conforme a métrica selecionada
+            const metric = metricSel.value;
+            // Encontrar o maior valor das séries para métrica "sum"
+            let maxSeriesValue = 0;
+            try {
+                (datasets || []).forEach(ds => {
+                    (ds.values || []).forEach(v => {
+                        if (v != null && !isNaN(v)) {
+                            const num = Number(v);
+                            if (num > maxSeriesValue) maxSeriesValue = num;
+                        }
+                    });
+                });
+            } catch (_) {}
+
+            const yScaleOptions = metric === 'sum'
+                ? { beginAtZero: true, suggestedMax: Math.max(10, Math.ceil(maxSeriesValue)), title: { display: true, text: 'Soma das intensidades' } }
+                : { beginAtZero: true, min: 0, max: 10, suggestedMax: 10, title: { display: true, text: 'Intensidade (0–10)' } };
+            const period = periodSel.value;
+            const labels = (labelsRaw || []).map(k => formatLabelBR(k, period));
+            const xTitle = period === 'day' ? 'Dia' : (period === 'month' ? 'Mês' : (period === 'year' ? 'Ano' : 'Semana'));
+            this._emotionsChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets: chartDatasets },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: yScaleOptions,
+                        x: { title: { display: true, text: xTitle } }
+                    }
+                }
+            });
+        };
+
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const year = yearSel.value;
+                const period = periodSel.value;
+                const metric = metricSel.value;
+                const resp = await window.app.apiCall(`/patients/${patientId}/emotions/weekly?year=${year}&metric=${metric}&period=${period}`);
+                const data = resp.data;
+                renderChart((data.labels || data.weeks || []), data.datasets || []);
+            } catch (err) {
+                console.error('Erro ao carregar gráfico de emoções:', err);
+                noDataEl.classList.remove('d-none');
+                noDataEl.textContent = 'Erro ao carregar dados.';
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // Bind de eventos
+        yearSel.addEventListener('change', fetchData);
+        periodSel.addEventListener('change', fetchData);
+        metricSel.addEventListener('change', fetchData);
+        exportBtn.addEventListener('click', () => {
+            if (this._emotionsChart) {
+                const link = document.createElement('a');
+                link.href = this._emotionsChart.toBase64Image();
+                link.download = `emocoes_${periodSel.value}_${patientId}_${yearSel.value}.png`;
+                link.click();
+            }
+        });
+
+        // Primeira carga
+        fetchData();
     },
 
     async deletePatient(patientId) {

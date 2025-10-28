@@ -3,7 +3,8 @@ from flask import Blueprint, request, jsonify
 from src.models.usuario import db
 from src.models.paciente import Patient
 from src.models.diario import DiaryEntry
-from datetime import datetime
+from datetime import datetime, date
+from sqlalchemy import func, and_
 import logging
 import json
 
@@ -72,8 +73,8 @@ def create_my_diary_entry():
                     intensidade_int = int(intensidade_val)
                 except (ValueError, TypeError):
                     return jsonify({'success': False, 'message': f'Intensidade inválida em emocao_intensidades[{idx}]'}), 400
-                if intensidade_int < 0 or intensidade_int > 100:
-                    return jsonify({'success': False, 'message': f'Intensidade deve estar entre 0 e 100 em emocao_intensidades[{idx}]'}), 400
+                if intensidade_int < 0 or intensidade_int > 10:
+                    return jsonify({'success': False, 'message': f'Intensidade deve estar entre 0 e 10 em emocao_intensidades[{idx}]'}), 400
                 pairs.append({'emocao': emocao_val, 'intensidade': intensidade_int})
         else:
             # Fallback: campos únicos legado
@@ -83,8 +84,8 @@ def create_my_diary_entry():
                 intensidade_int = int(data['intensidade'])
             except (ValueError, TypeError):
                 return jsonify({'success': False, 'message': 'Intensidade deve ser um número inteiro'}), 400
-            if intensidade_int < 0 or intensidade_int > 100:
-                return jsonify({'success': False, 'message': 'Intensidade deve estar entre 0 e 100'}), 400
+            if intensidade_int < 0 or intensidade_int > 10:
+                return jsonify({'success': False, 'message': 'Intensidade deve estar entre 0 e 10'}), 400
             pairs.append({'emocao': data['emocao'], 'intensidade': intensidade_int})
 
         # data_registro opcional (ISO8601)
@@ -175,8 +176,8 @@ def create_patient_diary_entry(patient_id):
                     intensidade_int = int(intensidade_val)
                 except (ValueError, TypeError):
                     return jsonify({'success': False, 'message': f'Intensidade inválida em emocao_intensidades[{idx}]'}), 400
-                if intensidade_int < 0 or intensidade_int > 100:
-                    return jsonify({'success': False, 'message': f'Intensidade deve estar entre 0 e 100 em emocao_intensidades[{idx}]'}), 400
+                if intensidade_int < 0 or intensidade_int > 10:
+                    return jsonify({'success': False, 'message': f'Intensidade deve estar entre 0 e 10 em emocao_intensidades[{idx}]'}), 400
                 pairs.append({'emocao': emocao_val, 'intensidade': intensidade_int})
         else:
             # Fallback: campos únicos legado
@@ -186,8 +187,8 @@ def create_patient_diary_entry(patient_id):
                 intensidade_int = int(data['intensidade'])
             except (ValueError, TypeError):
                 return jsonify({'success': False, 'message': 'Intensidade deve ser um número inteiro'}), 400
-            if intensidade_int < 0 or intensidade_int > 100:
-                return jsonify({'success': False, 'message': 'Intensidade deve estar entre 0 e 100'}), 400
+            if intensidade_int < 0 or intensidade_int > 10:
+                return jsonify({'success': False, 'message': 'Intensidade deve estar entre 0 e 10'}), 400
             pairs.append({'emocao': data['emocao'], 'intensidade': intensidade_int})
 
         data_registro = datetime.utcnow()
@@ -220,3 +221,135 @@ def create_patient_diary_entry(patient_id):
         logger.error(f"[POST /patients/{patient_id}/diary-entries] Erro: {e}", exc_info=True)
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Erro ao criar registro: {str(e)}'}), 500
+
+
+# ---------------------- EMOÇÕES (semanal) ----------------------
+@diaries_bp.route('/patients/<int:patient_id>/emotions/weekly', methods=['GET'])
+@login_and_subscription_required
+def get_patient_emotions_weekly(patient_id):
+    """Retorna agregação semanal das emoções de um paciente para um ano.
+    Parâmetros: year (YYYY, padrão ano atual), metric (avg|max|sum, padrão avg), period (day|week|month, padrão week)
+    Segurança: isola por tenant (user_id do profissional atual)
+    """
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 401
+
+        # Garantir que o paciente pertence ao profissional
+        patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
+        if not patient:
+            return jsonify({'success': False, 'message': 'Paciente não encontrado ou não autorizado'}), 404
+
+        # Parâmetros
+        try:
+            year_param = int(request.args.get('year') or date.today().year)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'Parâmetro year inválido'}), 400
+
+        metric = (request.args.get('metric') or 'avg').lower()
+        if metric not in ('avg', 'max', 'sum'):
+            return jsonify({'success': False, 'message': 'Parâmetro metric inválido (use avg|max|sum)'}), 400
+
+        period = (request.args.get('period') or 'week').lower()
+        if period not in ('day', 'week', 'month', 'year'):
+            return jsonify({'success': False, 'message': 'Parâmetro period inválido (use day|week|month|year)'}), 400
+
+        # Filtrar entradas pelo ano
+        if period == 'year':
+            # Agregar por anos no intervalo [year_param-4, year_param]
+            start_date = date(year_param - 4, 1, 1)
+            end_date = date(year_param, 12, 31)
+        else:
+            start_date = date(year_param, 1, 1)
+            end_date = date(year_param, 12, 31)
+        entries = DiaryEntry.query.filter(
+            and_(
+                DiaryEntry.patient_id == patient_id,
+                DiaryEntry.user_id == current_user.id,
+                func.date(DiaryEntry.data_registro) >= start_date,
+                func.date(DiaryEntry.data_registro) <= end_date,
+            )
+        ).order_by(DiaryEntry.data_registro.asc()).all()
+
+        # Agregar por emoção e período solicitado
+        from collections import defaultdict
+        by_emotion_period = defaultdict(lambda: defaultdict(list))
+        labels_set = set()
+
+        for e in entries:
+            try:
+                dt = e.data_registro or datetime.utcnow()
+                if period == 'day':
+                    label = dt.date().isoformat()  # YYYY-MM-DD
+                elif period == 'month':
+                    label = f"{dt.year}-{dt.month:02d}"  # YYYY-MM
+                elif period == 'year':
+                    label = f"{dt.year}"  # YYYY
+                else:
+                    iso_year, iso_week, _ = dt.isocalendar()
+                    label = f"{iso_year}-{iso_week:02d}"  # YYYY-WW
+                labels_set.add(label)
+
+                pairs = []
+                if e.emocao_intensidades:
+                    try:
+                        data_pairs = json.loads(e.emocao_intensidades)
+                        if isinstance(data_pairs, list):
+                            for p in data_pairs:
+                                emocao_val = p.get('emocao')
+                                intensidade_val = p.get('intensidade')
+                                if emocao_val not in (None, ''):
+                                    try:
+                                        intensidade_int = int(intensidade_val)
+                                    except (TypeError, ValueError):
+                                        intensidade_int = None
+                                    if intensidade_int is not None:
+                                        # Garantir escala 0–10
+                                        intensidade_int = max(0, min(10, intensidade_int))
+                                        pairs.append({'emocao': emocao_val, 'intensidade': intensidade_int})
+                    except Exception:
+                        # Fallback para campos legado
+                        pass
+
+                if not pairs and e.emocao:
+                    try:
+                        intensidade_int = int(e.intensidade)
+                    except (TypeError, ValueError):
+                        intensidade_int = None
+                    if intensidade_int is not None:
+                        intensidade_int = max(0, min(10, intensidade_int))
+                        pairs.append({'emocao': e.emocao, 'intensidade': intensidade_int})
+
+                for p in pairs:
+                    by_emotion_period[p['emocao']][label].append(p['intensidade'])
+            except Exception:
+                # Ignora registro problemático sem interromper toda agregação
+                continue
+
+        labels = sorted(list(labels_set))
+
+        datasets = []
+        for emotion, period_map in by_emotion_period.items():
+            values = []
+            for lbl in labels:
+                intens_list = period_map.get(lbl, [])
+                if not intens_list:
+                    values.append(None)
+                else:
+                    if metric == 'avg':
+                        values.append(round(sum(intens_list) / len(intens_list), 2))
+                    elif metric == 'max':
+                        values.append(max(intens_list))
+                    else:  # sum
+                        values.append(sum(intens_list))
+            datasets.append({'emotion': emotion, 'values': values})
+
+        # Para compatibilidade, devolvemos 'weeks' quando period=week e também um campo genérico 'labels'
+        result = {'year': year_param, 'labels': labels, 'datasets': datasets}
+        if period == 'week':
+            result['weeks'] = labels
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logger.error(f"[GET /patients/{patient_id}/emotions/weekly] Erro: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Erro ao agregar emoções: {str(e)}'}), 500
