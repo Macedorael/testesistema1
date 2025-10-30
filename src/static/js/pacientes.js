@@ -482,14 +482,6 @@ window.Patients = {
                                                     <div class="col-sm-6"><strong>Pendentes:</strong></div>
                                                     <div class="col-sm-6">${patient.statistics.sessions_pendentes}</div>
                                                 </div>
-                                                <div class="row mb-2">
-                                                    <div class="col-sm-6"><strong>Total Pago:</strong></div>
-                                                    <div class="col-sm-6 text-success fw-bold">${window.app.formatCurrency(patient.statistics.total_pago)}</div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-sm-6"><strong>A Receber:</strong></div>
-                                                    <div class="col-sm-6 text-warning fw-bold">${window.app.formatCurrency(patient.statistics.total_a_receber)}</div>
-                                                </div>
                                             ` : '<div class="text-muted">Carregando estatísticas...</div>'}
                                         </div>
                                     </div>
@@ -499,30 +491,30 @@ window.Patients = {
                             <!-- Action Buttons -->
                             <div class="row mt-3">
                                 <div class="col-12">
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-outline-primary" ${patient.ativo === false ? 'disabled' : ''} onclick="Appointments.showCreateModalForPatient(${patient.id})">
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button class="btn btn-outline-primary btn-sm" ${patient.ativo === false ? 'disabled' : ''} onclick="Appointments.showCreateModalForPatient(${patient.id})">
                                             <i class="bi bi-calendar-plus me-1"></i>Novo Agendamento
                                         </button>
                                         ${patient.diario_tcc_ativo ? `
-                                            <button class="btn btn-outline-primary" onclick="Patients.viewDiaryEntries(${patient.id})">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="Patients.viewDiaryEntries(${patient.id})">
                                                 <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
                                             </button>
-                                            <button class="btn btn-outline-primary" onclick="Patients.showEmotionsChart(${patient.id})">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="Patients.showEmotionsChart(${patient.id})">
                                                 <i class="bi bi-graph-up-arrow me-1"></i>Gráfico de Emoções
                                             </button>
                                         ` : ''}
                                         ${patient.diario_tcc_ativo
-                                            ? `<button class="btn btn-warning" onclick="Patients.toggleCbtDiary(${patient.id}, false)">
+                                            ? `<button class="btn btn-warning btn-sm" onclick="Patients.toggleCbtDiary(${patient.id}, false)">
                                                     <i class="bi bi-journal-x me-1"></i>Desativar Diário TCC
                                                </button>`
-                                            : `<button class="btn btn-success" onclick="Patients.toggleCbtDiary(${patient.id}, true)">
+                                            : `<button class="btn btn-success btn-sm" onclick="Patients.toggleCbtDiary(${patient.id}, true)">
                                                     <i class="bi bi-journal-check me-1"></i>Ativar Diário TCC
                                                </button>`}
                                         ${patient.ativo === false
-                                            ? `<button class="btn btn-outline-danger btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, true)">
+                                            ? `<button class="btn btn-outline-danger btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, true)">
                                                     <i class="bi bi-toggle2-off text-danger me-1"></i>Ativar
                                                </button>`
-                                            : `<button class="btn btn-outline-success btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, false)">
+                                            : `<button class="btn btn-outline-success btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, false)">
                                                     <i class="bi bi-toggle2-on text-success me-1"></i>Inativar
                                                </button>`}
                                     </div>

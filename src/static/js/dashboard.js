@@ -37,7 +37,7 @@ window.Dashboard = {
             } else {
                 // Renderiza cards com valores zerados quando não há dados
                 this.renderStatsCards({
-                    general: { total_patients: 0, total_appointments: 0, total_sessions: 0, total_payments: 0 },
+                    general: { total_patients: 0, active_patients: 0, inactive_patients: 0, total_appointments: 0, total_sessions: 0, total_payments: 0 },
                     financial: { total_recebido: 0, total_a_receber: 0, total_geral: 0 },
                     sessions: { realizadas: 0, agendadas: 0, canceladas: 0, faltou: 0, pagas: 0, pendentes: 0, proximas_7_dias: 0, hoje: 0, hoje_realizadas: 0, hoje_total: 0, hoje_restantes: 0 }
                 });
@@ -58,6 +58,20 @@ window.Dashboard = {
                 value: stats.general.total_patients,
                 icon: 'people',
                 color: 'primary',
+                page: 'patients'
+            },
+            {
+                title: 'Pacientes Ativos',
+                value: stats.general.active_patients,
+                icon: 'person-check',
+                color: 'success',
+                page: 'patients'
+            },
+            {
+                title: 'Pacientes Inativos',
+                value: stats.general.inactive_patients,
+                icon: 'person-dash',
+                color: 'danger',
                 page: 'patients'
             },
             {

@@ -94,12 +94,6 @@ def get_patient(patient_id):
             Session.status_pagamento == "pago"
         ).count()
         
-        total_pago = db.session.query(func.sum(Payment.valor_pago)).filter_by(patient_id=patient_id).scalar() or 0
-        total_a_receber = db.session.query(func.sum(Session.valor)).join(Appointment).filter(
-            Appointment.patient_id == patient_id,
-            Session.status_pagamento == "pendente"
-        ).scalar() or 0
-        
         patient_data = patient.to_dict()
         patient_data["statistics"] = {
             "total_appointments": total_appointments,
@@ -107,9 +101,7 @@ def get_patient(patient_id):
             "sessions_realizadas": sessions_realizadas,
             "sessions_pagas": sessions_pagas,
             "sessions_pendentes": total_sessions - sessions_realizadas,
-            "sessions_em_aberto": total_sessions - sessions_pagas,
-            "total_pago": float(total_pago),
-            "total_a_receber": float(total_a_receber)
+            "sessions_em_aberto": total_sessions - sessions_pagas
         }
         
         logger.info(f"[GET /patients/{patient_id}] Retornando dados do paciente com estatísticas")

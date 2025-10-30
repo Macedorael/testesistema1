@@ -30,6 +30,17 @@ def get_dashboard_stats():
             
         # Estatísticas gerais
         total_patients = Patient.query.filter_by(user_id=current_user.id).count()
+        
+        # Pacientes ativos (com sessões nos últimos 30 dias)
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        active_patients = db.session.query(Patient.id).join(Appointment).join(Session).filter(
+            Patient.user_id == current_user.id,
+            Session.data_sessao >= thirty_days_ago
+        ).distinct().count()
+        
+        # Pacientes inativos (total - ativos)
+        inactive_patients = total_patients - active_patients
+        
         total_appointments = Appointment.query.filter_by(user_id=current_user.id).count()
         total_sessions = Session.query.join(Appointment).filter(Appointment.user_id == current_user.id).count()
         total_payments = Payment.query.filter_by(user_id=current_user.id).count()
@@ -91,6 +102,8 @@ def get_dashboard_stats():
             'data': {
                 'general': {
                     'total_patients': total_patients,
+                    'active_patients': active_patients,
+                    'inactive_patients': inactive_patients,
                     'total_appointments': total_appointments,
                     'total_sessions': total_sessions,
                     'total_payments': total_payments
