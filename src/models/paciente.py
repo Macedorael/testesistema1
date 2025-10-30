@@ -16,6 +16,9 @@ class Patient(db.Model):
     observacoes = db.Column(db.Text)
     ativo = db.Column(db.Boolean, nullable=False, default=True)
     
+    # Flag para habilitar o Diário de TCC apenas para pacientes selecionados
+    diario_tcc_ativo = db.Column(db.Boolean, nullable=False, default=False)
+    
     # Novos campos para contato de emergência
     nome_contato_emergencia = db.Column(db.String(200), nullable=True)
     telefone_contato_emergencia = db.Column(db.String(20), nullable=True)
@@ -43,6 +46,7 @@ class Patient(db.Model):
             'data_nascimento': self.data_nascimento.isoformat() if self.data_nascimento else None,
             'observacoes': self.observacoes,
             'ativo': bool(self.ativo) if self.ativo is not None else True,
+            'diario_tcc_ativo': bool(getattr(self, 'diario_tcc_ativo', False)),
             'nome_contato_emergencia': self.nome_contato_emergencia,
             'telefone_contato_emergencia': self.telefone_contato_emergencia,
             'grau_parentesco_emergencia': self.grau_parentesco_emergencia,

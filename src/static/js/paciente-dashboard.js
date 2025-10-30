@@ -4,6 +4,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const shortcutNovoRegistro = document.getElementById('shortcutNovoRegistro');
   let currentUser = null;
 
+  // Ocultar permanentemente os botões do Diário na navbar
+  const diaryNavLinkAlways = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+  if (diaryNavLinkAlways) { diaryNavLinkAlways.style.display = 'none'; }
+  if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
+  if (shortcutNovoRegistro) { shortcutNovoRegistro.style.display = 'none'; }
+
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -23,7 +29,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   checkUserAuthentication().then(() => {
     loadAppointmentsSummary();
-    loadDiarySummary();
+    checkDiaryAvailability().then((enabled) => {
+      if (enabled) {
+        loadDiarySummary();
+      } else {
+        const latestDiaryContent = document.getElementById('latestDiaryContent');
+        if (latestDiaryContent) {
+          const card = latestDiaryContent.closest('.card');
+          if (card) { card.style.display = 'none'; }
+        }
+      }
+    });
   });
 
   async function checkUserAuthentication() {
@@ -45,6 +61,25 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     } catch (error) {
       console.error('Erro ao verificar usuário:', error);
+    }
+  }
+
+  async function checkDiaryAvailability() {
+    try {
+      const response = await fetch('/api/patients/me');
+      if (!response.ok) { return false; }
+      const payload = await response.json();
+      const patient = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+      const enabled = !!(patient && patient.diario_tcc_ativo);
+      if (!enabled) {
+        if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
+        if (shortcutNovoRegistro) { shortcutNovoRegistro.style.display = 'none'; }
+        const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+        if (diaryNavLink) { diaryNavLink.style.display = 'none'; }
+      }
+      return enabled;
+    } catch (_) {
+      return false;
     }
   }
 

@@ -3,6 +3,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const novoRegistroBtn = document.getElementById('novoRegistroBtn');
   let currentUser = null;
 
+  // Ocultar permanentemente os botões do Diário na navbar
+  const diaryNavLinkAlways = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+  if (diaryNavLinkAlways) { diaryNavLinkAlways.style.display = 'none'; }
+  if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
+
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -21,7 +26,23 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   checkUserAuthentication().then(() => {
-    loadDiaryEntries();
+    checkDiaryAvailability().then((enabled) => {
+      if (enabled) {
+        loadDiaryEntries();
+      } else {
+        if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
+        const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+        if (diaryNavLink) { diaryNavLink.style.display = 'none'; }
+        const spinnerEl = document.getElementById('diaryLoadingSpinner');
+        if (spinnerEl) { spinnerEl.style.display = 'none'; }
+        const noDiaryEl = document.getElementById('noDiaryEntries');
+        if (noDiaryEl) { noDiaryEl.style.display = 'none'; }
+        const diaryListEl = document.getElementById('diaryList');
+        if (diaryListEl) { diaryListEl.style.display = 'none'; }
+        const headerEl = document.querySelector('main h1');
+        if (headerEl) { headerEl.style.display = 'none'; }
+      }
+    });
   });
 
   async function checkUserAuthentication() {
@@ -43,6 +64,18 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     } catch (error) {
       console.error('Erro ao verificar usuário:', error);
+    }
+  }
+
+  async function checkDiaryAvailability() {
+    try {
+      const response = await fetch('/api/patients/me');
+      if (!response.ok) { return false; }
+      const payload = await response.json();
+      const patient = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+      return !!(patient && patient.diario_tcc_ativo);
+    } catch (_) {
+      return false;
     }
   }
 

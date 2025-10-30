@@ -279,3 +279,20 @@ label {
 .grid-4 {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
+
+/* Botões de alternar status: evitar preenchimento de cor no hover */
+.btn-toggle-status.btn-outline-success:hover,
+.btn-toggle-status.btn-outline-success:focus,
+.btn-toggle-status.btn-outline-success:active {
+  background-color: transparent !important;
+  color: #198754 !important; /* manter verde no texto/ícone */
+  border-color: #198754 !important;
+}
+
+.btn-toggle-status.btn-outline-danger:hover,
+.btn-toggle-status.btn-outline-danger:focus,
+.btn-toggle-status.btn-outline-danger:active {
+  background-color: transparent !important;
+  color: #dc3545 !important; /* manter vermelho no texto/ícone */
+  border-color: #dc3545 !important;
+}

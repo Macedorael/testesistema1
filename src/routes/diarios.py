@@ -29,6 +29,9 @@ def get_my_diary_entries():
         patient = Patient.query.filter_by(email=current_user.email).first()
         if not patient:
             return jsonify({'success': False, 'message': 'Paciente não encontrado'}), 404
+        # Gate: Diário TCC desativado
+        if not bool(getattr(patient, 'diario_tcc_ativo', False)):
+            return jsonify({'success': False, 'message': 'Diário TCC desativado para este paciente'}), 403
 
         entries = DiaryEntry.query.filter_by(patient_id=patient.id).order_by(DiaryEntry.data_registro.desc()).all()
         return jsonify({'success': True, 'data': [e.to_dict() for e in entries]})
@@ -51,6 +54,9 @@ def create_my_diary_entry():
         patient = Patient.query.filter_by(email=current_user.email).first()
         if not patient:
             return jsonify({'success': False, 'message': 'Paciente não encontrado'}), 404
+        # Gate: Diário TCC desativado
+        if not bool(getattr(patient, 'diario_tcc_ativo', False)):
+            return jsonify({'success': False, 'message': 'Diário TCC desativado para este paciente'}), 403
 
         data = request.get_json() or {}
         # Campos base obrigatórios
@@ -134,6 +140,9 @@ def get_patient_diary_entries(patient_id):
         patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
         if not patient:
             return jsonify({'success': False, 'message': 'Paciente não encontrado ou não autorizado'}), 404
+        # Gate: Diário TCC desativado
+        if not bool(getattr(patient, 'diario_tcc_ativo', False)):
+            return jsonify({'success': False, 'message': 'Diário TCC desativado para este paciente'}), 403
 
         entries = DiaryEntry.query.filter_by(patient_id=patient_id, user_id=current_user.id).order_by(DiaryEntry.data_registro.desc()).all()
         return jsonify({'success': True, 'data': [e.to_dict() for e in entries]})
@@ -154,6 +163,9 @@ def create_patient_diary_entry(patient_id):
         patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
         if not patient:
             return jsonify({'success': False, 'message': 'Paciente não encontrado ou não autorizado'}), 404
+        # Gate: Diário TCC desativado
+        if not bool(getattr(patient, 'diario_tcc_ativo', False)):
+            return jsonify({'success': False, 'message': 'Diário TCC desativado para este paciente'}), 403
 
         data = request.get_json() or {}
         # Campos base obrigatórios
@@ -240,6 +252,9 @@ def get_patient_emotions_weekly(patient_id):
         patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
         if not patient:
             return jsonify({'success': False, 'message': 'Paciente não encontrado ou não autorizado'}), 404
+        # Gate: Diário TCC desativado
+        if not bool(getattr(patient, 'diario_tcc_ativo', False)):
+            return jsonify({'success': False, 'message': 'Diário TCC desativado para este paciente'}), 403
 
         # Parâmetros
         try:

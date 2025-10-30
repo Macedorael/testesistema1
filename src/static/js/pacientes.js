@@ -84,11 +84,11 @@ window.Patients = {
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         ${patient.ativo === false
-                                            ? `<button class="btn btn-outline-success" onclick="Patients.toggleActive(${patient.id}, true)" title="Ativar">
-                                                    <i class="bi bi-toggle2-on"></i>
+                                            ? `<button class="btn btn-outline-danger btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, true)" title="Ativar">
+                                                    <i class="bi bi-toggle2-off text-danger"></i>
                                                </button>`
-                                            : `<button class="btn btn-outline-warning" onclick="Patients.toggleActive(${patient.id}, false)" title="Desativar">
-                                                    <i class="bi bi-toggle2-off"></i>
+                                            : `<button class="btn btn-outline-success btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, false)" title="Inativar">
+                                                    <i class="bi bi-toggle2-on text-success"></i>
                                                </button>`}
                                         <button class="btn btn-outline-danger" onclick="Patients.deletePatient(${patient.id})" title="Excluir">
                                             <i class="bi bi-trash"></i>
@@ -503,18 +503,27 @@ window.Patients = {
                                         <button class="btn btn-outline-primary" ${patient.ativo === false ? 'disabled' : ''} onclick="Appointments.showCreateModalForPatient(${patient.id})">
                                             <i class="bi bi-calendar-plus me-1"></i>Novo Agendamento
                                         </button>
-                                        <button class="btn btn-outline-primary" onclick="Patients.viewDiaryEntries(${patient.id})">
-                                            <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
-                                        </button>
-                                        <button class="btn btn-outline-primary" onclick="Patients.showEmotionsChart(${patient.id})">
-                                            <i class="bi bi-graph-up-arrow me-1"></i>Gráfico de Emoções
-                                        </button>
-                                        ${patient.ativo === false
-                                            ? `<button class="btn btn-success" onclick="Patients.toggleActive(${patient.id}, true)">
-                                                    <i class="bi bi-toggle2-on me-1"></i>Ativo
+                                        ${patient.diario_tcc_ativo ? `
+                                            <button class="btn btn-outline-primary" onclick="Patients.viewDiaryEntries(${patient.id})">
+                                                <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
+                                            </button>
+                                            <button class="btn btn-outline-primary" onclick="Patients.showEmotionsChart(${patient.id})">
+                                                <i class="bi bi-graph-up-arrow me-1"></i>Gráfico de Emoções
+                                            </button>
+                                        ` : ''}
+                                        ${patient.diario_tcc_ativo
+                                            ? `<button class="btn btn-warning" onclick="Patients.toggleCbtDiary(${patient.id}, false)">
+                                                    <i class="bi bi-journal-x me-1"></i>Desativar Diário TCC
                                                </button>`
-                                            : `<button class="btn btn-warning" onclick="Patients.toggleActive(${patient.id}, false)">
-                                                    <i class="bi bi-toggle2-off me-1"></i>Inativo
+                                            : `<button class="btn btn-success" onclick="Patients.toggleCbtDiary(${patient.id}, true)">
+                                                    <i class="bi bi-journal-check me-1"></i>Ativar Diário TCC
+                                               </button>`}
+                                        ${patient.ativo === false
+                                            ? `<button class="btn btn-outline-danger btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, true)">
+                                                    <i class="bi bi-toggle2-off text-danger me-1"></i>Ativar
+                                               </button>`
+                                            : `<button class="btn btn-outline-success btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, false)">
+                                                    <i class="bi bi-toggle2-on text-success me-1"></i>Inativar
                                                </button>`}
                                     </div>
                                 </div>
@@ -545,6 +554,35 @@ window.Patients = {
         modal.show();
     },
 
+    async toggleCbtDiary(patientId, newState) {
+        try {
+            const patient = this.patients.find(p => p.id === patientId);
+            const name = patient ? patient.nome_completo : 'o paciente';
+            const actionText = newState ? 'ativar' : 'desativar';
+            if (!confirm(`Tem certeza que deseja ${actionText} o Diário TCC de ${name}?`)) {
+                return;
+            }
+            const resp = await window.app.apiCall(`/patients/${patientId}/toggle-cbt-diary`, {
+                method: 'POST',
+                body: JSON.stringify({ ativo: !!newState })
+            });
+            window.app.showSuccess('Diário TCC atualizado');
+            // Recarregar lista
+            await this.loadPatients();
+            // Se o modal de detalhes estiver aberto, atualizar seu conteúdo
+            const openModal = document.getElementById('patientDetailsModal');
+            if (openModal) {
+                try {
+                    const fresh = await window.app.apiCall(`/patients/${patientId}`);
+                    this.showPatientDetailsModal(fresh.data);
+                } catch (_) {}
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar Diário TCC:', error);
+            window.app.showError(error.message || 'Erro ao atualizar Diário TCC');
+        }
+    },
+
     async toggleActive(patientId, newStatus) {
         try {
             const patient = this.patients.find(p => p.id === patientId);
@@ -560,13 +598,53 @@ window.Patients = {
             window.app.showSuccess(resp.message || 'Status atualizado');
             // Recarregar lista
             await this.loadPatients();
-            // Se o modal de detalhes estiver aberto, atualizar seu conteúdo
+            // Se o modal de detalhes estiver aberto, atualizar elementos em tempo real (sem reabrir)
             const openModal = document.getElementById('patientDetailsModal');
             if (openModal) {
-                try {
-                    const fresh = await window.app.apiCall(`/patients/${patientId}`);
-                    this.showPatientDetailsModal(fresh.data);
-                } catch (_) {}
+                // Atualiza badge de status no título
+                const badgeEl = openModal.querySelector('.modal-title .badge');
+                if (badgeEl) {
+                    if (newStatus) {
+                        badgeEl.classList.remove('bg-secondary');
+                        badgeEl.classList.add('bg-success');
+                        badgeEl.textContent = 'Ativo';
+                    } else {
+                        badgeEl.classList.remove('bg-success');
+                        badgeEl.classList.add('bg-secondary');
+                        badgeEl.textContent = 'Inativo';
+                    }
+                }
+
+                // Atualiza botão de novo agendamento (habilita somente quando ativo)
+                const novoAgendamentoBtnIcon = openModal.querySelector('.modal-body i.bi-calendar-plus');
+                const novoAgendamentoBtn = novoAgendamentoBtnIcon ? novoAgendamentoBtnIcon.closest('button') : null;
+                if (novoAgendamentoBtn) {
+                    novoAgendamentoBtn.disabled = !newStatus;
+                }
+
+                // Atualiza botão de ativar/inativar dentro da área de ações
+                const actionsContainer = openModal.querySelector('.modal-body .d-flex.gap-2');
+                if (actionsContainer) {
+                    const currentToggleIcon = actionsContainer.querySelector('i.bi-toggle2-on, i.bi-toggle2-off');
+                    const toggleBtn = currentToggleIcon ? currentToggleIcon.closest('button') : null;
+                    if (toggleBtn) {
+                        if (newStatus) {
+                            // Paciente ficou ativo: botão verde e ícone verde
+                            toggleBtn.classList.remove('btn-outline-danger');
+                            toggleBtn.classList.add('btn-outline-success');
+                            toggleBtn.classList.add('btn-toggle-status');
+                            toggleBtn.innerHTML = '<i class="bi bi-toggle2-on text-success me-1"></i>Inativar';
+                            toggleBtn.setAttribute('onclick', `Patients.toggleActive(${patientId}, false)`);
+                        } else {
+                            // Paciente ficou inativo: botão vermelho e ícone vermelho
+                            toggleBtn.classList.remove('btn-outline-success');
+                            toggleBtn.classList.add('btn-outline-danger');
+                            toggleBtn.classList.add('btn-toggle-status');
+                            toggleBtn.innerHTML = '<i class="bi bi-toggle2-off text-danger me-1"></i>Ativar';
+                            toggleBtn.setAttribute('onclick', `Patients.toggleActive(${patientId}, true)`);
+                        }
+                    }
+                }
             }
         } catch (error) {
             console.error('Erro ao atualizar status do paciente:', error);

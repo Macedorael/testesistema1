@@ -124,6 +124,32 @@ def get_patient(patient_id):
             "message": f"Erro ao buscar paciente: {str(e)}"
         }), 500
 
+# Toggle do Diário TCC (ativar/desativar)
+@patients_bp.route("/patients/<int:patient_id>/toggle-cbt-diary", methods=["POST"])
+@login_and_subscription_required
+def toggle_cbt_diary(patient_id):
+    """Ativa/Desativa o Diário de TCC para um paciente do profissional atual.
+    Body: { "ativo": true|false }
+    """
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
+
+        patient = Patient.query.filter_by(id=patient_id, user_id=current_user.id).first()
+        if not patient:
+            return jsonify({"success": False, "message": "Paciente não encontrado ou não autorizado"}), 404
+
+        payload = request.get_json() or {}
+        novo_estado = bool(payload.get('ativo'))
+        patient.diario_tcc_ativo = novo_estado
+        db.session.commit()
+
+        return jsonify({"success": True, "data": patient.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Erro ao atualizar Diário TCC: {str(e)}"}), 500
+
 @patients_bp.route("/patients", methods=["POST"])
 @login_and_subscription_required
 def create_patient():

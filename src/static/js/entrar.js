@@ -30,10 +30,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (subscriptionData.success && subscriptionData.subscription && subscriptionData.subscription.status === 'active') {
                     window.location.href = '/index.html';
                 } else {
-                    window.location.href = '/assinaturas.html';
+                    // Sem assinatura ativa: seguir para a tela inicial
+                    window.location.href = '/index.html';
                 }
             } else {
-                window.location.href = '/assinaturas.html';
+                // Em caso de erro na verificação da assinatura: seguir para a tela inicial
+                window.location.href = '/index.html';
             }
             return;
         }

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded',function(){const appointmentsList=d
     }
     appointments.sort((a,b)=>new Date(b.data_primeira_sessao)-new Date(a.data_primeira_sessao));
     // Atualiza resumo do próximo agendamento
-    try { updateDashboardNextAppointment(appointments); } catch(e){ console.error('Erro ao atualizar resumo de agendamentos:', e); }
+    try { updateDashboardNextAppointment(nextAppointmentContent, appointments); } catch(e){ console.error('Erro ao atualizar resumo de agendamentos:', e); }
     appointments.forEach(appointment=>{renderAppointment(appointment);});
   }).catch(error=>{
     loadingSpinner.classList.remove('d-flex');
@@ -77,10 +77,32 @@ function loadDiaryEntries(){
       console.error('Erro ao carregar registros diários:',error);
     });
 }
+
+// Oculta botões/links do Diário na navbar quando desativado
+document.addEventListener('DOMContentLoaded', function(){
+  try{
+    // Ocultar permanentemente os botões do Diário na navbar
+    const novoBtn = document.getElementById('novoRegistroBtn');
+    if(novoBtn){ novoBtn.style.display = 'none'; }
+    const diaryNavLinkAlways = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+    if(diaryNavLinkAlways){ diaryNavLinkAlways.style.display = 'none'; }
+
+    fetch('/api/patients/me')
+      .then(r=>r.ok?r.json():null)
+      .then((payload)=>{
+        if(!payload) return;
+        const patient = (payload && typeof payload==='object' && 'data' in payload) ? payload.data : payload;
+        const enabled = !!(patient && patient.diario_tcc_ativo);
+        if(!enabled){
+          // Já ocultados acima; manter lógica caso precise outras seções
+        }
+      }).catch(()=>{});
+  }catch(_){ /* noop */ }
+});
 function renderDiaryEntry(entry){const diaryListEl=document.getElementById('diaryList');if(!diaryListEl)return;const createdISO=entry.data_registro||entry.created_at||entry.createdAt||entry.dataHora;const d=createdISO?new Date(createdISO):null;const formattedDate=d?d.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'}):'Data não informada';const formattedTime=d?d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';let pares=[];if(Array.isArray(entry.emocao_intensidades)){pares=entry.emocao_intensidades;}else if(typeof entry.emocao==='string'&&entry.emocao){const inten=(typeof entry.intensidade==='number'?entry.intensidade:Number(entry.intensidade||0))||0;pares=[{emocao:entry.emocao,intensidade:inten}];}const maxIntensidade=pares.length?Math.max(...pares.map(p=>Number(p.intensidade||0))):((typeof entry.intensidade==='number'?entry.intensidade:Number(entry.intensidade||0))||0);const badgeClass=maxIntensidade>=7?'text-bg-danger':(maxIntensidade>=4?'text-bg-warning':'text-bg-success');const emotionsHtml=pares.length?pares.map(p=>{const inten=Number(p.intensidade||0);const cls=inten>=7?'text-bg-danger':(inten>=4?'text-bg-warning':'text-bg-info');return `<span class="badge ${cls} me-1">${escapeHtml(p.emocao)} (${inten})</span>`;}).join(''):`<span class="badge text-bg-info">${escapeHtml(entry.emocao||'—')}</span>`;const card=document.createElement('div');card.className='card shadow-sm mb-3';card.innerHTML=`<div class="card-body py-3"><div class="d-flex justify-content-between align-items-center"><div><div class="fw-normal">${formattedDate}</div><div class="text-muted"><i class="bi bi-clock"></i> ${formattedTime}</div></div><span class="badge rounded-pill ${badgeClass}">Intensidade máx: ${maxIntensidade}</span></div><div class="row gy-2 mt-2"><div class="col-12"><div class="small text-muted">Situação</div><div class="fw-normal">${escapeHtml(entry.situacao)||'—'}</div></div><div class="col-12"><div class="small text-muted">Pensamento</div><div class="fw-normal">${escapeHtml(entry.pensamento)||'—'}</div></div><div class="col-12"><div class="small text-muted">Emoções</div><div class="fw-normal">${emotionsHtml}</div></div><div class="col-12"><div class="small text-muted">Comportamento</div><div class="fw-normal">${escapeHtml(entry.comportamento)||'—'}</div></div>${entry.consequencia?`<div class="col-12"><div class="small text-muted">Consequência</div><div class="fw-normal">${escapeHtml(entry.consequencia)}</div></div>`:''}</div></div>`;diaryListEl.appendChild(card);}function escapeHtml(text){if(text==null)return'';return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 });
-function updateDashboardNextAppointment(appointments){
-  if(!nextAppointmentContent) return;
+function updateDashboardNextAppointment(targetEl, appointments){
+  if(!targetEl) return;
   const now=new Date();
   let candidate=null; // {date, especialidade, profissional}
   appointments.forEach(appt=>{
@@ -97,12 +119,12 @@ function updateDashboardNextAppointment(appointments){
     }
   });
   if(!candidate){
-    nextAppointmentContent.textContent='Nenhum próximo agendamento encontrado.';
+    targetEl.textContent='Nenhum próximo agendamento encontrado.';
     return;
   }
   const dateStr=candidate.date.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const timeStr=candidate.date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  nextAppointmentContent.innerHTML=`<i class=\"bi bi-calendar-event\"></i> ${dateStr} às ${timeStr} <span class=\"ms-2 fw-bold\">${escapeHtml(candidate.especialidade)} ${escapeHtml(candidate.profissional)}</span>`;
+  targetEl.innerHTML=`<i class=\"bi bi-calendar-event\"></i> ${dateStr} às ${timeStr} <span class=\"ms-2 fw-bold\">${escapeHtml(candidate.especialidade)} ${escapeHtml(candidate.profissional)}</span>`;
 }
 function updateDashboardLatestDiary(entry){
   if(!latestDiaryContent||!entry) return;

@@ -12,11 +12,8 @@ class App {
         
         // Verificar status da assinatura antes de carregar a aplicação
         const hasActiveSubscription = await this.checkSubscriptionStatus();
-        if (!hasActiveSubscription) {
-            // Redirecionar para página de assinatura se não tiver assinatura ativa
-            window.location.href = 'assinaturas.html';
-            return;
-        }
+        // Caso não haja assinatura ativa ou a verificação falhe, não redirecionar.
+        // Continuar carregando a aplicação normalmente para a tela inicial.
         
         this.setupEventListeners();
         

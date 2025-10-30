@@ -46,6 +46,12 @@ body {
     background: transparent; /* ensure no default opaque background */
 }
 
+/* Ensure hide utility wins for vertical nav items */
+.nav-item-vertical.d-none,
+.nav-item-vertical.hidden {
+    display: none !important;
+}
+
 .nav-item-vertical i {
     font-size: 1.2rem;
     margin-bottom: 0.25rem;
@@ -1160,5 +1166,33 @@ body.perfil-page {
     align-items: center;
     justify-content: center;
     z-index: 10;
+}
+
+/* ================= Status Toggle Buttons (Pacientes) ================= */
+/* Evita o bloco colorido no hover dos botões de alternância de status
+   mantendo apenas a cor do ícone/texto (verde/vermelho). */
+.btn-toggle-status {
+  background-color: transparent !important;
+}
+
+.btn-outline-success.btn-toggle-status:hover,
+.btn-outline-success.btn-toggle-status:focus,
+.btn-outline-success.btn-toggle-status:active {
+  background-color: transparent !important;
+  color: var(--success-color) !important;
+  box-shadow: none !important;
+}
+
+.btn-outline-danger.btn-toggle-status:hover,
+.btn-outline-danger.btn-toggle-status:focus,
+.btn-outline-danger.btn-toggle-status:active {
+  background-color: transparent !important;
+  color: var(--danger-color) !important;
+  box-shadow: none !important;
+}
+
+.btn-toggle-status:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
