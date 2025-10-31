@@ -84,11 +84,11 @@ window.Patients = {
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         ${patient.ativo === false
-                                            ? `<button class="btn btn-outline-danger btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, true)" title="Ativar">
-                                                    <i class="bi bi-toggle2-off text-danger"></i>
+                                            ? `<button class="btn btn-outline-success btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, true)" title="Ativar">
+                                                    <i class="bi bi-toggle2-off text-success"></i>
                                                </button>`
-                                            : `<button class="btn btn-outline-success btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, false)" title="Inativar">
-                                                    <i class="bi bi-toggle2-on text-success"></i>
+                                            : `<button class="btn btn-outline-danger btn-toggle-status" onclick="Patients.toggleActive(${patient.id}, false)" title="Inativar">
+                                                    <i class="bi bi-toggle2-on text-danger"></i>
                                                </button>`}
                                         <button class="btn btn-outline-danger" onclick="Patients.deletePatient(${patient.id})" title="Excluir">
                                             <i class="bi bi-trash"></i>
@@ -496,6 +496,9 @@ window.Patients = {
                                             <i class="bi bi-calendar-plus me-1"></i>Novo Agendamento
                                         </button>
                                         ${patient.diario_tcc_ativo ? `
+                                            <button class="btn btn-primary btn-sm" onclick="Patients.showAddDiaryEntryModal(${patient.id})">
+                                                <i class="bi bi-journal-plus me-1"></i>Adicionar Pensamento
+                                            </button>
                                             <button class="btn btn-outline-primary btn-sm" onclick="Patients.viewDiaryEntries(${patient.id})">
                                                 <i class="bi bi-journal-text me-1"></i>Ver todos os pensamentos
                                             </button>
@@ -511,11 +514,11 @@ window.Patients = {
                                                     <i class="bi bi-journal-check me-1"></i>Ativar Diário TCC
                                                </button>`}
                                         ${patient.ativo === false
-                                            ? `<button class="btn btn-outline-danger btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, true)">
-                                                    <i class="bi bi-toggle2-off text-danger me-1"></i>Ativar
+                                            ? `<button class="btn btn-outline-success btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, true)">
+                                                    <i class="bi bi-toggle2-off text-success me-1"></i>Ativar
                                                </button>`
-                                            : `<button class="btn btn-outline-success btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, false)">
-                                                    <i class="bi bi-toggle2-on text-success me-1"></i>Inativar
+                                            : `<button class="btn btn-outline-danger btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, false)">
+                                                    <i class="bi bi-toggle2-on text-danger me-1"></i>Inativar
                                                </button>`}
                                     </div>
                                 </div>
@@ -621,18 +624,18 @@ window.Patients = {
                     const toggleBtn = currentToggleIcon ? currentToggleIcon.closest('button') : null;
                     if (toggleBtn) {
                         if (newStatus) {
-                            // Paciente ficou ativo: botão verde e ícone verde
-                            toggleBtn.classList.remove('btn-outline-danger');
-                            toggleBtn.classList.add('btn-outline-success');
-                            toggleBtn.classList.add('btn-toggle-status');
-                            toggleBtn.innerHTML = '<i class="bi bi-toggle2-on text-success me-1"></i>Inativar';
-                            toggleBtn.setAttribute('onclick', `Patients.toggleActive(${patientId}, false)`);
-                        } else {
-                            // Paciente ficou inativo: botão vermelho e ícone vermelho
+                            // Paciente ficou ativo: botão vermelho para Inativar
                             toggleBtn.classList.remove('btn-outline-success');
                             toggleBtn.classList.add('btn-outline-danger');
                             toggleBtn.classList.add('btn-toggle-status');
-                            toggleBtn.innerHTML = '<i class="bi bi-toggle2-off text-danger me-1"></i>Ativar';
+                            toggleBtn.innerHTML = '<i class="bi bi-toggle2-on text-danger me-1"></i>Inativar';
+                            toggleBtn.setAttribute('onclick', `Patients.toggleActive(${patientId}, false)`);
+                        } else {
+                            // Paciente ficou inativo: botão verde para Ativar
+                            toggleBtn.classList.remove('btn-outline-danger');
+                            toggleBtn.classList.add('btn-outline-success');
+                            toggleBtn.classList.add('btn-toggle-status');
+                            toggleBtn.innerHTML = '<i class="bi bi-toggle2-off text-success me-1"></i>Ativar';
                             toggleBtn.setAttribute('onclick', `Patients.toggleActive(${patientId}, true)`);
                         }
                     }
@@ -654,6 +657,90 @@ window.Patients = {
             console.error('Erro ao carregar pensamentos:', error);
             window.app.showError('Erro ao carregar pensamentos do paciente');
         }
+    },
+
+    showAddDiaryEntryModal(patientId) {
+        const patient = this.patients.find(p => p.id === patientId);
+        const patientName = patient ? patient.nome_completo : 'Paciente';
+        const modalHtml = `
+            <div class="modal fade" id="newDiaryEntryModal" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <form id="newDiaryEntryForm" novalidate>
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-journal-plus me-2"></i>Novo Pensamento – ${patientName}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Situação</label>
+                                        <textarea class="form-control" name="situacao" rows="2" required></textarea>
+                                        <div class="invalid-feedback">Descreva a situação.</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Pensamento</label>
+                                        <textarea class="form-control" name="pensamento" rows="2" required></textarea>
+                                        <div class="invalid-feedback">Descreva o pensamento.</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Comportamento</label>
+                                        <textarea class="form-control" name="comportamento" rows="2" required></textarea>
+                                        <div class="invalid-feedback">Descreva o comportamento.</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Consequência</label>
+                                        <textarea class="form-control" name="consequencia" rows="2" required></textarea>
+                                        <div class="invalid-feedback">Descreva a consequência.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        const container = document.getElementById('modals-container');
+        if (!container) {
+            window.app.showError('Container de modais não encontrado');
+            return;
+        }
+        container.innerHTML = modalHtml;
+        const modalEl = document.getElementById('newDiaryEntryModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        const form = document.getElementById('newDiaryEntryForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            const formData = new FormData(form);
+            const payload = {
+                situacao: formData.get('situacao') || '',
+                pensamento: formData.get('pensamento') || '',
+                comportamento: formData.get('comportamento') || '',
+                consequencia: formData.get('consequencia') || ''
+            };
+            try {
+                await window.app.apiCall(`/patients/${patientId}/diary-entries`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                window.app.showSuccess('Pensamento adicionado com sucesso');
+                modal.hide();
+                try { await Patients.viewDiaryEntries(patientId); } catch (_) {}
+            } catch (error) {
+                console.error('Erro ao criar pensamento:', error);
+                window.app.showError(error.message || 'Erro ao criar pensamento');
+            }
+        });
     },
 
     showDiaryEntriesModal(patient, entries) {

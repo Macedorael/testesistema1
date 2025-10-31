@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const shortcutNovoRegistro = document.getElementById('shortcutNovoRegistro');
   let currentUser = null;
 
-  // Ocultar permanentemente os botões do Diário na navbar
+  // Estado inicial: manter oculto via classe; será exibido quando diário estiver habilitado
   const diaryNavLinkAlways = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
   if (diaryNavLinkAlways) { diaryNavLinkAlways.style.display = 'none'; }
   if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
@@ -31,6 +31,11 @@ document.addEventListener('DOMContentLoaded', function () {
     loadAppointmentsSummary();
     checkDiaryAvailability().then((enabled) => {
       if (enabled) {
+        // Exibir botões de diário na navbar
+        if (novoRegistroBtn) { novoRegistroBtn.classList.remove('d-none'); novoRegistroBtn.style.display = ''; }
+        const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+        if (diaryNavLink) { diaryNavLink.classList.remove('d-none'); diaryNavLink.style.display = ''; }
+        if (shortcutNovoRegistro) { shortcutNovoRegistro.classList?.remove('d-none'); shortcutNovoRegistro.style.display = ''; }
         loadDiarySummary();
       } else {
         const latestDiaryContent = document.getElementById('latestDiaryContent');
@@ -72,10 +77,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const patient = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
       const enabled = !!(patient && patient.diario_tcc_ativo);
       if (!enabled) {
-        if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
-        if (shortcutNovoRegistro) { shortcutNovoRegistro.style.display = 'none'; }
+        if (novoRegistroBtn) { novoRegistroBtn.classList.add('d-none'); novoRegistroBtn.style.display = 'none'; }
+        if (shortcutNovoRegistro) { shortcutNovoRegistro.classList?.add('d-none'); shortcutNovoRegistro.style.display = 'none'; }
         const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
-        if (diaryNavLink) { diaryNavLink.style.display = 'none'; }
+        if (diaryNavLink) { diaryNavLink.classList.add('d-none'); diaryNavLink.style.display = 'none'; }
       }
       return enabled;
     } catch (_) {
@@ -358,7 +363,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('')
       : `<span class="badge text-bg-info">${escapeHtml(entry.emocao || '—')}</span>`;
     const summaryCls = maxInt >= 7 ? 'text-bg-danger' : (maxInt >= 4 ? 'text-bg-warning' : 'text-bg-success');
-    targetEl.innerHTML = `<i class="bi bi-clock"></i> ${dateStr} às ${timeStr} <span class="ms-2 badge rounded-pill ${summaryCls}">Intensidade máx: ${maxInt}</span><div class="mt-1"><span class="small text-muted">Emoções: </span>${badges}</div>`;
+    const consequenciaHtml = entry.consequencia ? `<div class="col-12"><div class="small text-muted">Consequência</div><div class="fw-normal">${escapeHtml(entry.consequencia)}</div></div>` : '';
+    targetEl.innerHTML = `
+      <i class="bi bi-clock"></i> ${dateStr} às ${timeStr}
+      <span class="ms-2 badge rounded-pill ${summaryCls}">Intensidade máx: ${maxInt}</span>
+      <div class="row gy-1 mt-2">
+        <div class="col-12">
+          <div class="small text-muted">Situação</div>
+          <div class="fw-normal">${escapeHtml(entry.situacao) || '—'}</div>
+        </div>
+        <div class="col-12">
+          <div class="small text-muted">Pensamento</div>
+          <div class="fw-normal">${escapeHtml(entry.pensamento) || '—'}</div>
+        </div>
+        <div class="col-12">
+          <div class="small text-muted">Emoções</div>
+          <div class="fw-normal d-flex flex-wrap gap-1">${badges}</div>
+        </div>
+        <div class="col-12">
+          <div class="small text-muted">Comportamento</div>
+          <div class="fw-normal">${escapeHtml(entry.comportamento) || '—'}</div>
+        </div>
+        ${consequenciaHtml}
+      </div>`;
   }
 
   function escapeHtml(text) {

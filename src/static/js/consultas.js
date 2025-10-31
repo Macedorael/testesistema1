@@ -1033,6 +1033,14 @@ window.Appointments = {
                                     Período: ${window.app.formatDate(startDate)} até ${window.app.formatDate(endDate)}
                                 </small>
                             </div>
+                            <div class="d-flex justify-content-end mb-2">
+                              <button type="button" class="btn btn-outline-primary btn-sm" id="togglePeriodChartBtn">
+                                <i class="bi bi-bar-chart"></i> Ver gráfico
+                              </button>
+                            </div>
+                            <div id="periodChartContainer" class="mb-3 d-none">
+                              ${this.renderDiaryChart(diaryEntries)}
+                            </div>
                             ${this.renderDiaryEntries(diaryEntries)}
                         </div>
                         <div class="modal-footer">
@@ -1059,9 +1067,214 @@ window.Appointments = {
         const modal = new bootstrap.Modal(document.getElementById('periodThoughtsModal'));
         modal.show();
 
+        // Toggle do gráfico
+        const toggleBtn = document.getElementById('togglePeriodChartBtn');
+        const chartContainer = document.getElementById('periodChartContainer');
+        if (toggleBtn && chartContainer) {
+            toggleBtn.addEventListener('click', () => {
+                chartContainer.classList.toggle('d-none');
+                toggleBtn.innerHTML = chartContainer.classList.contains('d-none')
+                  ? '<i class="bi bi-pie-chart"></i> Ver gráfico'
+                  : '<i class="bi bi-pie-chart"></i> Ocultar gráfico';
+
+                // Desenhar gráfico de pizza (proporção por emoção) quando exibido
+                if (!chartContainer.classList.contains('d-none')) {
+                    const canvas = document.getElementById('periodEmotionChartCanvas');
+                    const pie = this.computeEmotionPieData(diaryEntries);
+                    this.drawEmotionPieChart(canvas, pie);
+                }
+            });
+        }
+
         // Remove modal do DOM quando fechado
         document.getElementById('periodThoughtsModal').addEventListener('hidden.bs.modal', function () {
             this.remove();
+        });
+    },
+
+    renderDiaryChart(entries) {
+        if (!entries || entries.length === 0) {
+            return `<div class="text-muted">Sem dados para o gráfico.</div>`;
+        }
+        const items = this.computeEmotionTimeSeries(entries);
+        if (!items || items.length === 0) {
+            return `<div class="text-muted">Sem dados de emoções.</div>`;
+        }
+        return `
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Gráfico de Pizza de Emoções</h6>
+              <small class="text-muted">Proporção por emoção (soma de intensidades 0–10)</small>
+            </div>
+            <div class="card-body">
+              <canvas id="periodEmotionChartCanvas" width="720" height="320"></canvas>
+              <div id="periodEmotionLegendBadges" class="mt-2">
+                ${items.map(it => `<span class="badge bg-${it.color} me-1">${it.label}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+    },
+    computeEmotionTimeSeries(entries) {
+        // Aggrega intensidade por emoção por dia
+        const byEmotionDay = {};
+        const addPoint = (emotionLabel, dayStr, intensity) => {
+            const key = (emotionLabel || '').toLowerCase();
+            if (!key) return;
+            if (!byEmotionDay[key]) byEmotionDay[key] = { label: emotionLabel, color: this.getEmotionColor(emotionLabel), days: {} };
+            if (!byEmotionDay[key].days[dayStr]) byEmotionDay[key].days[dayStr] = [];
+            byEmotionDay[key].days[dayStr].push(Number(intensity) || 0);
+        };
+
+        entries.forEach(entry => {
+            const dt = new Date(entry.data_registro || entry.created_at);
+            if (isNaN(dt)) return;
+            const dayStr = dt.toISOString().split('T')[0];
+            const pairs = Array.isArray(entry.emocao_intensidades) ? entry.emocao_intensidades : [];
+            if (pairs.length > 0) {
+                pairs.forEach(p => addPoint(p.emocao, dayStr, p.intensidade));
+            } else if (entry.emocao) {
+                addPoint(entry.emocao, dayStr, entry.intensidade);
+            }
+        });
+
+        // Converte em séries com média por dia
+        const series = Object.values(byEmotionDay).map(group => {
+            const points = Object.entries(group.days).map(([dayStr, vals]) => {
+                const avg = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+                return { x: new Date(dayStr + 'T00:00:00'), y: Math.max(0, Math.min(10, avg)) };
+            }).sort((a,b) => a.x - b.x);
+            return { label: group.label, color: group.color, points };
+        }).filter(s => s.points.length > 0);
+
+        return series;
+    },
+
+    // Dados para gráfico de pizza: proporção por emoção (soma de intensidades)
+    computeEmotionPieData(entries) {
+        const totals = new Map();
+        const addVal = (emotionLabel, val) => {
+            const emo = (emotionLabel || '').trim();
+            if (!emo) return;
+            const v = Number(val) || 0;
+            totals.set(emo, (totals.get(emo) || 0) + Math.max(0, Math.min(10, v)));
+        };
+
+        entries.forEach(entry => {
+            const pairs = Array.isArray(entry.emocao_intensidades) ? entry.emocao_intensidades : [];
+            if (pairs.length > 0) {
+                pairs.forEach(p => addVal(p.emocao, p.intensidade));
+            } else if (entry.emocao) {
+                addVal(entry.emocao, entry.intensidade);
+            }
+        });
+
+        // Ordenar por maior intensidade total
+        const sorted = Array.from(totals.entries()).sort((a,b)=>b[1]-a[1]);
+        const labels = sorted.map(([emo]) => emo);
+        const values = sorted.map(([,val]) => val);
+
+        const total = values.reduce((s,v)=>s+v,0);
+        return { labels, values, total };
+    },
+
+    // Resolve cor real de fundo a partir da classe Bootstrap (ou gera uma cor estável)
+    resolveEmotionSliceColor(label) {
+        try {
+            const clsRaw = (typeof getEmotionColor === 'function') ? getEmotionColor(label) : null;
+            const bgClass = clsRaw ? (clsRaw.includes('bg-') ? clsRaw : `bg-${clsRaw}`) : null;
+            if (bgClass && typeof window !== 'undefined' && document && document.body) {
+                const temp = document.createElement('span');
+                temp.className = `badge ${bgClass}`;
+                temp.style.position = 'absolute';
+                temp.style.left = '-9999px';
+                document.body.appendChild(temp);
+                const color = window.getComputedStyle(temp).backgroundColor;
+                document.body.removeChild(temp);
+                if (color) return color;
+            }
+        } catch (_) {}
+        // Fallback: paleta estável por hash do label
+        const palette = ['#0d6efd','#dc3545','#198754','#ffc107','#6f42c1','#20c997','#fd7e14','#0dcaf0','#6610f2','#343a40','#6c757d'];
+        let hash = 0;
+        for (let i = 0; i < label.length; i++) {
+            hash = ((hash << 5) - hash) + label.charCodeAt(i);
+            hash |= 0;
+        }
+        return palette[Math.abs(hash) % palette.length];
+    },
+
+    drawEmotionPieChart(canvas, pie) {
+        if (!canvas || !pie || !pie.values || pie.values.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+
+        const margin = { left: 16, right: 220, top: 16, bottom: 16 };
+        const chartW = width - margin.left - margin.right;
+        const chartH = height - margin.top - margin.bottom;
+        const radius = Math.min(chartW, chartH) / 2 - 4;
+        const cx = margin.left + chartW / 2;
+        const cy = margin.top + chartH / 2;
+
+        const total = pie.total || pie.values.reduce((s,v)=>s+v,0);
+        if (total <= 0) {
+            ctx.fillStyle = '#6c757d';
+            ctx.textAlign = 'center';
+            ctx.font = '14px Arial';
+            ctx.fillText('Sem dados suficientes para gráfico de pizza', cx, cy);
+            return;
+        }
+
+        // Preparar cores por emoção (prioriza cores dos badges renderizados)
+        const badgeColors = {};
+        try {
+            const legend = document.getElementById('periodEmotionLegendBadges');
+            if (legend) {
+                const nodes = legend.querySelectorAll('span.badge');
+                nodes.forEach(el => {
+                    const lbl = (el.textContent || '').trim();
+                    const bg = window.getComputedStyle(el).backgroundColor;
+                    if (lbl && bg) badgeColors[lbl] = bg;
+                });
+            }
+        } catch (_) {}
+        const sliceColors = pie.labels.map(lbl => badgeColors[lbl] || this.resolveEmotionSliceColor(lbl));
+
+        // Desenhar fatias
+        let start = -Math.PI / 2; // começar no topo
+        pie.values.forEach((val, idx) => {
+            const frac = val / total;
+            const end = start + frac * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, start, end);
+            ctx.closePath();
+            ctx.fillStyle = sliceColors[idx] || '#0d6efd';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            start = end;
+        });
+
+        // Legenda ao lado direito
+        const legendX = margin.left + chartW + 16;
+        let legendY = margin.top + 4;
+        ctx.font = '12px Arial';
+        pie.labels.forEach((lbl, idx) => {
+            const color = sliceColors[idx] || '#0d6efd';
+            const val = pie.values[idx];
+            const pct = ((val / total) * 100).toFixed(0) + '%';
+            // swatch
+            ctx.fillStyle = color;
+            ctx.fillRect(legendX, legendY, 14, 14);
+            // texto
+            ctx.fillStyle = '#212529';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${lbl} — ${pct}`, legendX + 20, legendY + 11);
+            legendY += 18;
         });
     },
 
@@ -1097,6 +1310,22 @@ window.Appointments = {
                             <span class="badge bg-danger rounded-pill">Intensidade máx: ${maxIntensity}</span>
                         </div>
                         <div class="card-body">
+                            ${entry.situacao ? `
+                                <div class="mb-2">
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        Situação
+                                    </h6>
+                                    <p class="card-text">${entry.situacao}</p>
+                                </div>
+                            ` : ''}
+                            <div class="mb-2">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-chat-quote me-1"></i>
+                                    Pensamento
+                                </h6>
+                                <p class="card-text">${entry.pensamento || 'Não informado'}</p>
+                            </div>
                             <div class="mb-2">
                                 <h6 class="card-subtitle mb-2 text-muted">
                                     <i class="bi bi-emoji-smile me-1"></i>
@@ -1104,38 +1333,20 @@ window.Appointments = {
                                 </h6>
                                 <div>${emotionsBadges}</div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="card-subtitle mb-2 text-muted">
-                                        <i class="bi bi-chat-quote me-1"></i>
-                                        Pensamento
-                                    </h6>
-                                    <p class="card-text">${entry.pensamento || 'Não informado'}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="card-subtitle mb-2 text-muted">
-                                        <i class="bi bi-activity me-1"></i>
-                                        Comportamento
-                                    </h6>
-                                    <p class="card-text">${entry.comportamento || 'Não informado'}</p>
-                                </div>
+                            <div class="mb-2">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-activity me-1"></i>
+                                    Comportamento
+                                </h6>
+                                <p class="card-text">${entry.comportamento || 'Não informado'}</p>
                             </div>
                             ${entry.consequencia ? `
-                                <div class="mt-2">
+                                <div class="mb-2">
                                     <h6 class="card-subtitle mb-2 text-muted">
                                         <i class="bi bi-arrow-right-circle me-1"></i>
                                         Consequência
                                     </h6>
                                     <p class="card-text">${entry.consequencia}</p>
-                                </div>
-                            ` : ''}
-                            ${entry.situacao ? `
-                                <div class="mt-2">
-                                    <h6 class="card-subtitle mb-2 text-muted">
-                                        <i class="bi bi-geo-alt me-1"></i>
-                                        Situação
-                                    </h6>
-                                    <p class="card-text">${entry.situacao}</p>
                                 </div>
                             ` : ''}
                         </div>

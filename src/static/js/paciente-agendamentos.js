@@ -81,7 +81,7 @@ function loadDiaryEntries(){
 // Oculta botões/links do Diário na navbar quando desativado
 document.addEventListener('DOMContentLoaded', function(){
   try{
-    // Ocultar permanentemente os botões do Diário na navbar
+    // Estado inicial: oculto; exibir quando diário estiver habilitado
     const novoBtn = document.getElementById('novoRegistroBtn');
     if(novoBtn){ novoBtn.style.display = 'none'; }
     const diaryNavLinkAlways = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
@@ -93,8 +93,13 @@ document.addEventListener('DOMContentLoaded', function(){
         if(!payload) return;
         const patient = (payload && typeof payload==='object' && 'data' in payload) ? payload.data : payload;
         const enabled = !!(patient && patient.diario_tcc_ativo);
-        if(!enabled){
-          // Já ocultados acima; manter lógica caso precise outras seções
+        const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+        if(enabled){
+          if(novoBtn){ novoBtn.classList.remove('d-none'); novoBtn.style.display = ''; }
+          if(diaryNavLink){ diaryNavLink.classList.remove('d-none'); diaryNavLink.style.display = ''; }
+        } else {
+          if(novoBtn){ novoBtn.classList.add('d-none'); novoBtn.style.display = 'none'; }
+          if(diaryNavLink){ diaryNavLink.classList.add('d-none'); diaryNavLink.style.display = 'none'; }
         }
       }).catch(()=>{});
   }catch(_){ /* noop */ }
@@ -147,5 +152,27 @@ function updateDashboardLatestDiary(entry){
     return `<span class="badge ${cls} me-1">${escapeHtml(p.emocao)} (${inten})</span>`;
   }).join(''):`<span class="badge text-bg-info">${escapeHtml(entry.emocao||'—')}</span>`;
   const summaryBadgeClass=maxIntensidade>=7?'text-bg-danger':(maxIntensidade>=4?'text-bg-warning':'text-bg-success');
-  latestDiaryContent.innerHTML=`<i class="bi bi-clock"></i> ${dateStr} às ${timeStr} <span class="ms-2 badge rounded-pill ${summaryBadgeClass}">Intensidade máx: ${maxIntensidade}</span><div class="mt-1"><span class="small text-muted">Emoções: </span>${badges}</div>`;
+  const consequenciaHtml = entry.consequencia ? `<div class="col-12"><div class="small text-muted">Consequência</div><div class="fw-normal">${escapeHtml(entry.consequencia)}</div></div>` : '';
+  latestDiaryContent.innerHTML=`
+    <i class="bi bi-clock"></i> ${dateStr} às ${timeStr}
+    <span class="ms-2 badge rounded-pill ${summaryBadgeClass}">Intensidade máx: ${maxIntensidade}</span>
+    <div class="row gy-1 mt-2">
+      <div class="col-12">
+        <div class="small text-muted">Situação</div>
+        <div class="fw-normal">${escapeHtml(entry.situacao)||'—'}</div>
+      </div>
+      <div class="col-12">
+        <div class="small text-muted">Pensamento</div>
+        <div class="fw-normal">${escapeHtml(entry.pensamento)||'—'}</div>
+      </div>
+      <div class="col-12">
+        <div class="small text-muted">Emoções</div>
+        <div class="fw-normal d-flex flex-wrap gap-1">${badges}</div>
+      </div>
+      <div class="col-12">
+        <div class="small text-muted">Comportamento</div>
+        <div class="fw-normal">${escapeHtml(entry.comportamento)||'—'}</div>
+      </div>
+      ${consequenciaHtml}
+    </div>`;
 }

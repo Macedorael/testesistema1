@@ -28,11 +28,15 @@ document.addEventListener('DOMContentLoaded', function () {
   checkUserAuthentication().then(() => {
     checkDiaryAvailability().then((enabled) => {
       if (enabled) {
+        // Exibir botões/links do diário quando habilitado
+        if (novoRegistroBtn) { novoRegistroBtn.classList.remove('d-none'); novoRegistroBtn.style.display = ''; }
+        const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
+        if (diaryNavLink) { diaryNavLink.classList.remove('d-none'); diaryNavLink.style.display = ''; }
         loadDiaryEntries();
       } else {
-        if (novoRegistroBtn) { novoRegistroBtn.style.display = 'none'; }
+        if (novoRegistroBtn) { novoRegistroBtn.classList.add('d-none'); novoRegistroBtn.style.display = 'none'; }
         const diaryNavLink = document.querySelector('a.nav-link[href="paciente-diarios.html"]');
-        if (diaryNavLink) { diaryNavLink.style.display = 'none'; }
+        if (diaryNavLink) { diaryNavLink.classList.add('d-none'); diaryNavLink.style.display = 'none'; }
         const spinnerEl = document.getElementById('diaryLoadingSpinner');
         if (spinnerEl) { spinnerEl.style.display = 'none'; }
         const noDiaryEl = document.getElementById('noDiaryEntries');
