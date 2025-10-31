@@ -1196,6 +1196,23 @@ body.perfil-page {
   box-shadow: none !important;
 }
 
+/* ================= Outline Buttons Global (sem background no hover) ================ */
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+  background-color: transparent !important;
+  color: #0d6efd !important; /* cor padrão primary */
+  box-shadow: none !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active {
+  background-color: transparent !important;
+  color: #6c757d !important; /* cor padrão secondary */
+  box-shadow: none !important;
+}
+
 /* Responsive Modal Buttons */
 @media (max-width: 768px) {
   .modal-dialog.modal-xl {

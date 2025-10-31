@@ -496,7 +496,7 @@ window.Patients = {
                                             <i class="bi bi-calendar-plus me-1"></i>Novo Agendamento
                                         </button>
                                         ${patient.diario_tcc_ativo ? `
-                                            <button class="btn btn-primary btn-sm" onclick="Patients.showAddDiaryEntryModal(${patient.id})">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="Patients.showAddDiaryEntryModal(${patient.id})">
                                                 <i class="bi bi-journal-plus me-1"></i>Adicionar Pensamento
                                             </button>
                                             <button class="btn btn-outline-primary btn-sm" onclick="Patients.viewDiaryEntries(${patient.id})">
@@ -507,11 +507,11 @@ window.Patients = {
                                             </button>
                                         ` : ''}
                                         ${patient.diario_tcc_ativo
-                                            ? `<button class="btn btn-warning btn-sm" onclick="Patients.toggleCbtDiary(${patient.id}, false)">
-                                                    <i class="bi bi-journal-x me-1"></i>Desativar Diário TCC
+                                            ? `<button class="btn btn-outline-danger btn-toggle-status btn-sm" onclick="Patients.toggleCbtDiary(${patient.id}, false)">
+                                                    <i class="bi bi-journal-x text-danger me-1"></i>Desativar Diário TCC
                                                </button>`
-                                            : `<button class="btn btn-success btn-sm" onclick="Patients.toggleCbtDiary(${patient.id}, true)">
-                                                    <i class="bi bi-journal-check me-1"></i>Ativar Diário TCC
+                                            : `<button class="btn btn-outline-success btn-toggle-status btn-sm" onclick="Patients.toggleCbtDiary(${patient.id}, true)">
+                                                    <i class="bi bi-journal-check text-success me-1"></i>Ativar Diário TCC
                                                </button>`}
                                         ${patient.ativo === false
                                             ? `<button class="btn btn-outline-success btn-toggle-status btn-sm" onclick="Patients.toggleActive(${patient.id}, true)">
@@ -528,7 +528,7 @@ window.Patients = {
                             <button class="btn btn-outline-secondary" onclick="Patients.editPatient(${patient.id})">
                                 <i class="bi bi-pencil me-1"></i>Editar
                             </button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
                         </div>
                     </div>
                 </div>

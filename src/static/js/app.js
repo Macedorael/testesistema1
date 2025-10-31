@@ -171,8 +171,8 @@ class App {
             // Usar helper seguro para evitar erro quando o container não existir
             this.safeSetHtml('main-content', content);
             
-            // Initialize page-specific functionality
-            this.initPageFunctionality(page);
+            // Initialize page-specific functionality and await dashboards to finish
+            await this.initPageFunctionality(page);
             
         } catch (error) {
             console.error('Error loading page:', error);
@@ -193,21 +193,21 @@ class App {
         return true;
     }
 
-    initPageFunctionality(page) {
+    async initPageFunctionality(page) {
         switch (page) {
             case 'dashboard':
                 if (window.Dashboard) {
-                    window.Dashboard.init();
+                    await window.Dashboard.init();
                 }
                 break;
             case 'dashboard-payments':
                 if (window.DashboardPayments) {
-                    window.DashboardPayments.init();
+                    await window.DashboardPayments.init();
                 }
                 break;
             case 'dashboard-sessions':
                 if (window.DashboardSessions) {
-                    window.DashboardSessions.init();
+                    await window.DashboardSessions.init();
                 }
                 break;
             case 'patients':
