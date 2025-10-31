@@ -88,14 +88,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             modal.style.fontFamily = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial';
 
             const title = document.createElement('h3');
-            title.textContent = 'Assinatura próxima do vencimento';
+            const nearExpiry = typeof daysRemaining === 'number' && daysRemaining >= 1 && daysRemaining <= 5;
+            title.textContent = nearExpiry ? 'Assinatura próxima do vencimento' : 'Status da assinatura';
             title.style.margin = '0 0 10px 0';
             title.style.fontSize = '20px';
             title.style.color = '#1a202c';
 
             const info = document.createElement('p');
             const dias = Number(daysRemaining) === 1 ? '1 dia' : `${Number(daysRemaining)} dias`;
-            info.textContent = `Faltam ${dias} para o término da sua assinatura.`;
+            if (nearExpiry) {
+                info.textContent = `Faltam ${dias} para o término da sua assinatura.`;
+            } else if (typeof daysRemaining === 'number') {
+                info.textContent = `Assinatura ativa. Faltam ${dias} para o vencimento.`;
+            } else {
+                info.textContent = 'Não foi possível calcular os dias restantes da assinatura.';
+            }
             info.style.margin = '0 0 16px 0';
             info.style.color = '#2d3748';
             info.style.fontSize = '14px';
@@ -274,6 +281,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Garantir que o indicador de "já visto" não bloqueie após novo login
                 try { sessionStorage.removeItem('seenRenewalModal'); } catch (_) {}
                 try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const forceRenewal = urlParams.get('forceRenewalModal') === '1';
                     const subResp = await fetch('/api/subscriptions/my-subscription', { credentials: 'same-origin' });
                     if (subResp.ok) {
                         const payload = await subResp.json();
@@ -293,10 +302,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                             }
                         }
                         const isActive = !!(sub && (sub.is_active === true || sub.status === 'active'));
-                        const shouldShow = isActive && days !== null && days >= 1 && days <= 5;
+                        const shouldShow = (isActive && days !== null && days >= 1 && days <= 5) || forceRenewal;
                         const alreadySeen = sessionStorage.getItem('seenRenewalModal') === '1';
-                        console.log('[RenewalModal] role=user isActive=', isActive, 'days=', days, 'shouldShow=', shouldShow, 'alreadySeen=', alreadySeen, 'payload=', payload);
-                        if (shouldShow && !alreadySeen) {
+                        console.log('[RenewalModal] role=user isActive=', isActive, 'days=', days, 'shouldShow=', shouldShow, 'alreadySeen=', alreadySeen, 'forceRenewal=', forceRenewal, 'payload=', payload);
+                        if (shouldShow && (!alreadySeen || forceRenewal)) {
                             // Restaurar botão para estado normal antes de exibir modal
                             button.textContent = originalText;
                             button.disabled = false;
