@@ -136,7 +136,8 @@ except Exception as e:
 
 try:
     # Importar após inicialização do Mercado Pago
-    pass
+    from src.routes.assinaturas import subscriptions_bp
+    print("[DEBUG] Importação de assinaturas routes OK")
 except Exception as e:
     print(f"[ERROR] Erro ao importar assinaturas routes: {e}")
 
@@ -719,12 +720,12 @@ with app.app_context():
 #     print(f"[ERROR] Erro ao inicializar Mercado Pago: {e}")
 
 # Importar blueprints que dependem do Mercado Pago após inicialização
+# Assinaturas desativadas: não registrar rotas de assinatura de usuário
 try:
-    from src.routes.assinaturas import subscriptions_bp
     app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
-    print("[DEBUG] Blueprint subscriptions_bp importado e registrado")
+    print("[DEBUG] Blueprint subscriptions_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar/registrar subscriptions_bp: {e}")
+    print(f"[ERROR] Erro ao registrar subscriptions_bp: {e}")
 
 # Comentado - removendo registro do mercadopago_webhook_bp
 # try:
@@ -784,11 +785,11 @@ def home():
             ).first()
             
             if active_subscription:
-                print("[DEBUG] Usuário com assinatura ativa, retornando index.html")
+                print("[DEBUG] Usuário com acesso ativo, retornando index.html")
                 return send_from_directory(app.static_folder, 'index.html')
             else:
-                print("[DEBUG] Usuário sem assinatura ativa, redirecionando para assinaturas")
-                return send_from_directory(app.static_folder, 'assinaturas.html')
+                print("[DEBUG] Usuário sem acesso ativo, redirecionando para acesso_expirado.html")
+                return send_from_directory(app.static_folder, 'acesso_expirado.html')
         else:
             print("[DEBUG] Usuário não logado, retornando inicial.html")
             return send_from_directory(app.static_folder, 'inicial.html')
@@ -802,6 +803,12 @@ def assinaturas():
     """Rota específica para a página de assinaturas"""
     print("[DEBUG] Rota /assinaturas acessada")
     return send_from_directory(app.static_folder, 'assinaturas.html')
+
+@app.route('/acesso_expirado.html')
+def acesso_expirado():
+    """Página informativa para usuários sem acesso ativo"""
+    print("[DEBUG] Rota /acesso_expirado.html acessada")
+    return send_from_directory(app.static_folder, 'acesso_expirado.html')
 
 @app.route('/historico-assinaturas.html')
 def historico_assinaturas():

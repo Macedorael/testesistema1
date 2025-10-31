@@ -54,6 +54,7 @@ class App {
         }
     }
 
+
     updateUserInfo() {
         if (this.currentUser) {
             const userInfo = document.getElementById('user-info');

@@ -29,7 +29,7 @@
                 <p>Preencha os dados abaixo para criar sua conta</p>
             </div>
 
-            <form id="registerForm" class="register-form">
+            <form id="registerForm" class="register-form" method="post" action="#" autocomplete="off" novalidate>
                 <div class="form-row">
                     <div class="input-group">
                         <label for="username">Nome de Usuário</label>
@@ -67,7 +67,7 @@
                 <div class="form-row">
                     <div class="input-group">
                         <label for="password">Senha</label>
-                        <input type="password" id="password" name="password" required>
+                        <input type="password" id="password" name="password" required autocomplete="new-password">
                         <span class="input-focus"></span>
                         <small class="password-hint">Mínimo de 6 caracteres</small>
                     </div>
@@ -76,7 +76,7 @@
                 <div class="form-row">
                     <div class="input-group">
                         <label for="confirmPassword">Confirmar Senha</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
                         <span class="input-focus"></span>
                     </div>
                 </div>

@@ -18,18 +18,18 @@
             <h2>Criar Nova Senha</h2>
             <p class="subtitle">Digite sua nova senha abaixo</p>
             
-            <form id="resetPasswordForm">
+            <form id="resetPasswordForm" method="post" action="#" autocomplete="off" novalidate>
                 <input type="hidden" id="token" name="token">
                 
                 <div class="input-group">
                     <label for="password">Nova Senha:</label>
-                    <input type="password" id="password" name="password" required minlength="6" placeholder="••••••">
+                    <input type="password" id="password" name="password" required minlength="6" placeholder="••••••" autocomplete="new-password">
                     <small>Mínimo de 6 caracteres</small>
                 </div>
                 
                 <div class="input-group">
                     <label for="confirmPassword">Confirmar Nova Senha:</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6" placeholder="••••••">
+                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6" placeholder="••••••" autocomplete="new-password">
                 </div>
                 
                 <button type="submit" id="submitBtn" class="login-btn">

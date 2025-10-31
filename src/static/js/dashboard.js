@@ -10,11 +10,131 @@ window.Dashboard = {
         }
         
         console.log('[DEBUG] Dashboard.init() iniciado');
+        // Exibir modal de boas-vindas se for primeiro login de novo cadastro
+        try {
+            await this.showWelcomeModalIfFirstLogin();
+        } catch (e) {
+            console.warn('[DEBUG] Falha ao verificar/exibir modal de boas-vindas:', e);
+        }
         await this.loadStats();
         await this.loadCharts();
         await this.loadTodaySessions();
         await this.loadUpcomingSessions();
         await this.loadRecentPayments();
+    },
+
+    async showWelcomeModalIfFirstLogin() {
+        // Modal de boas-vindas para novos cadastros (não-pacientes).
+        // Mostra quando /api/me indica first_login=true;
+        // utiliza sessionStorage.justLoggedIn como otimização, mas não é obrigatório.
+        const justLoggedIn = (sessionStorage.getItem('justLoggedIn') === 'other');
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceWelcome = urlParams.get('forceWelcomeModal') === '1';
+        console.log('[DEBUG] showWelcomeModalIfFirstLogin() iniciado. justLoggedIn=', justLoggedIn, 'forceWelcome=', forceWelcome);
+
+        try {
+            console.log('[DEBUG] Consultando /api/me para verificar first_login...');
+            const resp = await fetch('/api/me', { credentials: 'same-origin' });
+            console.log('[DEBUG] /api/me status:', resp.status);
+            if (!resp.ok) { 
+                console.warn('[DEBUG] /api/me não retornou OK. Abortando modal de boas-vindas.');
+                return;
+            }
+            const me = await resp.json();
+            console.log('[DEBUG] /api/me payload:', me);
+
+            if (!me) {
+                console.warn('[DEBUG] /api/me retornou vazio. Abortando modal.');
+                return;
+            }
+
+            if (me.role === 'patient') {
+                console.log('[DEBUG] Usuário é paciente. Modal de boas-vindas não aplicável neste fluxo.');
+                return; // pacientes têm fluxo próprio de primeiro login
+            }
+
+            const firstLogin = forceWelcome || me.first_login === true;
+            if (firstLogin) {
+                console.log('[DEBUG] first_login=true detectado. Preparando exibição do modal de boas-vindas...');
+                // Consumir a flag (se existir) para evitar repetição em refreshes na mesma sessão
+                try { sessionStorage.removeItem('justLoggedIn'); } catch (_) {}
+
+                const modalHtml = `
+                  <div class="modal fade" id="welcomeFirstLoginModal" tabindex="-1" aria-labelledby="welcomeFirstLoginLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="welcomeFirstLoginLabel"><i class="bi bi-stars me-2"></i>Bem-vindo(a) ao seu Consultório!</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p class="mb-2">Uau! Primeiro acesso confirmado 🚀</p>
+                          <p>Este é o seu espaço para organizar pacientes, sessões e finanças com leveza.</p>
+                          <ul class="mb-0">
+                            <li>Cadastre pacientes e agende sessões</li>
+                            <li>Acompanhe pagamentos e recebimentos</li>
+                            <li>Veja estatísticas do dia e da semana</li>
+                          </ul>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Explorar depois</button>
+                          <button type="button" class="btn btn-primary" id="welcomeStartBtn">
+                            <i class="bi bi-play-circle me-1"></i>Começar agora
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`;
+
+                const container = document.getElementById('modals-container') || document.body;
+                console.log('[DEBUG] Container para modais:', container === document.body ? 'document.body' : '#modals-container');
+                const existing = document.getElementById('welcomeFirstLoginModal');
+                if (existing) { console.log('[DEBUG] Modal existente encontrado. Removendo para recriar.'); existing.remove(); }
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = modalHtml;
+                container.appendChild(wrapper);
+
+                const modalEl = document.getElementById('welcomeFirstLoginModal');
+                console.log('[DEBUG] Elemento do modal criado:', !!modalEl);
+                if (!modalEl) {
+                    console.warn('[DEBUG] Falha ao criar elemento do modal. Abortando.');
+                    return;
+                }
+                if (!window.bootstrap || !window.bootstrap.Modal) {
+                    console.warn('[DEBUG] Bootstrap.Modal não disponível. Verifique inclusão do bundle JS do Bootstrap.');
+                }
+                const modal = new bootstrap.Modal(modalEl);
+                console.log('[DEBUG] Exibindo modal de boas-vindas...');
+                modal.show();
+
+                // Ao fechar ou clicar em começar, marcar primeiro login como concluído
+                const ack = async () => {
+                    console.log('[DEBUG] Enviando ACK de primeiro login para /api/ack-first-login');
+                    try {
+                        await fetch('/api/ack-first-login', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' });
+                        console.log('[DEBUG] ACK primeiro login enviado com sucesso.');
+                    } catch (error) {
+                        console.warn('[DEBUG] Falha ao reconhecer primeiro login:', error);
+                    }
+                };
+
+                modalEl.addEventListener('hidden.bs.modal', ack, { once: true });
+                const startBtn = document.getElementById('welcomeStartBtn');
+                if (startBtn) {
+                    startBtn.addEventListener('click', async () => {
+                        console.log('[DEBUG] Botão "Começar agora" clicado.');
+                        await ack();
+                        try { modal.hide(); } catch (_) {}
+                    });
+                }
+            } else if (justLoggedIn) {
+                // Se acabou de logar mas first_login já é false, limpar flag
+                console.log('[DEBUG] first_login=false. Limpando flag justLoggedIn (se existir).');
+                try { sessionStorage.removeItem('justLoggedIn'); } catch (_) {}
+            }
+        } catch (error) {
+            console.warn('[DEBUG] Erro ao verificar primeiro login para modal de boas-vindas:', error);
+        }
     },
 
     async loadStats() {

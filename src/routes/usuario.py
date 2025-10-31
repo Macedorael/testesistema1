@@ -3,7 +3,7 @@ from src.models.usuario import User, db
 from src.models.assinatura import Subscription
 from src.models.password_reset import PasswordResetToken
 from src.utils.auth import login_required, get_current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import text
 import os
 import smtplib
@@ -129,7 +129,7 @@ def login():
                 'email': user.email,
                 'role': user.role
             },
-            "redirect": "/assinaturas.html"
+            "redirect": "/acesso_expirado.html"
         }), 200
 
 @user_bp.route("/logout", methods=["POST"])
@@ -229,13 +229,30 @@ def register():
         else:
             print("[ERROR] Usuário não encontrado após commit")
         
+        # Conceder acesso inicial de 2 dias (plano 'trial')
+        try:
+            trial_sub = Subscription(user_id=user.id, plan_type='trial', auto_renew=False)
+            # Garantir exatamente 2 dias de acesso
+            trial_sub.end_date = trial_sub.start_date + timedelta(days=2)
+            trial_sub.price = 0.0
+            trial_sub.status = 'active'
+            db.session.add(trial_sub)
+            db.session.commit()
+            trial_created = True
+        except Exception as trial_err:
+            db.session.rollback()
+            print(f"[WARNING] Falha ao criar assinatura de teste: {trial_err}")
+            trial_created = False
+
         return jsonify({
             "message": "Usuário cadastrado com sucesso!",
             "user": {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email
-            }
+            },
+            "trial_access": trial_created,
+            "redirect": "/dashboard.html" if trial_created else "/assinaturas.html"
         }), 201
         
     except Exception as e:
@@ -424,6 +441,35 @@ def forgot_password():
             
     except Exception as e:
         print(f"[ERROR] Erro ao processar recuperação de senha: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
+
+# Marcar que o usuário já viu o modal de primeiro login (não-pacientes)
+@user_bp.route("/ack-first-login", methods=["PUT"])
+@login_required
+def ack_first_login():
+    """Marca o primeiro login como concluído para usuários não-pacientes.
+    Usado pelo modal de boas-vindas para que apareça apenas uma vez.
+    """
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        # Pacientes utilizam fluxo próprio de primeiro login (alteração de senha)
+        if current_user.role == 'patient':
+            return jsonify({"error": "Operação não aplicável a pacientes"}), 400
+
+        if not current_user.first_login:
+            return jsonify({"success": True, "message": "Primeiro login já concluído"}), 200
+
+        current_user.first_login = False
+        db.session.commit()
+
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Erro ao marcar primeiro login como concluído: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/resetar-senha", methods=["POST"])

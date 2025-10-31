@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session, render_template_string
 from src.models.usuario import User
 from src.models.assinatura import Subscription
+from src.models.historico_assinatura import SubscriptionHistory
 from src.models.base import db
 from src.utils.auth import login_required
 from datetime import datetime, timedelta
@@ -132,6 +133,7 @@ def admin_dashboard():
                             <th>Dias Restantes</th>
                             <th>Auto-Renovação</th>
                             <th>Renovações</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
@@ -197,8 +199,9 @@ def admin_dashboard():
                     }
                     
                     // Traduzir tipo de plano para português
-                    let subscriptionText = 'Nenhuma';
-                    if (user.subscription) {
+                    // Quando não há assinatura (plan_type null/undefined), mostrar "Sem assinatura"
+                    let subscriptionText = 'Sem assinatura';
+                    if (user.subscription && user.subscription.plan_type) {
                         switch(user.subscription.plan_type) {
                             case 'annual':
                                 subscriptionText = 'Anual';
@@ -213,13 +216,14 @@ def admin_dashboard():
                                 subscriptionText = 'Semestral';
                                 break;
                             default:
-                                subscriptionText = user.subscription.plan_type;
+                                subscriptionText = String(user.subscription.plan_type);
                         }
                     }
                     
                     // Traduzir status para português
-                    let statusText = 'Sem assinatura';
-                    if (user.subscription) {
+                    // Quando status vier null/undefined, exibir "inativo"
+                    let statusText = 'inativo';
+                    if (user.subscription && user.subscription.status) {
                         switch(user.subscription.status) {
                             case 'active':
                                 statusText = 'ativo';
@@ -234,18 +238,35 @@ def admin_dashboard():
                                 statusText = 'cancelado';
                                 break;
                             default:
-                                statusText = user.subscription.status;
+                                statusText = String(user.subscription.status);
                         }
                     }
                     
-                    const daysRemaining = user.subscription ? user.subscription.days_remaining : '-';
-                    const autoRenew = user.subscription ? (user.subscription.auto_renew ? 'Sim' : 'Não') : '-';
+                    const daysRemaining = (user.subscription && typeof user.subscription.days_remaining !== 'undefined')
+                        ? user.subscription.days_remaining
+                        : '-';
+                    const autoRenew = (user.subscription && typeof user.subscription.auto_renew !== 'undefined')
+                        ? (user.subscription.auto_renew ? 'Sim' : 'Não')
+                        : '-';
                     const renewalsCount = user.subscription ? user.subscription.renewals_count : 0;
                     
                     // Adicionar classe para usuários novos
                     const newUserClass = isNewUser ? 'table-warning' : '';
                     const newUserBadge = isNewUser ? ' <span class="badge bg-success ms-1">NOVO</span>' : '';
                     
+                    const actionsHtml = (() => {
+                        const hasActive = !!user.subscription && user.subscription.status === 'active';
+                        const activationBtn = `
+                            <button class="btn btn-outline-success btn-sm" onclick="activateSubscription(${user.id})">
+                                <i class="fas fa-play me-1"></i>Liberar Acesso
+                            </button>`;
+                        const deactivationBtn = `
+                            <button class="btn btn-outline-danger btn-sm" onclick="deactivateSubscription(${user.id})">
+                                <i class="fas fa-stop me-1"></i>Encerrar Acesso
+                            </button>`;
+                        return hasActive ? deactivationBtn : activationBtn;
+                    })();
+
                     row.innerHTML = `
                         <td>${user.id}</td>
                         <td>${user.username}${newUserBadge}</td>
@@ -257,6 +278,7 @@ def admin_dashboard():
                         <td>${daysRemaining}</td>
                         <td>${autoRenew}</td>
                         <td>${renewalsCount}</td>
+                        <td>${actionsHtml}</td>
                     `;
                     
                     // Adicionar classe de destaque para usuários novos
@@ -279,6 +301,55 @@ def admin_dashboard():
         function refreshData() {
             loadStats();
             loadUsers();
+        }
+
+        async function activateSubscription(userId, planType = 'monthly') {
+            try {
+                const input = prompt('Defina os dias de acesso (ex: 30):', '30');
+                if (input === null) return;
+                const days = parseInt(input, 10);
+                if (isNaN(days) || days <= 0) {
+                    alert('Informe um número válido de dias.');
+                    return;
+                }
+                const resp = await fetch(`/admin/user/${userId}/access/grant`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ days })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    alert('Acesso liberado com sucesso');
+                    refreshData();
+                } else {
+                    alert(data.error || 'Falha ao liberar acesso');
+                }
+            } catch (err) {
+                console.error('Erro ao liberar acesso:', err);
+                alert('Erro ao liberar acesso');
+            }
+        }
+
+        async function deactivateSubscription(userId, reason = null) {
+            try {
+                const confirmed = confirm('Remover (desativar) a assinatura deste usuário?');
+                if (!confirmed) return;
+                const resp = await fetch(`/admin/user/${userId}/subscription/deactivate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    alert('Assinatura removida com sucesso');
+                    refreshData();
+                } else {
+                    alert(data.error || 'Falha ao encerrar acesso');
+                }
+            } catch (err) {
+                console.error('Erro ao encerrar acesso:', err);
+                alert('Erro ao encerrar acesso');
+            }
         }
 
         // Carregar dados ao inicializar a página
@@ -474,3 +545,135 @@ def delete_user(user_id):
         return jsonify({
             'error': f'Erro ao deletar usuário: {str(e)}'
         }), 500
+
+# Endpoints para ativar/desativar assinatura pelo admin
+@admin_bp.route('/user/<int:user_id>/subscription/activate', methods=['POST'])
+@require_admin()
+def admin_activate_subscription(user_id):
+    """Cria/ativa uma assinatura para o usuário especificado"""
+    try:
+        user = User.query.get_or_404(user_id)
+
+        data = request.get_json(silent=True) or {}
+        plan_type = data.get('plan_type', 'monthly')
+        auto_renew = data.get('auto_renew', True)
+
+        # Validar tipo de plano
+        if plan_type not in Subscription.PLAN_PRICES:
+            return jsonify({'success': False, 'error': 'Tipo de plano inválido'}), 400
+
+        # Cancelar assinaturas ativas anteriores (se houver)
+        active_subs = Subscription.query.filter_by(user_id=user_id, status='active').filter(
+            Subscription.end_date > datetime.utcnow()
+        ).all()
+        for sub in active_subs:
+            sub.cancel()
+
+        # Criar nova assinatura
+        new_sub = Subscription(user_id=user_id, plan_type=plan_type, auto_renew=auto_renew)
+        db.session.add(new_sub)
+        db.session.flush()  # Garantir ID para histórico
+
+        # Registrar histórico
+        SubscriptionHistory.create_history_entry(
+            user_id=user_id,
+            action='created',
+            plan_type=plan_type,
+            price=new_sub.price,
+            subscription_id=new_sub.id,
+            start_date=new_sub.start_date,
+            end_date=new_sub.end_date,
+            details='Assinatura ativada pelo admin'
+        )
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Assinatura ativada'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Erro ao ativar assinatura: {str(e)}'}), 500
+
+
+@admin_bp.route('/user/<int:user_id>/subscription/deactivate', methods=['POST'])
+@require_admin()
+def admin_deactivate_subscription(user_id):
+    """Desativa/cancela a assinatura ativa do usuário"""
+    try:
+        user = User.query.get_or_404(user_id)
+
+        data = request.get_json(silent=True) or {}
+        reason = data.get('reason')
+
+        # Localizar a assinatura ativa mais recente
+        active_sub = Subscription.query.filter_by(user_id=user_id, status='active').filter(
+            Subscription.end_date > datetime.utcnow()
+        ).order_by(Subscription.created_at.desc()).first()
+
+        if not active_sub:
+            return jsonify({'success': False, 'error': 'Nenhuma assinatura ativa encontrada'}), 404
+
+        # Cancelar
+        active_sub.cancel()
+
+        # Registrar histórico
+        SubscriptionHistory.create_history_entry(
+            user_id=user_id,
+            action='cancelled',
+            plan_type=active_sub.plan_type,
+            price=active_sub.price,
+            subscription_id=active_sub.id,
+            start_date=active_sub.start_date,
+            end_date=active_sub.end_date,
+            details=reason or 'Assinatura cancelada pelo admin'
+        )
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Assinatura desativada'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Erro ao desativar assinatura: {str(e)}'}), 500
+
+# Novo endpoint: liberar acesso por N dias
+@admin_bp.route('/user/<int:user_id>/access/grant', methods=['POST'])
+@require_admin()
+def grant_user_access_days(user_id):
+    """Libera acesso ao usuário por N dias criando uma assinatura sem cobrança."""
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json(silent=True) or {}
+        days = int(data.get('days', 0))
+        if days <= 0:
+            return jsonify({'success': False, 'error': 'Dias de acesso inválidos'}), 400
+
+        # Cancelar assinaturas ativas anteriores
+        active_subs = Subscription.query.filter_by(user_id=user_id, status='active').filter(
+            Subscription.end_date > datetime.utcnow()
+        ).all()
+        for sub in active_subs:
+            sub.cancel()
+
+        # Criar assinatura "trial" com fim manual
+        new_sub = Subscription(user_id=user_id, plan_type='trial', auto_renew=False)
+        new_sub.end_date = new_sub.start_date + timedelta(days=days)
+        new_sub.price = 0.0
+        new_sub.status = 'active'
+
+        db.session.add(new_sub)
+        db.session.flush()
+
+        # Histórico
+        SubscriptionHistory.create_history_entry(
+            user_id=user_id,
+            action='created',
+            plan_type='manual_days',
+            price=0.0,
+            subscription_id=new_sub.id,
+            start_date=new_sub.start_date,
+            end_date=new_sub.end_date,
+            details=f'Acesso liberado pelo admin por {days} dias'
+        )
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Acesso liberado por {days} dias'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Erro ao liberar acesso: {str(e)}'}), 500

@@ -1,16 +1,162 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Sanitizar URL caso algum submit GET tenha ocorrido acidentalmente (evitar vazamento)
+    try {
+        const qs = window.location.search || '';
+        if (qs.includes('password=') || qs.includes('email=')) {
+            history.replaceState(null, '', window.location.pathname);
+        }
+    } catch (_) {}
     // Detectar contexto da página para restringir login por papel
     const urlParams = new URLSearchParams(window.location.search);
+    // Suprimir redirecionamentos automáticos somente quando explicitamente solicitado
+    const suppressAutoRedirect = urlParams.has('stay');
+    // Fazer logout automático quando vindo de acesso expirado
+    const shouldAutoLogout = urlParams.get('from') === 'expired' || urlParams.has('logout');
     const isPatientLoginPage = (
         window.location.pathname.endsWith('entrar-paciente.html') ||
         urlParams.has('paciente')
     );
     const loginScope = isPatientLoginPage ? 'patient' : 'professional';
+
+    // Se solicitado, efetuar logout imediato antes de qualquer verificação
+    if (shouldAutoLogout) {
+        try {
+            await fetch('/api/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (_) {}
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch (_) {}
+    }
+
+    // Helper: mostrar mensagem visível quando staying estiver ativo
+    function showStayInfo(message, targetLabel, targetHref) {
+        try {
+            const container = document.querySelector('.login-container');
+            if (!container) return;
+            // Remover mensagem anterior se existir
+            const existing = document.getElementById('stayMessage');
+            if (existing) existing.remove();
+            const box = document.createElement('div');
+            box.id = 'stayMessage';
+            box.style.marginTop = '16px';
+            box.style.padding = '12px 14px';
+            box.style.borderRadius = '10px';
+            box.style.border = '1px solid #9ae6b4';
+            box.style.background = '#c6f6d5';
+            box.style.color = '#22543d';
+            box.style.fontWeight = '600';
+            box.style.textAlign = 'center';
+            box.style.boxShadow = '0 4px 10px rgba(0,0,0,0.06)';
+            box.innerHTML = `${message} <a href="${targetHref}" style="margin-left:8px;color:#2f855a;text-decoration:underline;">${targetLabel}</a>`;
+            container.appendChild(box);
+        } catch (e) {
+            console.warn('Falha ao exibir mensagem stay:', e);
+        }
+    }
+
+    // Helper: modal de aviso de renovação de assinatura (exibido somente após login)
+    function showRenewalModal(daysRemaining, onContinue) {
+        try {
+            // Evitar duplicar modal
+            if (document.getElementById('renewalModalOverlay')) return;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'renewalModalOverlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.background = 'rgba(0,0,0,0.45)';
+            overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+
+            const modal = document.createElement('div');
+            modal.id = 'renewalModal';
+            modal.style.background = '#ffffff';
+            modal.style.borderRadius = '14px';
+            modal.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
+            modal.style.maxWidth = '480px';
+            modal.style.width = '90%';
+            modal.style.padding = '20px 22px';
+            modal.style.fontFamily = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial';
+
+            const title = document.createElement('h3');
+            title.textContent = 'Assinatura próxima do vencimento';
+            title.style.margin = '0 0 10px 0';
+            title.style.fontSize = '20px';
+            title.style.color = '#1a202c';
+
+            const info = document.createElement('p');
+            const dias = Number(daysRemaining) === 1 ? '1 dia' : `${Number(daysRemaining)} dias`;
+            info.textContent = `Faltam ${dias} para o término da sua assinatura.`;
+            info.style.margin = '0 0 16px 0';
+            info.style.color = '#2d3748';
+            info.style.fontSize = '14px';
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '10px';
+            actions.style.justifyContent = 'flex-end';
+
+            const continueBtn = document.createElement('button');
+            continueBtn.textContent = 'Continuar';
+            continueBtn.style.background = '#edf2f7';
+            continueBtn.style.color = '#2d3748';
+            continueBtn.style.border = '1px solid #cbd5e0';
+            continueBtn.style.padding = '10px 14px';
+            continueBtn.style.borderRadius = '8px';
+            continueBtn.style.cursor = 'pointer';
+
+            actions.appendChild(continueBtn);
+
+            modal.appendChild(title);
+            modal.appendChild(info);
+            modal.appendChild(actions);
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            continueBtn.addEventListener('click', () => {
+                try { sessionStorage.setItem('seenRenewalModal', '1'); } catch (_) {}
+                overlay.remove();
+                if (typeof onContinue === 'function') onContinue();
+            });
+        } catch (e) {
+            console.warn('Falha ao exibir modal de renovação:', e);
+            if (typeof onContinue === 'function') onContinue();
+        }
+    }
     // Verificar se o usuário já está logado via API (mais confiável que localStorage)
     try {
         const response = await fetch('/api/me');
         if (response.ok) {
             const userData = await response.json();
+            // Se pedido para permanecer na tela de login, não redirecionar
+            if (suppressAutoRedirect) {
+                // Calcular destino apropriado e exibir mensagem com link
+                if (userData.role === 'patient') {
+                    const target = userData.first_login ? '/paciente-primeiro-login.html' : '/paciente-dashboard.html';
+                    showStayInfo('Você já está logado.', 'Ir para o Dashboard do Paciente', target);
+                } else {
+                    // Para outros usuários, usar página inicial como destino padrão
+                    let target = '/index.html';
+                    try {
+                        const userResponse = await fetch('/api/subscriptions/my-subscription');
+                        if (userResponse.ok) {
+                            // Independente da assinatura, manter destino como index
+                            target = '/index.html';
+                        }
+                    } catch (_) {}
+                    showStayInfo('Você já está logado.', 'Ir para o Dashboard', target);
+                }
+                return;
+            }
             
             // Verificar se é um paciente
             if (userData.role === 'patient') {
@@ -69,7 +215,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password, login_scope: loginScope })
+                body: JSON.stringify({ email, password, login_scope: loginScope }),
+                credentials: 'same-origin'
             });
             
             const data = await response.json();
@@ -87,6 +234,26 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 } catch (_) {}
                 
+                // Se pedido para permanecer na tela de login, não redirecionar
+                if (suppressAutoRedirect) {
+                    // Restaurar botão e permanecer na página
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    // Calcular destino e mostrar mensagem com link
+                    const normalizeRedirect = (path) => {
+                        if (!path) return null;
+                        const p = path.trim();
+                        if (p === '/dashboard.html' || p === 'dashboard.html') return '/index.html';
+                        return p;
+                    };
+                    let target = normalizeRedirect(data.redirect) || 'index.html';
+                    if (loginScope === 'patient' || (data.user && data.user.role === 'patient')) {
+                        target = '/paciente-dashboard.html';
+                    }
+                    showStayInfo('Login efetuado com sucesso.', 'Ir para o destino', target);
+                    return;
+                }
+                
                 // Redirecionar baseado no status da assinatura (normaliza dashboard -> index)
                 const normalizeRedirect = (path) => {
                     if (!path) return null;
@@ -99,6 +266,53 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (loginScope === 'patient' || (data.user && data.user.role === 'patient')) {
                     target = '/paciente-dashboard.html';
                 }
+
+                // Aviso de renovação: 1 a 5 dias restantes, apenas para usuários
+                console.log('[LOGIN] Usuário logado:', data.user.role, 'Verificando modal de renovação...');
+                if (data && data.user && data.user.role === 'user') {
+                console.log('[LOGIN] Usuário é "user", verificando assinatura...');
+                // Garantir que o indicador de "já visto" não bloqueie após novo login
+                try { sessionStorage.removeItem('seenRenewalModal'); } catch (_) {}
+                try {
+                    const subResp = await fetch('/api/subscriptions/my-subscription', { credentials: 'same-origin' });
+                    if (subResp.ok) {
+                        const payload = await subResp.json();
+                        const sub = payload && payload.subscription;
+                        // Aceitar diferentes formatos e calcular por end_date como fallback
+                        let days = null;
+                        if (sub) {
+                            if (typeof sub.days_remaining === 'number') {
+                                days = sub.days_remaining;
+                            } else if (typeof sub.daysRemaining === 'number') {
+                                days = sub.daysRemaining;
+                            } else if (sub.end_date) {
+                                const end = new Date(sub.end_date);
+                                const now = new Date();
+                                const diffMs = end.getTime() - now.getTime();
+                                days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                            }
+                        }
+                        const isActive = !!(sub && (sub.is_active === true || sub.status === 'active'));
+                        const shouldShow = isActive && days !== null && days >= 1 && days <= 5;
+                        const alreadySeen = sessionStorage.getItem('seenRenewalModal') === '1';
+                        console.log('[RenewalModal] role=user isActive=', isActive, 'days=', days, 'shouldShow=', shouldShow, 'alreadySeen=', alreadySeen, 'payload=', payload);
+                        if (shouldShow && !alreadySeen) {
+                            // Restaurar botão para estado normal antes de exibir modal
+                            button.textContent = originalText;
+                            button.disabled = false;
+                            showRenewalModal(days, () => { window.location.href = target; });
+                            return; // Não prosseguir até fechar o modal
+                        }
+                        if (!shouldShow) {
+                            console.warn('[RenewalModal] Condições não atendidas: isActive=', isActive, 'days=', days);
+                        }
+                    } else {
+                        console.warn('[RenewalModal] Falha na API my-subscription. Status=', subResp.status);
+                    }
+                } catch (e) { console.warn('[RenewalModal] erro ao obter assinatura:', e); }
+                }
+
+                // Prosseguir com redirecionamento normal
                 window.location.href = target;
             } else {
                 // Restaurar botão

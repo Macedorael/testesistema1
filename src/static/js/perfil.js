@@ -41,7 +41,7 @@ function loadUserProfile() {
             // Se não autenticado, redirecionar para login
             if (xhr.status === 401) {
                 setTimeout(() => {
-                    window.location.href = '/login.html';
+            window.location.href = '/entrar.html';
                 }, 2000);
             }
         },
