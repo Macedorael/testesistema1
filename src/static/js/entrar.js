@@ -78,6 +78,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Login bem-sucedido
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('userInfo', JSON.stringify(data.user));
+                // Marcar que acabou de logar (usado pelo dashboard do paciente)
+                try {
+                    if (loginScope === 'patient' || (data.user && data.user.role === 'patient')) {
+                        sessionStorage.setItem('justLoggedIn', 'patient');
+                    } else {
+                        sessionStorage.setItem('justLoggedIn', 'other');
+                    }
+                } catch (_) {}
                 
                 // Redirecionar baseado no status da assinatura (normaliza dashboard -> index)
                 const normalizeRedirect = (path) => {
@@ -86,7 +94,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (p === '/dashboard.html' || p === 'dashboard.html') return '/index.html';
                     return p;
                 };
-                const target = normalizeRedirect(data.redirect) || 'index.html';
+                let target = normalizeRedirect(data.redirect) || 'index.html';
+                // Garantir que paciente vá para o dashboard do paciente
+                if (loginScope === 'patient' || (data.user && data.user.role === 'patient')) {
+                    target = '/paciente-dashboard.html';
+                }
                 window.location.href = target;
             } else {
                 // Restaurar botão

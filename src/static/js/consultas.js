@@ -672,6 +672,7 @@ window.Appointments = {
                             <th>#</th>
                             <th>Data/Hora</th>
                             <th>Status</th>
+                            <th>Pagamento</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -687,6 +688,22 @@ window.Appointments = {
                                         `<br><small class="text-info"><i class="bi bi-info-circle"></i> ${session.observacoes_reagendamento}</small>` : ''}
                                 </td>
                                 <td><span class="status-badge status-${session.status}">${session.status}</span></td>
+                                <td>
+                                    ${(() => {
+                                        try {
+                                            const paid = session.status_pagamento === 'pago';
+                                            const d = new Date(session.data_sessao);
+                                            const today = new Date();
+                                            const onlyDate = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                                            const overdue = !paid && d && (onlyDate(d) < onlyDate(today)) && session.status !== 'cancelada';
+                                            if (paid) return '<span class="badge rounded-pill bg-success">PAGA</span>';
+                                            if (overdue) return '<span class="badge rounded-pill bg-danger">EM ATRASO</span>';
+                                            return '<span class="badge rounded-pill bg-secondary">PENDENTE</span>';
+                                        } catch (e) {
+                                            return '<span class="badge rounded-pill bg-secondary">PENDENTE</span>';
+                                        }
+                                    })()}
+                                </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-success btn-sm" onclick="Appointments.updateSessionStatus(${session.id}, 'realizada')" title="Marcar como realizada">

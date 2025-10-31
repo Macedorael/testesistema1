@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
 from src.models.usuario import db
 from src.models.paciente import Patient
-from src.models.consulta import Appointment, Session
+from src.models.consulta import Appointment, Session, PaymentStatus
 from src.models.pagamento import Payment
 from src.models.diario import DiaryEntry
 from src.utils.auth import login_required, login_and_subscription_required, get_current_user
 from datetime import datetime
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
 from sqlalchemy.exc import IntegrityError
 import logging
 
@@ -551,6 +551,151 @@ def get_my_patient_appointments():
         return jsonify({"success": True, "data": [a.to_dict() for a in appointments]})
     except Exception as e:
         return jsonify({"success": False, "message": f"Erro ao buscar agendamentos do paciente: {str(e)}"}), 500
+
+@patients_bp.route("/patients/me/payment-notices", methods=["GET"])
+@login_required
+def get_my_payment_notices():
+    """Avisos de cobrança para o paciente autenticado.
+    Regras:
+    - Avisar 2 dias antes do vencimento (usa data da sessão como vencimento)
+    - Avisar diariamente após o vencimento enquanto o pagamento estiver pendente
+    - Quando houver mais de uma sessão pendente, informar quantidade e listar quais são
+    """
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
+        if current_user.role != 'patient':
+            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
+
+        patient = Patient.query.filter_by(email=current_user.email).first()
+        if not patient:
+            return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
+
+        # Buscar sessões do paciente com pagamento pendente.
+        # Critérios:
+        # - status_pagamento PENDENTE
+        # - OU sessão sem associação em PaymentSession (fallback para dados legados)
+        unpaid_sessions = Session.query.join(Appointment).filter(
+            Appointment.patient_id == patient.id
+        ).filter(
+            or_(
+                Session.status_pagamento == PaymentStatus.PENDENTE,
+                ~Session.payment_sessions.any()
+            )
+        ).order_by(Session.data_sessao.asc()).all()
+
+        today = datetime.now().date()
+        notices = []
+
+        for s in unpaid_sessions:
+            due_date = s.data_sessao.date() if hasattr(s.data_sessao, 'date') else s.data_sessao
+            days_until_due = (due_date - today).days if due_date else None
+            days_overdue = (today - due_date).days if (due_date and today > due_date) else 0
+
+            alert_type = None
+            if due_date:
+                # Até 2 dias antes do vencimento
+                if 0 <= days_until_due <= 2:
+                    alert_type = 'due_soon'
+                # Vencidas: alertar diariamente
+                elif days_until_due is not None and days_until_due < 0:
+                    alert_type = 'overdue'
+
+            if alert_type:
+                notices.append({
+                    'session_id': s.id,
+                    'appointment_id': s.appointment_id,
+                    'numero_sessao': getattr(s, 'numero_sessao', None),
+                    'valor': float(s.valor) if getattr(s, 'valor', None) is not None else 0,
+                    'due_date': due_date.isoformat() if hasattr(due_date, 'isoformat') else str(due_date),
+                    'alert_type': alert_type,
+                    'days_until_due': days_until_due,
+                    'days_overdue': days_overdue,
+                    'status': getattr(s, 'status', None)
+                })
+
+        result = {
+            'pending_count': len(unpaid_sessions),
+            'notices': notices,
+            'unpaid_sessions': [
+                {
+                    'session_id': s.id,
+                    'numero_sessao': getattr(s, 'numero_sessao', None),
+                    'valor': float(s.valor) if getattr(s, 'valor', None) is not None else 0,
+                    'data_sessao': s.data_sessao.isoformat() if hasattr(s.data_sessao, 'isoformat') else str(s.data_sessao),
+                    'status': getattr(s, 'status', None)
+                } for s in unpaid_sessions
+            ]
+        }
+
+        return jsonify({"success": True, "data": result})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar avisos de cobrança: {str(e)}"}), 500
+
+@patients_bp.route("/patients/me/payments-summary", methods=["GET"])
+@login_required
+def get_my_payments_summary():
+    """Resumo de pagamentos para o paciente autenticado.
+    Retorna listas de sessões pendentes e pagas para exibição no dashboard.
+    Critérios:
+    - Pendentes: status_pagamento PENDENTE OU sem associação em PaymentSession
+    - Pagas: status_pagamento PAGO OU com associação em PaymentSession
+    """
+    try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
+        if current_user.role != 'patient':
+            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
+
+        patient = Patient.query.filter_by(email=current_user.email).first()
+        if not patient:
+            return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
+
+        # Pendentes
+        unpaid_sessions = Session.query.join(Appointment).filter(
+            Appointment.patient_id == patient.id
+        ).filter(
+            or_(
+                Session.status_pagamento == PaymentStatus.PENDENTE,
+                ~Session.payment_sessions.any()
+            )
+        ).order_by(Session.data_sessao.asc()).all()
+
+        # Pagas
+        paid_sessions = Session.query.join(Appointment).filter(
+            Appointment.patient_id == patient.id
+        ).filter(
+            or_(
+                Session.status_pagamento == PaymentStatus.PAGO,
+                Session.payment_sessions.any()
+            )
+        ).order_by(Session.data_sessao.asc()).all()
+
+        def serialize_session(s):
+            return {
+                'session_id': s.id,
+                'appointment_id': s.appointment_id,
+                'numero_sessao': getattr(s, 'numero_sessao', None),
+                'valor': float(getattr(s, 'valor', 0) or 0),
+                'data_sessao': s.data_sessao.isoformat() if hasattr(s.data_sessao, 'isoformat') else str(s.data_sessao),
+                'status_pagamento': getattr(getattr(s, 'status_pagamento', None), 'value', s.status_pagamento),
+                'has_payment': bool(s.payment_sessions)
+            }
+
+        result = {
+            'pending': [serialize_session(s) for s in unpaid_sessions],
+            'paid': [serialize_session(s) for s in paid_sessions],
+            'counts': {
+                'pending': len(unpaid_sessions),
+                'paid': len(paid_sessions)
+            }
+        }
+
+        return jsonify({"success": True, "data": result})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar resumo de pagamentos: {str(e)}"}), 500
 
 @patients_bp.route("/patients/<int:patient_id>/diary-entries/period", methods=["GET"])
 def get_patient_diary_entries_period(patient_id):

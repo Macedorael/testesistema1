@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function (e) {
       e.preventDefault();
+      // Limpa flag para exibir modal de vencidas novamente após novo login
+      try { sessionStorage.removeItem('overdueModalShown'); } catch (_) {}
       fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
         .then(r => r.json())
         .then(() => { window.location.href = '/inicial.html'; })
@@ -29,6 +31,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   checkUserAuthentication().then(() => {
     loadAppointmentsSummary();
+    loadPaymentNotices();
+    loadPaymentsSummary();
+    showOverdueModalIfNeeded();
     checkDiaryAvailability().then((enabled) => {
       if (enabled) {
         // Exibir botões de diário na navbar
@@ -66,6 +71,241 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     } catch (error) {
       console.error('Erro ao verificar usuário:', error);
+    }
+  }
+
+  async function loadPaymentsSummary() {
+    const section = document.getElementById('paymentsSummarySection');
+    const content = document.getElementById('paymentsSummaryContent');
+    if (!section || !content) return;
+
+    try {
+      const response = await fetch('/api/patients/me/payments-summary');
+      if (!response.ok) { section.style.display = 'none'; return; }
+      const payload = await response.json();
+      const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+
+      const pending = Array.isArray(data?.pending) ? data.pending : [];
+      const paid = Array.isArray(data?.paid) ? data.paid : [];
+      const counts = data?.counts || { pending: pending.length, paid: paid.length };
+
+      // Separar pendentes vencidas vs. não vencidas
+      const today = new Date();
+      const onlyDate = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const parseDate = (iso) => { try { const dd = new Date(iso); return onlyDate(dd); } catch { return null; } };
+      const overdue = pending.filter(s => { const ds = parseDate(s.data_sessao); return ds && ds < onlyDate(today); });
+      const pendingFuture = pending.filter(s => { const ds = parseDate(s.data_sessao); return ds && ds >= onlyDate(today); });
+
+      const formatDate = (iso) => { try { const d = new Date(iso); return d.toLocaleDateString('pt-BR'); } catch { return iso; } };
+      const formatCurrency = (v) => { const n = Number(v || 0); return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
+
+      let html = '';
+      html += `<div class="mb-2">`+
+        `<span class="badge text-bg-danger me-2">Vencidas: ${overdue.length}</span>`+
+        `<span class="badge text-bg-warning me-2">Pendentes: ${counts.pending}</span>`+
+        `<span class="badge text-bg-success">Pagas: ${counts.paid}</span>`+
+        `</div>`;
+
+      html += `<div class="row g-3">`;
+      html += `<div class="col-md-6">
+        <div class="border rounded p-2 h-100">
+          <div class="fw-bold mb-2"><i class="bi bi-hourglass-split me-1"></i> Sessões Pendentes</div>
+          ${(() => {
+            let pendingHtml = '';
+            if (pending.length === 0) {
+              pendingHtml = '<div class="text-muted">Nenhuma sessão pendente.</div>';
+            } else {
+              pendingHtml += '<div class="mb-2"><span class="text-danger fw-semibold">Sessões vencidas</span></div>';
+              if (overdue.length === 0) {
+                pendingHtml += '<div class="text-muted">Nenhuma vencida.</div>';
+              } else {
+                pendingHtml += '<ul class="list-unstyled mb-3">' + overdue.map(s => (
+                  `<li class="mb-1">
+                    <span class="me-2">Sessão ${s.numero_sessao ?? s.session_id ?? ''}</span>
+                    <span class="text-danger">está vencida</span>
+                    <span class="text-muted ms-2">${formatDate(s.data_sessao)}</span>
+                    <span class="ms-2 fw-semibold">${formatCurrency(s.valor)}</span>
+                  </li>`
+                )).join('') + '</ul>';
+              }
+              pendingHtml += '<div class="mb-2"><span class="fw-semibold">Sessões pendentes (não vencidas)</span></div>';
+              if (pendingFuture.length === 0) {
+                pendingHtml += '<div class="text-muted">Nenhuma pendente futura.</div>';
+              } else {
+                pendingHtml += '<ul class="list-unstyled mb-0">' + pendingFuture.map(s => (
+                  `<li class="mb-1">
+                    <span class="me-2">Sessão ${s.numero_sessao ?? s.session_id ?? ''}</span>
+                    <span class="text-muted">${formatDate(s.data_sessao)}</span>
+                    <span class="ms-2 fw-semibold">${formatCurrency(s.valor)}</span>
+                  </li>`
+                )).join('') + '</ul>';
+              }
+            }
+            return pendingHtml;
+          })()}
+        </div>
+      </div>`;
+
+      html += `<div class="col-md-6">
+        <div class="border rounded p-2 h-100">
+          <div class="fw-bold mb-2"><i class="bi bi-check2-circle me-1"></i> Sessões Pagas</div>
+          ${paid.length === 0 ? '<div class="text-muted">Nenhuma sessão paga.</div>' :
+            `<ul class="list-unstyled mb-0">${paid.map(s => `
+              <li class="mb-1">
+                <span class="me-2">Sessão ${s.numero_sessao ?? ''}</span>
+                <span class="text-muted">${formatDate(s.data_sessao)}</span>
+                <span class="ms-2 fw-semibold">${formatCurrency(s.valor)}</span>
+              </li>
+            `).join('')}</ul>`}
+        </div>
+      </div>`;
+      html += `</div>`;
+
+      content.innerHTML = html;
+      section.style.display = '';
+    } catch (error) {
+      console.error('Erro ao carregar resumo de pagamentos:', error);
+      section.style.display = 'none';
+    }
+  }
+
+  async function loadPaymentNotices() {
+    const section = document.getElementById('paymentNoticesSection');
+    const content = document.getElementById('paymentNoticesContent');
+    if (!section || !content) return;
+
+    try {
+      const response = await fetch('/api/patients/me/payment-notices');
+      if (!response.ok) { return; }
+      const payload = await response.json();
+      const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+
+      const notices = Array.isArray(data?.notices) ? data.notices : [];
+      const pendingCount = Number(data?.pending_count || 0);
+
+      if ((notices.length === 0) && pendingCount === 0) {
+        section.style.display = 'none';
+        return;
+      }
+
+      // Agrupar por tipo para mensagens distintas
+      const overdue = notices.filter(n => n.alert_type === 'overdue');
+      const dueSoon = notices.filter(n => n.alert_type === 'due_soon');
+
+      let html = '';
+      if (overdue.length > 0) {
+        html += `<div class="alert alert-danger" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-exclamation-octagon me-2"></i>
+            <div>
+              <strong>Pagamento atrasado</strong>: você tem ${overdue.length} sessão${overdue.length>1?'s':''} vencida${overdue.length>1?'s':''}.
+              <div class="mt-2">${overdue.map(n => {
+                const when = (n.days_overdue||0) > 0 ? `há ${n.days_overdue} dia${n.days_overdue>1?'s':''}` : 'vencida';
+                const valor = typeof n.valor === 'number' ? window.app?.formatCurrency ? window.app.formatCurrency(n.valor) : `R$ ${n.valor.toFixed(2)}` : '-';
+                return `<div>• Sessão ${n.numero_sessao ?? n.session_id} — vencida ${when} — ${valor}</div>`;
+              }).join('')}</div>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      if (dueSoon.length > 0) {
+        html += `<div class="alert alert-warning" role="alert">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <div>
+              <strong>Vencimento próximo</strong>: você tem ${dueSoon.length} sessão${dueSoon.length>1?'s':''} a vencer.
+              <div class="mt-2">${dueSoon.map(n => {
+                const days = n.days_until_due ?? 0;
+                const when = days === 0 ? 'vence hoje' : `vence em ${days} dia${days>1?'s':''}`;
+                const valor = typeof n.valor === 'number' ? window.app?.formatCurrency ? window.app.formatCurrency(n.valor) : `R$ ${n.valor.toFixed(2)}` : '-';
+                return `<div>• Sessão ${n.numero_sessao ?? n.session_id} — ${when} (${new Date(n.due_date).toLocaleDateString('pt-BR')}) — ${valor}</div>`;
+              }).join('')}</div>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      if (pendingCount > notices.length) {
+        const restante = pendingCount - notices.length;
+        html += `<div class="alert alert-secondary" role="alert">
+          <i class="bi bi-info-circle me-2"></i>
+          Existem ${pendingCount} sessões com pagamento pendente. ${restante>0?`(${restante} sem alerta de vencimento)`:''}
+        </div>`;
+      }
+
+      content.innerHTML = html;
+      section.style.display = '';
+    } catch (error) {
+      console.error('Erro ao carregar avisos de cobrança:', error);
+    }
+  }
+
+  // Exibe modal imediatamente após login se houver sessões vencidas
+  async function showOverdueModalIfNeeded() {
+    try {
+      // Só exibir quando acabou de logar (flag definida na tela de login)
+      const justLoggedIn = (sessionStorage.getItem('justLoggedIn') === 'patient');
+      if (!justLoggedIn) return;
+      // Consumir a flag para não mostrar em refreshes subsequentes
+      try { sessionStorage.removeItem('justLoggedIn'); } catch (_) {}
+      const getOverdueFromNotices = async () => {
+        const response = await fetch('/api/patients/me/payment-notices');
+        if (!response.ok) throw new Error('notices fetch failed');
+        const payload = await response.json();
+        const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+        const notices = Array.isArray(data?.notices) ? data.notices : [];
+        return notices.filter(n => n.alert_type === 'overdue');
+      };
+
+      const getOverdueFromSummary = async () => {
+        const response = await fetch('/api/patients/me/payments-summary');
+        if (!response.ok) throw new Error('summary fetch failed');
+        const payload = await response.json();
+        const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+        const pending = Array.isArray(data?.pending) ? data.pending : [];
+        const today = new Date();
+        const onlyDate = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const parseDate = (iso) => { try { const dd = new Date(iso); return onlyDate(dd); } catch { return null; } };
+        return pending.filter(s => { const ds = parseDate(s.data_sessao); return ds && ds < onlyDate(today); })
+          .map(s => ({ numero_sessao: s.numero_sessao ?? s.session_id, data_sessao: s.data_sessao, valor: s.valor, days_overdue: Math.max(0, Math.floor((onlyDate(today)-onlyDate(new Date(s.data_sessao)))/86400000)) }));
+      };
+
+      let overdue = [];
+      try { overdue = await getOverdueFromNotices(); }
+      catch (_) {
+        try { overdue = await getOverdueFromSummary(); }
+        catch (err) {
+          // Retry único após breve atraso
+          await new Promise(res => setTimeout(res, 1500));
+          try { overdue = await getOverdueFromNotices(); }
+          catch (_) { overdue = await getOverdueFromSummary().catch(() => []); }
+        }
+      }
+      if (!Array.isArray(overdue) || overdue.length === 0) return;
+
+      const bodyEl = document.getElementById('overduePaymentsModalBody');
+      const modalEl = document.getElementById('overduePaymentsModal');
+      if (!bodyEl || !modalEl || typeof bootstrap === 'undefined') return;
+
+      const formatDate = (iso) => { try { const d = new Date(iso); return d.toLocaleDateString('pt-BR'); } catch { return iso || ''; } };
+      const formatCurrency = (v) => { const n = Number(v || 0); return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); };
+
+      const listHtml = overdue.map(n => {
+        const when = (n.days_overdue || 0) > 0 ? `há ${n.days_overdue} dia${n.days_overdue>1?'s':''}` : 'vencida';
+        const valorFmt = typeof n.valor === 'number' ? formatCurrency(n.valor) : formatCurrency(Number(n.valor || 0));
+        const num = n.numero_sessao ?? n.session_id ?? '—';
+        const dateStr = n.data_sessao ? formatDate(n.data_sessao) : '—';
+        return `<li class="mb-1">Sessão ${num} — ${dateStr} — ${when} — ${valorFmt}</li>`;
+      }).join('');
+
+      bodyEl.innerHTML = `<p>Você tem ${overdue.length} sessão${overdue.length>1?'s':''} vencida${overdue.length>1?'s':''}:</p>
+        <ul class="list-unstyled mb-0">${listHtml}</ul>`;
+
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    } catch (error) {
+      console.error('Erro ao exibir modal de vencidas:', error);
     }
   }
 
