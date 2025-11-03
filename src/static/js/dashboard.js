@@ -178,21 +178,21 @@ window.Dashboard = {
                 value: stats.general.total_patients,
                 icon: 'people',
                 color: 'primary',
-                page: 'patients'
+                page: 'pacientes'
             },
             {
                 title: 'Pacientes Ativos',
                 value: stats.general.active_patients,
                 icon: 'person-check',
                 color: 'success',
-                page: 'patients'
+                page: 'pacientes'
             },
             {
                 title: 'Pacientes Inativos',
                 value: stats.general.inactive_patients,
                 icon: 'person-dash',
                 color: 'danger',
-                page: 'patients'
+                page: 'pacientes'
             },
             {
                 title: 'Total Recebido',

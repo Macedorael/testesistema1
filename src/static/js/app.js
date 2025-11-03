@@ -124,10 +124,23 @@ class App {
     }
 
     async loadPage(page, pushState = true) {
-        this.currentPage = page;
+        // Preservar o slug solicitado (URL em português) e mapear internamente para páginas existentes
+        const originalPage = page;
+        const pageMap = {
+            // Principais seções
+            'pacientes': 'patients',
+            'agendamentos': 'appointments',
+            'pagamentos': 'payments',
+            // Dashboards
+            'dashboard-pagamentos': 'dashboard-payments',
+            'dashboard-sessoes': 'dashboard-sessions'
+        };
+
+        const internalPage = pageMap[originalPage] || originalPage;
+        this.currentPage = internalPage;
         
         if (pushState) {
-            history.pushState({ page }, '', `#${page}`);
+            history.pushState({ page: originalPage }, '', `#${originalPage}`);
         }
 
         this.showLoading();
@@ -135,7 +148,8 @@ class App {
         try {
             let content = '';
             
-            switch (page) {
+            // Usar a página interna para renderização
+            switch (internalPage) {
                 case 'dashboard':
                     content = await this.loadDashboard();
                     break;
@@ -173,7 +187,7 @@ class App {
             this.safeSetHtml('main-content', content);
             
             // Initialize page-specific functionality and await dashboards to finish
-            await this.initPageFunctionality(page);
+            await this.initPageFunctionality(internalPage);
             
         } catch (error) {
             console.error('Error loading page:', error);
