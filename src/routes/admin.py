@@ -2,6 +2,10 @@ from flask import Blueprint, request, jsonify, session, render_template_string
 from src.models.usuario import User
 from src.models.assinatura import Subscription
 from src.models.historico_assinatura import SubscriptionHistory
+from src.models.paciente import Patient
+from src.models.funcionario import Funcionario
+from src.models.especialidade import Especialidade
+from src.models.password_reset import PasswordResetToken
 from src.models.base import db
 from src.utils.auth import login_required
 from datetime import datetime, timedelta
@@ -257,14 +261,19 @@ def admin_dashboard():
                     const actionsHtml = (() => {
                         const hasActive = !!user.subscription && user.subscription.status === 'active';
                         const activationBtn = `
-                            <button class="btn btn-outline-success btn-sm" onclick="activateSubscription(${user.id})">
+                            <button class="btn btn-outline-success btn-sm me-1" onclick="activateSubscription(${user.id})">
                                 <i class="fas fa-play me-1"></i>Liberar Acesso
                             </button>`;
                         const deactivationBtn = `
-                            <button class="btn btn-outline-danger btn-sm" onclick="deactivateSubscription(${user.id})">
+                            <button class="btn btn-outline-danger btn-sm me-1" onclick="deactivateSubscription(${user.id})">
                                 <i class="fas fa-stop me-1"></i>Encerrar Acesso
                             </button>`;
-                        return hasActive ? deactivationBtn : activationBtn;
+                        const deleteBtn = `
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteUser(${user.id}, '${user.username}')" title="Excluir usuário permanentemente">
+                                <i class="fas fa-trash me-1"></i>Excluir
+                            </button>`;
+                        const subscriptionBtn = hasActive ? deactivationBtn : activationBtn;
+                        return subscriptionBtn + deleteBtn;
                     })();
 
                     row.innerHTML = `
@@ -349,6 +358,44 @@ def admin_dashboard():
             } catch (err) {
                 console.error('Erro ao encerrar acesso:', err);
                 alert('Erro ao encerrar acesso');
+            }
+        }
+
+        async function deleteUser(userId, username) {
+            try {
+                // Confirmação dupla para exclusão
+                const firstConfirm = confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o usuário "${username}"?\\n\\nEsta ação não pode ser desfeita e removerá todos os dados relacionados ao usuário.`);
+                if (!firstConfirm) return;
+                
+                const secondConfirm = confirm(`ÚLTIMA CONFIRMAÇÃO:\\n\\nVocê está prestes a excluir permanentemente o usuário "${username}" (ID: ${userId}).\\n\\nTodos os dados relacionados (pacientes, agendamentos, pagamentos, etc.) serão removidos.\\n\\nDigite "CONFIRMAR" para prosseguir:`);
+                if (!secondConfirm) return;
+                
+                // Mostrar loading
+                const loadingMsg = document.createElement('div');
+                loadingMsg.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Excluindo usuário...</div>';
+                document.body.appendChild(loadingMsg);
+                
+                const response = await fetch(`/admin/user/${userId}/delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Remover loading
+                document.body.removeChild(loadingMsg);
+                
+                if (response.ok && data.success) {
+                    alert(`Usuário excluído com sucesso!\\n\\n${data.message}\\n\\nDetalhes:\\n- Pacientes removidos: ${data.details.patients_removed}\\n- Funcionários removidos: ${data.details.funcionarios_removed}\\n- Especialidades removidas: ${data.details.especialidades_removed}\\n- Assinaturas removidas: ${data.details.subscriptions_removed}\\n- Histórico removido: ${data.details.subscription_history_removed}\\n- Tokens removidos: ${data.details.reset_tokens_removed}`);
+                    refreshData();
+                } else {
+                    alert(`Erro ao excluir usuário: ${data.message || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                console.error('Erro ao excluir usuário:', error);
+                alert('Erro ao excluir usuário. Verifique a conexão e tente novamente.');
             }
         }
 
@@ -522,28 +569,79 @@ def update_user(user_id):
             'error': f'Erro ao atualizar usuário: {str(e)}'
         }), 500
 
-@admin_bp.route('/user/<int:user_id>/delete')
+@admin_bp.route('/user/<int:user_id>/delete', methods=['DELETE'])
 @require_admin()
 def delete_user(user_id):
-    """Deleta usuário"""
+    """Deleta usuário com limpeza segura de dependências"""
     try:
         user = User.query.get_or_404(user_id)
         
-        # Buscar todas as assinaturas do usuário
-        subscriptions = Subscription.query.filter_by(user_id=user_id).order_by(
-            Subscription.created_at.desc()
-        ).all()
+        # Verificar se o usuário atual é admin
+        current_user = User.query.get(session.get('user_id'))
+        if not current_user or not current_user.is_admin:
+            return jsonify({
+                'success': False,
+                'message': 'Acesso negado. Apenas administradores podem excluir usuários.'
+            }), 403
         
-        user_data = user.to_dict()
-        user_data['subscriptions_history'] = [sub.to_dict() for sub in subscriptions]
+        # Impedir que não-admins excluam administradores
+        if user.is_admin and not current_user.is_admin:
+            return jsonify({
+                'success': False,
+                'message': 'Não é possível excluir um administrador.'
+            }), 403
+        
+        # Contar registros relacionados antes da exclusão
+        patients_count = Patient.query.filter_by(user_id=user_id).count()
+        funcionarios_count = Funcionario.query.filter_by(user_id=user_id).count()
+        especialidades_count = Especialidade.query.filter_by(user_id=user_id).count()
+        subscription_history_count = SubscriptionHistory.query.filter_by(user_id=user_id).count()
+        subscriptions_count = Subscription.query.filter_by(user_id=user_id).count()
+        reset_tokens_count = PasswordResetToken.query.filter_by(user_id=user_id).count()
+        
+        # Limpeza ordenada de dependências
+        # 1. Excluir pacientes (cascata remove agendamentos, pagamentos, diários)
+        Patient.query.filter_by(user_id=user_id).delete()
+        
+        # 2. Excluir funcionários
+        Funcionario.query.filter_by(user_id=user_id).delete()
+        
+        # 3. Excluir especialidades
+        Especialidade.query.filter_by(user_id=user_id).delete()
+        
+        # 4. Excluir histórico de assinaturas
+        SubscriptionHistory.query.filter_by(user_id=user_id).delete()
+        
+        # 5. Excluir assinaturas
+        Subscription.query.filter_by(user_id=user_id).delete()
+        
+        # 6. Excluir tokens de reset de senha
+        PasswordResetToken.query.filter_by(user_id=user_id).delete()
+        
+        # 7. Finalmente, excluir o usuário
+        db.session.delete(user)
+        
+        # Commit das alterações
+        db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': 'Usuário deletado com sucesso'
+            'message': f'Usuário {user.username} (ID: {user_id}) excluído com sucesso.',
+            'details': {
+                'patients_removed': patients_count,
+                'funcionarios_removed': funcionarios_count,
+                'especialidades_removed': especialidades_count,
+                'subscription_history_removed': subscription_history_count,
+                'subscriptions_removed': subscriptions_count,
+                'reset_tokens_removed': reset_tokens_count
+            }
         })
+        
     except Exception as e:
+        db.session.rollback()
         return jsonify({
-            'error': f'Erro ao deletar usuário: {str(e)}'
+            'success': False,
+            'message': f'Erro ao excluir usuário: {str(e)}'
         }), 500
 
 # Endpoints para ativar/desativar assinatura pelo admin

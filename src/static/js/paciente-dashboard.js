@@ -30,11 +30,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   checkUserAuthentication().then(() => {
+    setupChangeContextButton();
+    return ensurePatientContext();
+  }).then(() => {
     loadAppointmentsSummary();
     loadPaymentNotices();
     loadPaymentsSummary();
     showOverdueModalIfNeeded();
-    checkDiaryAvailability().then((enabled) => {
+    return checkDiaryAvailability().then((enabled) => {
       if (enabled) {
         // Exibir botões de diário na navbar
         if (novoRegistroBtn) { novoRegistroBtn.classList.remove('d-none'); novoRegistroBtn.style.display = ''; }
@@ -61,10 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       const userData = await response.json();
       currentUser = userData;
-      if (userData.role !== 'patient') {
-        window.location.href = '/';
-        throw new Error('Acesso não autorizado');
-      }
+      // Permitir modo paciente por sessão mesmo se role !== 'patient'
+      // A verificação de contexto será feita ao consultar /api/patients/me com owner_id
       if (userData.first_login) {
         window.location.href = '/paciente-primeiro-login.html';
         throw new Error('Primeiro login - necessário alterar senha');
@@ -74,13 +75,131 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  async function ensurePatientContext() {
+    try {
+      const ownerId = localStorage.getItem('patientOwnerId');
+      const url = ownerId ? `/api/patients/me?owner_id=${ownerId}` : '/api/patients/me';
+      const resp = await fetch(url);
+      if (resp.status === 400) {
+        const payload = await resp.json();
+        if (payload && payload.code === 'patient_context_required' && payload.data && Array.isArray(payload.data.owners)) {
+          const owners = payload.data.owners;
+          const selected = await pickOwnerContext(owners);
+          if (!selected) { throw new Error('Contexto não selecionado corretamente'); }
+          localStorage.setItem('patientOwnerId', String(selected));
+          const recheck = await fetch(`/api/patients/me?owner_id=${selected}`);
+          if (!recheck.ok) { throw new Error('Falha ao confirmar contexto do paciente'); }
+          return true;
+        }
+        throw new Error('Contexto de paciente necessário');
+      }
+      if (!resp.ok) { throw new Error('Falha ao confirmar contexto do paciente'); }
+      return true;
+    } catch (e) {
+      console.error('Erro ao resolver contexto do paciente:', e);
+      window.app?.showError?.('Não foi possível identificar o contexto do paciente.');
+      return false;
+    }
+  }
+
+  function setupChangeContextButton() {
+    const btn = document.getElementById('changeContextBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const owners = await fetchOwnersList();
+        if (!owners || owners.length === 0) {
+          alert('Não há profissionais disponíveis para seleção.');
+          return;
+        }
+        const selected = await pickOwnerContext(owners);
+        if (!selected) return; // cancelado
+        localStorage.setItem('patientOwnerId', String(selected));
+        // Recarrega página para aplicar novo contexto
+        window.location.reload();
+      } catch (err) {
+        console.error('Erro ao trocar contexto:', err);
+        alert('Falha ao trocar o contexto do paciente.');
+      }
+    });
+  }
+
+  async function fetchOwnersList() {
+    try {
+      // Força retorno da lista de owners usando owner_id inválido
+      const resp = await fetch('/api/patients/me?owner_id=0');
+      if (resp.status === 400) {
+        const payload = await resp.json();
+        return Array.isArray(payload?.data?.owners) ? payload.data.owners : [];
+      }
+      // Se já há contexto único selecionado, tenta usar o armazenado
+      const cur = localStorage.getItem('patientOwnerId');
+      if (cur) {
+        const idNum = parseInt(cur, 10);
+        return [{ user_id: idNum, owner_name: null, owner_email: null }];
+      }
+      return [];
+    } catch (_) { return []; }
+  }
+
+  function renderOwnerOptions(owners) {
+    const container = document.getElementById('patientContextOptions');
+    if (!container) return;
+    const current = localStorage.getItem('patientOwnerId');
+    const html = owners.map((o, idx) => {
+      const label = o.owner_name || o.owner_email || (`Usuário #${o.user_id}`);
+      const checked = current && String(o.user_id) === String(current) ? 'checked' : '';
+      return `<div class="form-check">
+        <input class="form-check-input" type="radio" name="ownerRadio" id="owner-${idx}" value="${o.user_id}" ${checked}>
+        <label class="form-check-label" for="owner-${idx}">${label}</label>
+      </div>`;
+    }).join('');
+    container.innerHTML = html;
+  }
+
+  function pickOwnerContext(owners) {
+    return new Promise((resolve) => {
+      const modalEl = document.getElementById('patientContextModal');
+      if (!modalEl) {
+        // Fallback simples
+        const ids = owners.map(o => o.user_id);
+        const choice = window.prompt(`Selecione seu profissional: ${owners.map(o => (o.owner_name||o.owner_email||o.user_id)).join(', ')}`);
+        const selected = parseInt(choice || '', 10);
+        if (!selected || !ids.includes(selected)) { resolve(null); } else { resolve(selected); }
+        return;
+      }
+      renderOwnerOptions(owners);
+      const confirmBtn = document.getElementById('confirmPatientContextBtn');
+      const bsModal = new bootstrap.Modal(modalEl);
+      const onConfirm = () => {
+        const selectedInput = modalEl.querySelector('input[name="ownerRadio"]:checked');
+        const val = selectedInput ? parseInt(selectedInput.value, 10) : null;
+        bsModal.hide();
+        confirmBtn?.removeEventListener('click', onConfirm);
+        resolve(val || null);
+      };
+      confirmBtn?.addEventListener('click', onConfirm);
+      bsModal.show();
+    });
+  }
+
+  function withOwnerId(path) {
+    try {
+      const ownerId = localStorage.getItem('patientOwnerId');
+      if (!ownerId) return path;
+      const hasQuery = path.includes('?');
+      return hasQuery ? `${path}&owner_id=${ownerId}` : `${path}?owner_id=${ownerId}`;
+    } catch (_) { return path; }
+  }
+
   async function loadPaymentsSummary() {
     const section = document.getElementById('paymentsSummarySection');
     const content = document.getElementById('paymentsSummaryContent');
     if (!section || !content) return;
 
     try {
-      const response = await fetch('/api/patients/me/payments-summary');
+      const response = await fetch(withOwnerId('/api/patients/me/payments-summary'));
       if (!response.ok) { section.style.display = 'none'; return; }
       const payload = await response.json();
       const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
@@ -175,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!section || !content) return;
 
     try {
-      const response = await fetch('/api/patients/me/payment-notices');
+      const response = await fetch(withOwnerId('/api/patients/me/payment-notices'));
       if (!response.ok) { return; }
       const payload = await response.json();
       const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
@@ -250,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Consumir a flag para não mostrar em refreshes subsequentes
       try { sessionStorage.removeItem('justLoggedIn'); } catch (_) {}
       const getOverdueFromNotices = async () => {
-        const response = await fetch('/api/patients/me/payment-notices');
+        const response = await fetch(withOwnerId('/api/patients/me/payment-notices'));
         if (!response.ok) throw new Error('notices fetch failed');
         const payload = await response.json();
         const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
@@ -259,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function () {
       };
 
       const getOverdueFromSummary = async () => {
-        const response = await fetch('/api/patients/me/payments-summary');
+        const response = await fetch(withOwnerId('/api/patients/me/payments-summary'));
         if (!response.ok) throw new Error('summary fetch failed');
         const payload = await response.json();
         const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
@@ -311,7 +430,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function checkDiaryAvailability() {
     try {
-      const response = await fetch('/api/patients/me');
+      const ownerId = localStorage.getItem('patientOwnerId');
+      const url = ownerId ? `/api/patients/me?owner_id=${ownerId}` : '/api/patients/me';
+      const response = await fetch(url);
       if (!response.ok) { return false; }
       const payload = await response.json();
       const patient = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
@@ -474,7 +595,7 @@ document.addEventListener('DOMContentLoaded', function () {
           consequencia: newFormEl.querySelector('[name="consequencia"]').value || '',
           data_registro: nowISO
         };
-        fetch('/api/patients/me/diary-entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        fetch(withOwnerId('/api/patients/me/diary-entries'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .then(async (res) => {
             if (!res.ok) {
               const err = await res.json().catch(() => ({ message: 'Erro desconhecido' }));
@@ -507,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (spinner) { spinner.classList.remove('d-none'); spinner.classList.add('d-flex'); }
     if (nextAppointmentContent) { nextAppointmentContent.textContent = 'Carregando próximo agendamento...'; }
 
-    fetch('/api/patients/me/appointments')
+    fetch(withOwnerId('/api/patients/me/appointments'))
       .then((response) => {
         if (!response.ok) { throw new Error('Falha ao buscar agendamentos'); }
         return response.json();
@@ -535,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (spinner) { spinner.classList.remove('d-none'); spinner.classList.add('d-flex'); }
     if (latestDiaryContent) { latestDiaryContent.textContent = 'Carregando último registro diário...'; }
 
-    fetch('/api/patients/me/diary-entries')
+    fetch(withOwnerId('/api/patients/me/diary-entries'))
       .then((response) => {
         if (!response.ok) { throw new Error('Falha ao buscar registros diários'); }
         return response.json();

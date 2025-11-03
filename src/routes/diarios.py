@@ -14,20 +14,56 @@ logger.setLevel(logging.DEBUG)
 
 diaries_bp = Blueprint('diaries', __name__)
 
+def _resolve_patient_context_for_user(current_user, owner_id=None):
+    """Resolve o paciente do usuário atual pelo email, opcionalmente com owner_id.
+    Retorna (patient, owners_info) onde owners_info inclui user_id, patient_id e owner_name.
+    """
+    try:
+        patients = Patient.query.filter_by(email=current_user.email).all()
+        if owner_id is not None:
+            chosen = next((p for p in patients if p.user_id == owner_id), None)
+            return chosen, [{
+                "user_id": p.user_id,
+                "patient_id": p.id,
+                "owner_name": getattr(getattr(p, 'user', None), 'username', None),
+                "owner_email": getattr(getattr(p, 'user', None), 'email', None)
+            } for p in patients]
+        if len(patients) == 1:
+            return patients[0], []
+        elif len(patients) > 1:
+            return None, [{
+                "user_id": p.user_id,
+                "patient_id": p.id,
+                "owner_name": getattr(getattr(p, 'user', None), 'username', None),
+                "owner_email": getattr(getattr(p, 'user', None), 'email', None)
+            } for p in patients]
+        else:
+            return None, []
+    except Exception:
+        return None, []
+
 # ---------------------- PACIENTE LOGADO (role=patient) ----------------------
 @diaries_bp.route('/patients/me/diary-entries', methods=['GET'])
 @login_required
 def get_my_diary_entries():
-    """Lista registros diários do paciente autenticado (role=patient)"""
+    """Lista registros diários do paciente autenticado.
+    Suporta owner_id para resolver contexto quando há múltiplos donos.
+    """
     try:
         current_user = get_current_user()
         if not current_user:
             return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 401
-        if current_user.role != 'patient':
-            return jsonify({'success': False, 'message': 'Acesso não autorizado'}), 403
+        owner_id = request.args.get('owner_id', type=int)
 
-        patient = Patient.query.filter_by(email=current_user.email).first()
+        patient, owners = _resolve_patient_context_for_user(current_user, owner_id)
         if not patient:
+            if owners:
+                return jsonify({
+                    'success': False,
+                    'message': 'Contexto de paciente necessário',
+                    'code': 'patient_context_required',
+                    'data': {'owners': owners}
+                }), 400
             return jsonify({'success': False, 'message': 'Paciente não encontrado'}), 404
         # Gate: Diário TCC desativado
         if not bool(getattr(patient, 'diario_tcc_ativo', False)):
@@ -43,16 +79,24 @@ def get_my_diary_entries():
 @diaries_bp.route('/patients/me/diary-entries', methods=['POST'])
 @login_required
 def create_my_diary_entry():
-    """Cria um novo registro diário pelo paciente autenticado (role=patient)"""
+    """Cria um novo registro diário pelo paciente autenticado.
+    Suporta owner_id para resolver contexto quando há múltiplos donos.
+    """
     try:
         current_user = get_current_user()
         if not current_user:
             return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 401
-        if current_user.role != 'patient':
-            return jsonify({'success': False, 'message': 'Acesso não autorizado'}), 403
+        owner_id = request.args.get('owner_id', type=int)
 
-        patient = Patient.query.filter_by(email=current_user.email).first()
+        patient, owners = _resolve_patient_context_for_user(current_user, owner_id)
         if not patient:
+            if owners:
+                return jsonify({
+                    'success': False,
+                    'message': 'Contexto de paciente necessário',
+                    'code': 'patient_context_required',
+                    'data': {'owners': owners}
+                }), 400
             return jsonify({'success': False, 'message': 'Paciente não encontrado'}), 404
         # Gate: Diário TCC desativado
         if not bool(getattr(patient, 'diario_tcc_ativo', False)):

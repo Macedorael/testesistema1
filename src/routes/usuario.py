@@ -1,7 +1,11 @@
 from flask import Blueprint, jsonify, request, session
 from src.models.usuario import User, db
 from src.models.assinatura import Subscription
+from src.models.historico_assinatura import SubscriptionHistory
 from src.models.password_reset import PasswordResetToken
+from src.models.paciente import Patient
+from src.models.funcionario import Funcionario
+from src.models.especialidade import Especialidade
 from src.utils.auth import login_required, get_current_user
 from datetime import datetime, timedelta
 from sqlalchemy import text
@@ -372,22 +376,70 @@ def update_user(user_id):
 @user_bp.route("/users/<int:user_id>", methods=["DELETE"])
 @login_required
 def delete_user(user_id):
-    """Remove um usuário"""
+    """Remove um usuário com limpeza de dados relacionados e checagem de autorização"""
     try:
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        # Somente o próprio usuário ou um admin pode excluir
+        if current_user.id != user_id and not current_user.is_admin():
+            return jsonify({"error": "Não autorizado a excluir este usuário"}), 403
+
         user = User.query.get(user_id)
         if not user:
             return jsonify({"error": "Usuário não encontrado"}), 404
-        
+
+        # Impedir que usuários não-admin excluam administradores
+        if user.is_admin() and not current_user.is_admin():
+            return jsonify({"error": "Não é permitido excluir um usuário administrador"}), 403
+
+        # Limpeza ordenada de dependências (evitar violações de FK)
+        # 1) Pacientes do usuário (cascade: appointments, payments, diary_entries)
+        patients = Patient.query.filter_by(user_id=user.id).all()
+        for p in patients:
+            db.session.delete(p)
+
+        # 2) Funcionários do usuário (após remoção de appointments, não deve haver dependências)
+        funcionarios = Funcionario.query.filter_by(user_id=user.id).all()
+        for f in funcionarios:
+            db.session.delete(f)
+
+        # 3) Especialidades do usuário (após remover funcionários)
+        especialidades = Especialidade.query.filter_by(user_id=user.id).all()
+        for esp in especialidades:
+            db.session.delete(esp)
+
+        # 4) Histórico de assinaturas do usuário (remover antes das assinaturas)
+        histories = SubscriptionHistory.query.filter_by(user_id=user.id).all()
+        for h in histories:
+            db.session.delete(h)
+
+        # 5) Assinaturas do usuário
+        subscriptions = Subscription.query.filter_by(user_id=user.id).all()
+        for sub in subscriptions:
+            db.session.delete(sub)
+
+        # 6) Tokens de reset de senha do usuário
+        tokens = PasswordResetToken.query.filter_by(user_id=user.id).all()
+        for t in tokens:
+            db.session.delete(t)
+
+        # 7) Finalmente, remover o usuário
         db.session.delete(user)
         db.session.commit()
-        
+
+        # Se o usuário excluído for o atual, limpar a sessão
+        if current_user.id == user_id:
+            session.clear()
+
         return jsonify({
             "success": True,
-            "message": "Usuário excluído com sucesso"
+            "message": "Usuário e dados relacionados excluídos com sucesso"
         }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Erro ao excluir usuário"}), 500
+        return jsonify({"error": f"Erro ao excluir usuário: {str(e)}"}), 500
 
 
 

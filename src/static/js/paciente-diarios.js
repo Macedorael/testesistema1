@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   checkUserAuthentication().then(() => {
-    checkDiaryAvailability().then((enabled) => {
+    setupChangeContextButton();
+    return ensurePatientContext();
+  }).then(() => {
+    return checkDiaryAvailability().then((enabled) => {
       if (enabled) {
         // Exibir botões/links do diário quando habilitado
         if (novoRegistroBtn) { novoRegistroBtn.classList.remove('d-none'); novoRegistroBtn.style.display = ''; }
@@ -58,10 +61,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       const userData = await response.json();
       currentUser = userData;
-      if (userData.role !== 'patient') {
-        window.location.href = '/';
-        throw new Error('Acesso não autorizado');
-      }
       if (userData.first_login) {
         window.location.href = '/paciente-primeiro-login.html';
         throw new Error('Primeiro login - necessário alterar senha');
@@ -71,9 +70,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  async function ensurePatientContext() {
+    try {
+      const ownerId = localStorage.getItem('patientOwnerId');
+      const url = ownerId ? `/api/patients/me?owner_id=${ownerId}` : '/api/patients/me';
+      const resp = await fetch(url);
+      if (resp.status === 400) {
+        const payload = await resp.json();
+        if (payload && payload.code === 'patient_context_required' && payload.data && Array.isArray(payload.data.owners)) {
+          const owners = payload.data.owners;
+          const selected = await pickOwnerContext(owners);
+          if (!selected) { throw new Error('Contexto não selecionado corretamente'); }
+          localStorage.setItem('patientOwnerId', String(selected));
+          const recheck = await fetch(`/api/patients/me?owner_id=${selected}`);
+          if (!recheck.ok) { throw new Error('Falha ao confirmar contexto do paciente'); }
+          return true;
+        }
+        throw new Error('Contexto de paciente necessário');
+      }
+      if (!resp.ok) { throw new Error('Falha ao confirmar contexto do paciente'); }
+      return true;
+    } catch (e) {
+      console.error('Erro ao resolver contexto do paciente:', e);
+      window.app?.showError?.('Não foi possível identificar o contexto do paciente.');
+      return false;
+    }
+  }
+
+  function withOwnerId(path) {
+    try {
+      const ownerId = localStorage.getItem('patientOwnerId');
+      if (!ownerId) return path;
+      const hasQuery = path.includes('?');
+      return hasQuery ? `${path}&owner_id=${ownerId}` : `${path}?owner_id=${ownerId}`;
+    } catch (_) { return path; }
+  }
+
   async function checkDiaryAvailability() {
     try {
-      const response = await fetch('/api/patients/me');
+      const response = await fetch(withOwnerId('/api/patients/me'));
       if (!response.ok) { return false; }
       const payload = await response.json();
       const patient = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
@@ -254,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
           data_registro: nowISO
         };
 
-        fetch('/api/patients/me/diary-entries', {
+        fetch(withOwnerId('/api/patients/me/diary-entries'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -287,6 +322,81 @@ document.addEventListener('DOMContentLoaded', function () {
     registroModal.show();
   }
 
+  function setupChangeContextButton() {
+    const btn = document.getElementById('changeContextBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const owners = await fetchOwnersList();
+        if (!owners || owners.length === 0) {
+          alert('Não há profissionais disponíveis para seleção.');
+          return;
+        }
+        const selected = await pickOwnerContext(owners);
+        if (!selected) return; // cancelado
+        localStorage.setItem('patientOwnerId', String(selected));
+        window.location.reload();
+      } catch (err) {
+        console.error('Erro ao trocar contexto:', err);
+        alert('Falha ao trocar o contexto do paciente.');
+      }
+    });
+  }
+
+  async function fetchOwnersList() {
+    try {
+      const resp = await fetch('/api/patients/me?owner_id=0');
+      if (resp.status === 400) {
+        const payload = await resp.json();
+        return Array.isArray(payload?.data?.owners) ? payload.data.owners : [];
+      }
+      const cur = localStorage.getItem('patientOwnerId');
+      if (cur) { return [{ user_id: parseInt(cur,10), owner_name: null, owner_email: null }]; }
+      return [];
+    } catch (_) { return []; }
+  }
+
+  function renderOwnerOptions(owners) {
+    const container = document.getElementById('patientContextOptions');
+    if (!container) return;
+    const current = localStorage.getItem('patientOwnerId');
+    const html = owners.map((o, idx) => {
+      const label = o.owner_name || o.owner_email || (`Usuário #${o.user_id}`);
+      const checked = current && String(o.user_id) === String(current) ? 'checked' : '';
+      return `<div class="form-check">
+        <input class="form-check-input" type="radio" name="ownerRadio" id="owner-${idx}" value="${o.user_id}" ${checked}>
+        <label class="form-check-label" for="owner-${idx}">${label}</label>
+      </div>`;
+    }).join('');
+    container.innerHTML = html;
+  }
+
+  function pickOwnerContext(owners) {
+    return new Promise((resolve) => {
+      const modalEl = document.getElementById('patientContextModal');
+      if (!modalEl) {
+        const ids = owners.map(o => o.user_id);
+        const choice = window.prompt(`Selecione o profissional: ${owners.map(o => (o.owner_name||o.owner_email||o.user_id)).join(', ')}`);
+        const selected = parseInt(choice || '', 10);
+        if (!selected || !ids.includes(selected)) { resolve(null); } else { resolve(selected); }
+        return;
+      }
+      renderOwnerOptions(owners);
+      const confirmBtn = document.getElementById('confirmPatientContextBtn');
+      const bsModal = new bootstrap.Modal(modalEl);
+      const onConfirm = () => {
+        const selectedInput = modalEl.querySelector('input[name="ownerRadio"]:checked');
+        const val = selectedInput ? parseInt(selectedInput.value, 10) : null;
+        bsModal.hide();
+        confirmBtn?.removeEventListener('click', onConfirm);
+        resolve(val || null);
+      };
+      confirmBtn?.addEventListener('click', onConfirm);
+      bsModal.show();
+    });
+  }
+
   function loadDiaryEntries() {
     const diaryListEl = document.getElementById('diaryList');
     const diaryLoadingSpinnerEl = document.getElementById('diaryLoadingSpinner');
@@ -299,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
     diaryListEl.innerHTML = '';
     noDiaryEntriesEl.style.display = 'none';
 
-    fetch('/api/patients/me/diary-entries')
+    fetch(withOwnerId('/api/patients/me/diary-entries'))
       .then((response) => {
         if (!response.ok) {
           throw new Error('Falha ao buscar registros diários');

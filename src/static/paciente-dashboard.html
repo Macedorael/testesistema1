@@ -64,6 +64,12 @@
         <!-- Sair no canto direito -->
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
+            <a id="changeContextBtn" class="nav-link nav-item-vertical" href="#">
+              <i class="bi bi-person-lines-fill"></i>
+              <span class="nav-text">Trocar Profissional</span>
+            </a>
+          </li>
+          <li class="nav-item">
             <a id="logoutBtn" class="nav-link nav-item-vertical" href="#">
               <i class="bi bi-box-arrow-right"></i>
               <span class="nav-text">Sair</span>
@@ -156,6 +162,26 @@
         <div class="modal-footer">
           <a href="paciente-agendamentos.html" class="btn btn-primary">Ir para Agendamentos</a>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Selecionar Profissional -->
+  <div class="modal fade" id="patientContextModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-people me-2"></i>Selecionar Profissional</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="patientContextOptions" class="vstack gap-2"></div>
+          <div class="form-text mt-2">Você pode alterar a qualquer momento pelo botão "Trocar Profissional" na barra superior.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button id="confirmPatientContextBtn" type="button" class="btn btn-primary">Confirmar</button>
         </div>
       </div>
     </div>

@@ -190,49 +190,35 @@ def create_patient():
                 }
             }), 200
             
-        # Verificar se já existe um usuário com este email
+        # Verificar se já existe um usuário com este email (global)
         from src.models.usuario import User
         existing_user = User.query.filter_by(email=data["email"]).first()
-        if existing_user:
-            # Se já existe um usuário e também já existe o paciente (corrida), devolver idempotente.
-            existing_patient = Patient.query.filter_by(user_id=current_user.id, email=data["email"]).first()
-            if existing_patient:
-                return jsonify({
-                    "success": True,
-                    "message": "Paciente já criado anteriormente",
-                    "data": {
-                        "patient": existing_patient.to_dict()
-                    }
-                }), 200
-            # Caso contrário, é realmente um conflito de email
-            return jsonify({
-                "success": False,
-                "message": "Este email já está cadastrado no sistema. Por favor, use um email diferente."
-            }), 400
-            
-        # Criar usuário para o paciente com senha padrão
-        username = data["email"].split("@")[0]  # Usar parte do email como username
         
-        # Verificar se o username já existe e adicionar número se necessário
-        base_username = username
-        counter = 1
-        while User.query.filter_by(username=username).first():
-            username = f"{base_username}{counter}"
-            counter += 1
+        patient_user = None
+        if not existing_user:
+            # Criar usuário para o paciente com senha padrão
+            username = data["email"].split("@")[0]  # Usar parte do email como username
             
-        # Criar o usuário
-        patient_user = User(
-            username=username,
-            email=data["email"],
-            telefone=data["telefone"],
-            data_nascimento=data_nascimento,
-            role="patient",
-            first_login=True
-        )
-        patient_user.set_password("123456")  # Senha padrão
-        
-        db.session.add(patient_user)
-        db.session.flush()  # Para obter o ID do usuário
+            # Verificar se o username já existe e adicionar número se necessário
+            base_username = username
+            counter = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}{counter}"
+                counter += 1
+                
+            # Criar o usuário
+            patient_user = User(
+                username=username,
+                email=data["email"],
+                telefone=data["telefone"],
+                data_nascimento=data_nascimento,
+                role="patient",
+                first_login=True
+            )
+            patient_user.set_password("123456")  # Senha padrão
+            
+            db.session.add(patient_user)
+            db.session.flush()  # Para obter o ID do usuário
         
         # Criar paciente vinculado ao usuário
         patient = Patient(
@@ -250,18 +236,28 @@ def create_patient():
         db.session.add(patient)
         db.session.commit()
 
-        return jsonify({
-            "success": True,
-            "message": "Paciente criado com sucesso e conta de acesso gerada",
-            "data": {
-                "patient": patient.to_dict(),
-                "user": {
-                    "username": patient_user.username,
-                    "email": patient_user.email,
-                    "password": "123456"
+        if patient_user:
+            return jsonify({
+                "success": True,
+                "message": "Paciente criado com sucesso e conta de acesso gerada",
+                "data": {
+                    "patient": patient.to_dict(),
+                    "user": {
+                        "username": patient_user.username,
+                        "email": patient_user.email,
+                        "password": "123456"
+                    }
                 }
-            }
-        }), 201
+            }), 201
+        else:
+            # Email já existe globalmente em outro usuário; cria apenas o registro de paciente para este usuário
+            return jsonify({
+                "success": True,
+                "message": "Paciente criado com sucesso",
+                "data": {
+                    "patient": patient.to_dict()
+                }
+            }), 201
 
     except IntegrityError:
         # Tratar corrida de duplo clique: retornar o recurso existente
@@ -516,18 +512,25 @@ def get_patient_payments(patient_id):
 @patients_bp.route("/patients/me", methods=["GET"])
 @login_required
 def get_my_patient_profile():
-    """Retorna o perfil do paciente autenticado (role=patient)"""
+    """Retorna o perfil do paciente autenticado.
+    Suporta modo paciente por sessão usando owner_id quando necessário.
+    """
     try:
         current_user = get_current_user()
         if not current_user:
             return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
-        if current_user.role != 'patient':
-            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
-        
-        patient = Patient.query.filter_by(email=current_user.email).first()
+        owner_id = request.args.get('owner_id', type=int)
+        patient, owners = _resolve_patient_context_for_user(current_user, owner_id)
         if not patient:
+            if owners:
+                return jsonify({
+                    "success": False,
+                    "message": "Contexto de paciente necessário",
+                    "code": "patient_context_required",
+                    "data": {"owners": owners}
+                }), 400
             return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
-        
+
         return jsonify({"success": True, "data": patient.to_dict()})
     except Exception as e:
         return jsonify({"success": False, "message": f"Erro ao buscar perfil do paciente: {str(e)}"}), 500
@@ -535,16 +538,21 @@ def get_my_patient_profile():
 @patients_bp.route("/patients/me/appointments", methods=["GET"])
 @login_required
 def get_my_patient_appointments():
-    """Lista todos os agendamentos do paciente autenticado (role=patient)"""
+    """Lista todos os agendamentos do paciente autenticado (suporta owner_id)."""
     try:
         current_user = get_current_user()
         if not current_user:
             return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
-        if current_user.role != 'patient':
-            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
-        
-        patient = Patient.query.filter_by(email=current_user.email).first()
+        owner_id = request.args.get('owner_id', type=int)
+        patient, owners = _resolve_patient_context_for_user(current_user, owner_id)
         if not patient:
+            if owners:
+                return jsonify({
+                    "success": False,
+                    "message": "Contexto de paciente necessário",
+                    "code": "patient_context_required",
+                    "data": {"owners": owners}
+                }), 400
             return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
         
         appointments = Appointment.query.filter_by(patient_id=patient.id).order_by(Appointment.data_primeira_sessao.desc()).all()
@@ -565,11 +573,16 @@ def get_my_payment_notices():
         current_user = get_current_user()
         if not current_user:
             return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
-        if current_user.role != 'patient':
-            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
-
-        patient = Patient.query.filter_by(email=current_user.email).first()
+        owner_id = request.args.get('owner_id', type=int)
+        patient, owners = _resolve_patient_context_for_user(current_user, owner_id)
         if not patient:
+            if owners:
+                return jsonify({
+                    "success": False,
+                    "message": "Contexto de paciente necessário",
+                    "code": "patient_context_required",
+                    "data": {"owners": owners}
+                }), 400
             return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
 
         # Buscar sessões do paciente com pagamento pendente.
@@ -646,11 +659,16 @@ def get_my_payments_summary():
         current_user = get_current_user()
         if not current_user:
             return jsonify({"success": False, "message": "Usuário não encontrado"}), 401
-        if current_user.role != 'patient':
-            return jsonify({"success": False, "message": "Acesso não autorizado"}), 403
-
-        patient = Patient.query.filter_by(email=current_user.email).first()
+        owner_id = request.args.get('owner_id', type=int)
+        patient, owners = _resolve_patient_context_for_user(current_user, owner_id)
         if not patient:
+            if owners:
+                return jsonify({
+                    "success": False,
+                    "message": "Contexto de paciente necessário",
+                    "code": "patient_context_required",
+                    "data": {"owners": owners}
+                }), 400
             return jsonify({"success": False, "message": "Paciente não encontrado"}), 404
 
         # Pendentes
@@ -781,6 +799,37 @@ def get_patient_diary_entries_period(patient_id):
             "success": False,
             "message": f"Erro interno do servidor"
         }), 500
+
+
+
+def _resolve_patient_context_for_user(current_user, owner_id=None):
+    """Resolve o paciente do usuário atual pelo email, opcionalmente com owner_id.
+    Retorna (patient, owners_info) onde owners_info é uma lista de dicts com informações do dono
+    incluindo user_id, patient_id e owner_name (quando disponível).
+    """
+    try:
+        patients = Patient.query.filter_by(email=current_user.email).all()
+        if owner_id is not None:
+            chosen = next((p for p in patients if p.user_id == owner_id), None)
+            return chosen, [{
+                "user_id": p.user_id,
+                "patient_id": p.id,
+                "owner_name": getattr(getattr(p, 'user', None), 'username', None),
+                "owner_email": getattr(getattr(p, 'user', None), 'email', None)
+            } for p in patients]
+        if len(patients) == 1:
+            return patients[0], []
+        elif len(patients) > 1:
+            return None, [{
+                "user_id": p.user_id,
+                "patient_id": p.id,
+                "owner_name": getattr(getattr(p, 'user', None), 'username', None),
+                "owner_email": getattr(getattr(p, 'user', None), 'email', None)
+            } for p in patients]
+        else:
+            return None, []
+    except Exception:
+        return None, []
 
 
 
