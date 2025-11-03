@@ -100,7 +100,7 @@ function renderEspecialidadesTable(dataToRender = null) {
     if (data.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center text-muted">
+                <td colspan="4" class="text-center text-muted">
                     <i class="bi bi-tags" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
                     <p>Nenhuma especialidade cadastrada</p>
                 </td>
@@ -122,7 +122,6 @@ function renderEspecialidadesTable(dataToRender = null) {
     paginatedData.forEach(especialidade => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${especialidade.id}</td>
             <td>${especialidade.nome}</td>
             <td>${especialidade.descricao || '-'}</td>
             <td>${formatDate(especialidade.created_at)}</td>

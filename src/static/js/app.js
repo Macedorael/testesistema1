@@ -451,6 +451,20 @@ class App {
     
     async loadAndRenderFuncionarios() {
         try {
+            // Mostrar estado de carregamento na tabela
+            const tbodyLoading = document.getElementById('funcionariosTableBody');
+            if (tbodyLoading) {
+                tbodyLoading.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
             const response = await fetch('/api/funcionarios');
             if (!response.ok) {
                 if (response.status === 401) {
@@ -475,6 +489,16 @@ class App {
         } catch (error) {
             console.error('Erro ao carregar profissionais:', error);
             this.showError('Erro ao carregar profissionais: ' + error.message);
+            const tbodyError = document.getElementById('funcionariosTableBody');
+            if (tbodyError) {
+                tbodyError.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-danger">
+                            Falha ao carregar profissionais
+                        </td>
+                    </tr>
+                `;
+            }
         }
     }
     
@@ -486,7 +510,7 @@ class App {
         if (funcionarios.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted">
+                    <td colspan="6" class="text-center text-muted">
                         <i class="bi bi-person-badge" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                         <p>Nenhum profissional cadastrado</p>
                     </td>
@@ -497,7 +521,6 @@ class App {
         
         tbody.innerHTML = funcionarios.map(funcionario => `
             <tr>
-                <td>${funcionario.id}</td>
                 <td>${funcionario.nome}</td>
                 <td>${funcionario.telefone || '-'}</td>
                 <td>${funcionario.email || '-'}</td>
@@ -1343,8 +1366,7 @@ class App {
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
-                                            <th>Nome</th>
+                                            <th>Nome Especialidades</th>
                                             <th>Descrição</th>
                                             <th>Criado em</th>
                                             <th>Ações</th>
@@ -1448,7 +1470,6 @@ class App {
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
                                             <th>Nome</th>
                                             <th>Telefone</th>
                                             <th>Email</th>
