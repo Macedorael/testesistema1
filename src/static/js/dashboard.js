@@ -64,23 +64,15 @@ window.Dashboard = {
                     <div class="modal-dialog modal-dialog-centered">
                       <div class="modal-content">
                         <div class="modal-header">
-                          <h5 class="modal-title" id="welcomeFirstLoginLabel"><i class="bi bi-stars me-2"></i>Bem-vindo(a) ao seu Consultório!</h5>
+                          <h5 class="modal-title" id="welcomeFirstLoginLabel"><i class="bi bi-stars me-2"></i>Bem-vindo(a)!</h5>
                           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                          <p class="mb-2">Uau! Primeiro acesso confirmado 🚀</p>
-                          <p>Este é o seu espaço para organizar pacientes, sessões e finanças com leveza.</p>
-                          <ul class="mb-0">
-                            <li>Cadastre pacientes e agende sessões</li>
-                            <li>Acompanhe pagamentos e recebimentos</li>
-                            <li>Veja estatísticas do dia e da semana</li>
-                          </ul>
+                          <p class="mb-2">Seja bem-vindo(a), ${me.username || ''}! Obrigado por escolher o nosso serviço.</p>
+                          <p>Estamos felizes em ter você conosco e prontos para apoiar sua jornada de cuidado e bem-estar. Conte com a gente sempre que precisar.</p>
                         </div>
                         <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Explorar depois</button>
-                          <button type="button" class="btn btn-primary" id="welcomeStartBtn">
-                            <i class="bi bi-play-circle me-1"></i>Começar agora
-                          </button>
+                          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fechar</button>
                         </div>
                       </div>
                     </div>
@@ -119,14 +111,7 @@ window.Dashboard = {
                 };
 
                 modalEl.addEventListener('hidden.bs.modal', ack, { once: true });
-                const startBtn = document.getElementById('welcomeStartBtn');
-                if (startBtn) {
-                    startBtn.addEventListener('click', async () => {
-                        console.log('[DEBUG] Botão "Começar agora" clicado.');
-                        await ack();
-                        try { modal.hide(); } catch (_) {}
-                    });
-                }
+                // Removido botão "Começar agora"; manter apenas o fechamento
             } else if (justLoggedIn) {
                 // Se acabou de logar mas first_login já é false, limpar flag
                 console.log('[DEBUG] first_login=false. Limpando flag justLoggedIn (se existir).');
