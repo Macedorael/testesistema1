@@ -28,6 +28,11 @@ def resolve_base_url() -> str:
     if base:
         return base.rstrip('/')
 
+    # 1b) Preferir DEFAULT_BASE_URL se fornecida (independente do modo)
+    default_env = os.getenv('DEFAULT_BASE_URL')
+    if default_env:
+        return default_env.rstrip('/')
+
     # 2) Fallbacks comuns de plataformas
     for env_name in (
         'RENDER_EXTERNAL_URL', 'RAILWAY_PUBLIC_DOMAIN', 'VERCEL_URL',
@@ -58,7 +63,11 @@ def resolve_base_url() -> str:
         pass
 
     # 4) Se estivermos em produção, usar um default seguro
-    is_production = (os.getenv('FLASK_ENV') == 'production') or bool(os.getenv('DATABASE_URL'))
+    is_production = (
+        (os.getenv('FLASK_ENV') == 'production') or
+        bool(os.getenv('DATABASE_URL')) or
+        bool(os.getenv('SQLALCHEMY_DATABASE_URI'))
+    )
     if is_production:
         # Permite override por DEFAULT_BASE_URL, senão usa domínio padrão do projeto
         default_prod = os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br')
