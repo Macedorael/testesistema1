@@ -61,7 +61,7 @@ def resolve_base_url() -> str:
     is_production = (os.getenv('FLASK_ENV') == 'production') or bool(os.getenv('DATABASE_URL'))
     if is_production:
         # Permite override por DEFAULT_BASE_URL, senão usa domínio padrão do projeto
-        default_prod = os.getenv('DEFAULT_BASE_URL', 'https://consultorio-psicologia.onrender.com')
+        default_prod = os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br')
         return default_prod.rstrip('/')
 
     # 5) Último fallback: localhost conforme configuração
@@ -97,6 +97,10 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
 
         # URL base para construir o link de verificação (robusto em produção)
         base_url = resolve_base_url()
+        try:
+            print(f"[DEBUG] Base URL para verificação (resolvida): {base_url}")
+        except Exception:
+            pass
         verify_link = f"{base_url}/api/verify-email?token={token}"
 
         if not sender_email or not sender_password:
