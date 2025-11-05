@@ -6,6 +6,7 @@ from src.models.paciente import Patient
 from src.models.funcionario import Funcionario
 from src.models.especialidade import Especialidade
 from src.models.password_reset import PasswordResetToken
+from src.models.email_verification import EmailVerificationToken
 from src.models.base import db
 from src.utils.auth import login_required
 from datetime import datetime, timedelta
@@ -598,6 +599,7 @@ def delete_user(user_id):
         subscription_history_count = SubscriptionHistory.query.filter_by(user_id=user_id).count()
         subscriptions_count = Subscription.query.filter_by(user_id=user_id).count()
         reset_tokens_count = PasswordResetToken.query.filter_by(user_id=user_id).count()
+        email_tokens_count = EmailVerificationToken.query.filter_by(user_id=user_id).count()
         
         # Limpeza ordenada de dependências
         # 1. Excluir pacientes (cascata remove agendamentos, pagamentos, diários)
@@ -618,6 +620,9 @@ def delete_user(user_id):
         # 6. Excluir tokens de reset de senha
         PasswordResetToken.query.filter_by(user_id=user_id).delete()
         
+        # 6b. Excluir tokens de verificação de email (evitar violação de FK em MySQL)
+        EmailVerificationToken.query.filter_by(user_id=user_id).delete()
+        
         # 7. Finalmente, excluir o usuário
         db.session.delete(user)
         
@@ -633,7 +638,8 @@ def delete_user(user_id):
                 'especialidades_removed': especialidades_count,
                 'subscription_history_removed': subscription_history_count,
                 'subscriptions_removed': subscriptions_count,
-                'reset_tokens_removed': reset_tokens_count
+                'reset_tokens_removed': reset_tokens_count,
+                'email_verification_tokens_removed': email_tokens_count
             }
         })
         

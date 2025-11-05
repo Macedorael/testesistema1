@@ -27,6 +27,7 @@ print("[DEBUG] Configuração de logging aplicada - logs detalhados habilitados"
 
 from flask import Flask, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Importações básicas primeiro
 try:
@@ -195,6 +196,10 @@ if os.getenv('FLASK_ENV') == 'production':
         'https://consultorio-psicologia.onrender.com'
     ]
     CORS(app, origins=allowed_origins, supports_credentials=True)
+    # Respeitar headers de proxy (Render, Railway, etc.) para gerar URLs corretas
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+    # Preferir HTTPS para construção de URLs
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
 else:
     # Desenvolvimento - CORS permissivo
     CORS(app, supports_credentials=True)

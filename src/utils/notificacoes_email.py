@@ -41,16 +41,30 @@ def resolve_base_url() -> str:
                 base = f"https://{val}"
             return base.rstrip('/')
 
-    # 3) Tentar contexto da requisição (se existir)
+    # 3) Tentar contexto da requisição (se existir) e headers de proxy
     try:
         from flask import request
-        url_root = getattr(request, 'url_root', None)
+        # Tentar respeitar X-Forwarded-* para obter domínio/https corretos
+        xf_proto = request.headers.get('X-Forwarded-Proto')
+        xf_host = request.headers.get('X-Forwarded-Host')
+        if xf_host:
+            scheme = xf_proto or 'https'
+            return f"{scheme}://{xf_host}".rstrip('/')
+        # Fallback para host_url/url_root
+        url_root = getattr(request, 'host_url', None) or getattr(request, 'url_root', None)
         if url_root:
             return url_root.rstrip('/')
     except Exception:
         pass
 
-    # 4) Último fallback: localhost conforme configuração
+    # 4) Se estivermos em produção, usar um default seguro
+    is_production = (os.getenv('FLASK_ENV') == 'production') or bool(os.getenv('DATABASE_URL'))
+    if is_production:
+        # Permite override por DEFAULT_BASE_URL, senão usa domínio padrão do projeto
+        default_prod = os.getenv('DEFAULT_BASE_URL', 'https://consultorio-psicologia.onrender.com')
+        return default_prod.rstrip('/')
+
+    # 5) Último fallback: localhost conforme configuração
     host = os.getenv('HOST', 'localhost')
     port = os.getenv('PORT', '5000')
     scheme = os.getenv('URL_SCHEME', 'http')
