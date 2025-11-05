@@ -18,6 +18,44 @@ def is_email_enabled():
     email_enabled = os.getenv('EMAIL_ENABLED', 'true').lower()
     return email_enabled in ['true', '1', 'yes', 'on']
 
+def resolve_base_url() -> str:
+    """Resolve a URL base pública para construir links em emails.
+    Prioriza variável de ambiente explícita e faz fallback para URLs comuns
+    de provedores ou para o contexto de requisição quando disponível.
+    """
+    # 1) Preferir BASE_URL explícita
+    base = os.getenv('BASE_URL')
+    if base:
+        return base.rstrip('/')
+
+    # 2) Fallbacks comuns de plataformas
+    for env_name in (
+        'RENDER_EXTERNAL_URL', 'RAILWAY_PUBLIC_DOMAIN', 'VERCEL_URL',
+        'DEPLOY_URL', 'APP_URL', 'PUBLIC_URL'
+    ):
+        val = os.getenv(env_name)
+        if val:
+            if val.startswith('http://') or val.startswith('https://'):
+                base = val
+            else:
+                base = f"https://{val}"
+            return base.rstrip('/')
+
+    # 3) Tentar contexto da requisição (se existir)
+    try:
+        from flask import request
+        url_root = getattr(request, 'url_root', None)
+        if url_root:
+            return url_root.rstrip('/')
+    except Exception:
+        pass
+
+    # 4) Último fallback: localhost conforme configuração
+    host = os.getenv('HOST', 'localhost')
+    port = os.getenv('PORT', '5000')
+    scheme = os.getenv('URL_SCHEME', 'http')
+    return f"{scheme}://{host}:{port}".rstrip('/')
+
 def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
     """
     Envia email de verificação de conta com link para confirmação.
@@ -43,8 +81,8 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
         sender_email = os.getenv('SMTP_EMAIL')
         sender_password = os.getenv('SMTP_PASSWORD')
 
-        # URL base para construir o link de verificação
-        base_url = os.getenv('BASE_URL', 'http://localhost:5000')
+        # URL base para construir o link de verificação (robusto em produção)
+        base_url = resolve_base_url()
         verify_link = f"{base_url}/api/verify-email?token={token}"
 
         if not sender_email or not sender_password:

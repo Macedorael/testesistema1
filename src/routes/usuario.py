@@ -762,7 +762,7 @@ def send_password_reset_email(email, username, token):
     """Função para enviar email de recuperação de senha"""
     
     # Verificar se emails estão habilitados
-    from src.utils.notificacoes_email import is_email_enabled
+    from src.utils.notificacoes_email import is_email_enabled, resolve_base_url
     if not is_email_enabled():
         print("[INFO] Envio de emails desabilitado. Email de recuperação não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
@@ -773,8 +773,8 @@ def send_password_reset_email(email, username, token):
         smtp_port = int(os.getenv('SMTP_PORT', 587))
         sender_email = os.getenv('SMTP_EMAIL')
         sender_password = os.getenv('SMTP_PASSWORD')
-        # URL base para construir o link de redefinição
-        base_url = os.getenv('BASE_URL', 'http://localhost:5000')
+        # URL base para construir o link de redefinição (robusto em produção)
+        base_url = resolve_base_url()
         # Link seguro: passa pelo endpoint que grava cookie HttpOnly e redireciona
         reset_link = f"{base_url}/api/password-reset/{token}"
         
