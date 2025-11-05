@@ -114,9 +114,18 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
         sender_password = os.getenv('SMTP_PASSWORD')
 
         # URL base para construir o link de verificação (robusto em produção)
-        base_url = resolve_base_url()
+        preferred = os.getenv('BASE_URL') or os.getenv('DEFAULT_BASE_URL')
+        if preferred:
+            base_url = preferred.rstrip('/')
+        else:
+            resolved = resolve_base_url()
+            # Evitar localhost/127.0.0.1 no link de e-mail
+            if ('localhost' in resolved) or ('127.0.0.1' in resolved):
+                base_url = os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br').rstrip('/')
+            else:
+                base_url = resolved.rstrip('/')
         try:
-            print(f"[DEBUG] Base URL para verificação (resolvida): {base_url}")
+            print(f"[DEBUG] Base URL para verificação (final): {base_url}")
         except Exception:
             pass
         verify_link = f"{base_url}/api/verify-email?token={token}"
