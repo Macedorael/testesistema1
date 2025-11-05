@@ -445,48 +445,90 @@ with app.app_context():
         from datetime import datetime, timedelta
         from sqlalchemy import text, inspect
         
-        # Verificar e adicionar coluna 'role' se não existir
-        try:
-            inspector = inspect(db.engine)
-            columns = inspector.get_columns('users')
-            column_names = [col['name'] for col in columns]
+        # Verificar e adicionar colunas em 'users'
+        inspector = inspect(db.engine)
+        columns = inspector.get_columns('users')
+        column_names = [col['name'] for col in columns]
+
+        # Adicionar coluna 'role' se não existir
+        if 'role' not in column_names:
+            print("[MIGRATION] Coluna 'role' não encontrada. Adicionando...")
             
-            if 'role' not in column_names:
-                print("[MIGRATION] Coluna 'role' não encontrada. Adicionando...")
-                
-                # Adicionar coluna 'role' com valor padrão 'user'
-                db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
-                
-                # Popular todos os usuários existentes com role 'user'
-                db.session.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
-                db.session.commit()
-                
-                print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
+            # Adicionar coluna 'role' com valor padrão 'user'
+            db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' NOT NULL"))
+            
+            # Popular todos os usuários existentes com role 'user'
+            db.session.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''"))
+            db.session.commit()
+            
+            print("✅ [MIGRATION] Coluna 'role' adicionada e usuários existentes populados com role 'user'")
+        else:
+            print("✅ [MIGRATION] Coluna 'role' já existe")
+        
+        # Verificar e adicionar coluna 'created_at' se não existir
+        if 'created_at' not in column_names:
+            print("[MIGRATION] Coluna 'created_at' não encontrada. Adicionando...")
+            
+            # Detectar tipo de banco de dados
+            # Detectar o dialect real do SQLAlchemy em vez de depender da env DATABASE_URL
+            try:
+                engine_name = db.engine.dialect.name
+            except Exception:
+                engine_name = ''
+
+            uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+            is_postgres = (
+                engine_name == 'postgresql' or
+                'postgresql' in uri or
+                uri.startswith('postgres://') or uri.startswith('postgresql://')
+            )
+            print(f"[MIGRATION] Dialect detectado: '{engine_name}' | is_postgres={is_postgres}")
+            
+            if is_postgres:
+                # PostgreSQL
+                db.session.execute(text("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
             else:
-                print("✅ [MIGRATION] Coluna 'role' já existe")
+                # SQLite
+                db.session.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
             
-            # Verificar e adicionar coluna 'created_at' se não existir
-            if 'created_at' not in column_names:
-                print("[MIGRATION] Coluna 'created_at' não encontrada. Adicionando...")
-                
-                # Detectar tipo de banco de dados
-                db_url = os.getenv('DATABASE_URL', '')
-                is_postgres = 'postgresql' in db_url or 'postgres' in db_url
-                
+            # Popular usuários existentes com data atual
+            db.session.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+            db.session.commit()
+            
+            print("✅ [MIGRATION] Coluna 'created_at' adicionada e usuários existentes populados")
+        else:
+            print("✅ [MIGRATION] Coluna 'created_at' já existe")
+
+        # Verificar e adicionar coluna 'email_verified' se não existir
+        if 'email_verified' not in column_names:
+            print("[MIGRATION] Coluna 'email_verified' não encontrada. Adicionando...")
+            # Detectar o dialect real do SQLAlchemy para aplicar SQL correto
+            try:
+                engine_name = db.engine.dialect.name
+            except Exception:
+                engine_name = ''
+            uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+            is_postgres = (
+                engine_name == 'postgresql' or
+                'postgresql' in uri or
+                uri.startswith('postgres://') or uri.startswith('postgresql://')
+            )
+            print(f"[MIGRATION] Dialect detectado: '{engine_name}' | is_postgres={is_postgres}")
+
+            try:
                 if is_postgres:
-                    # PostgreSQL
-                    db.session.execute(text("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                    db.session.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL"))
+                    db.session.execute(text("UPDATE users SET email_verified = FALSE WHERE email_verified IS NULL"))
                 else:
-                    # SQLite
-                    db.session.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
-                
-                # Popular usuários existentes com data atual
-                db.session.execute(text("UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+                    db.session.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0 NOT NULL"))
+                    db.session.execute(text("UPDATE users SET email_verified = 0 WHERE email_verified IS NULL"))
                 db.session.commit()
-                
-                print("✅ [MIGRATION] Coluna 'created_at' adicionada e usuários existentes populados")
-            else:
-                print("✅ [MIGRATION] Coluna 'created_at' já existe")
+                print("✅ [MIGRATION] Coluna 'email_verified' adicionada e populada")
+            except Exception as email_verified_error:
+                print(f"[WARNING] Erro ao adicionar 'email_verified': {email_verified_error}")
+                db.session.rollback()
+        else:
+            print("✅ [MIGRATION] Coluna 'email_verified' já existe")
                 
             # NOVO: Migrar coluna 'emocao_intensidades' na tabela 'diary_entries'
             try:
@@ -554,100 +596,231 @@ with app.app_context():
                 print(f"[WARNING] Erro ao migrar coluna 'diario_tcc_ativo' em 'patients': {patients_flag_migration_error}")
                 db.session.rollback()
             
-            # População automática de roles para usuários existentes
-            print("[STARTUP] Verificando e populando roles de usuários...")
-            
-            # Contar usuários sem role ou com role vazio
-            users_without_role = db.session.execute(
-                text("SELECT COUNT(*) FROM users WHERE role IS NULL OR role = ''")
-            ).scalar()
-            
-            if users_without_role > 0:
-                print(f"[STARTUP] Encontrados {users_without_role} usuário(s) sem role definido")
-                
-                # Popular usuários sem role com 'user'
-                result = db.session.execute(
-                    text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''")
+            # NOVO: Remover unicidade de 'username' na tabela 'users' (permitir nomes iguais)
+            try:
+                print("[MIGRATION] Verificando unicidade de 'username' em 'users'...")
+                engine_name = ''
+                try:
+                    engine_name = db.engine.dialect.name
+                except Exception:
+                    pass
+                uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+                is_postgres = (
+                    engine_name == 'postgresql' or
+                    'postgresql' in uri or
+                    uri.startswith('postgres://') or uri.startswith('postgresql://')
                 )
-                db.session.commit()
-                
-                print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com role 'user'")
-            else:
-                print("✅ [STARTUP] Todos os usuários já possuem roles definidos")
-                
-            # Garantir que existe pelo menos um admin
-            admin_count = db.session.execute(
-                text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
-            ).scalar()
+
+                if is_postgres:
+                    try:
+                        # Dropar constraints únicas
+                        res = db.session.execute(text("SELECT conname FROM pg_constraint WHERE conrelid = 'users'::regclass AND contype='u'")).fetchall()
+                        constraints = [row[0] for row in res]
+                        dropped_any = False
+                        for cname in constraints:
+                            try:
+                                db.session.execute(text(f"ALTER TABLE users DROP CONSTRAINT IF EXISTS {cname}"))
+                                dropped_any = True
+                            except Exception:
+                                pass
+                        # Dropar possíveis índices padrão
+                        for idx in ('ix_users_username', 'uq_users_username', 'users_username_key'):
+                            try:
+                                db.session.execute(text(f"DROP INDEX IF EXISTS {idx}"))
+                                dropped_any = True
+                            except Exception:
+                                pass
+                        if dropped_any:
+                            db.session.commit()
+                            print("✅ [MIGRATION] Unicidade de 'username' removida em PostgreSQL (constraints/índices)")
+                        else:
+                            print("✅ [MIGRATION] Nenhuma constraint/índice único encontrado para 'username' em PostgreSQL")
+                    except Exception as e_drop_pg:
+                        print(f"[WARNING] Falha ao remover unicidade de username em PostgreSQL: {e_drop_pg}")
+                        db.session.rollback()
+                else:
+                    # SQLite: identificar índices únicos envolvendo 'username' e removê-los
+                    try:
+                        res = db.session.execute(text("PRAGMA index_list('users')")).fetchall()
+                        unique_indexes = []
+                        for row in res:
+                            idx_name = row[1]
+                            is_unique = bool(row[2])
+                            if is_unique and idx_name:
+                                cols = db.session.execute(text(f"PRAGMA index_info('{idx_name}')")).fetchall()
+                                col_names = [c[2] for c in cols]
+                                if 'username' in col_names:
+                                    unique_indexes.append(idx_name)
+                        for idx_name in unique_indexes:
+                            try:
+                                db.session.execute(text(f"DROP INDEX IF EXISTS {idx_name}"))
+                            except Exception:
+                                pass
+                        if unique_indexes:
+                            db.session.commit()
+                            print(f"✅ [MIGRATION] Índices únicos removidos em SQLite: {unique_indexes}")
+                        else:
+                            print("✅ [MIGRATION] Nenhum índice único de 'username' encontrado em SQLite")
+                    except Exception as e_drop_sqlite:
+                        print(f"[WARNING] Falha ao remover unicidade de username em SQLite: {e_drop_sqlite}")
+                        db.session.rollback()
+
+                    # Fallback robusto para SQLite: se a DDL ainda contiver UNIQUE em 'username',
+                    # recriar a tabela 'users' sem unicidade e preservar os dados.
+                    try:
+                        tbl_sql_row = db.session.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")).fetchone()
+                        table_sql = tbl_sql_row[0] if tbl_sql_row and tbl_sql_row[0] else ''
+                        has_unique_username = ('UNIQUE' in (table_sql or '').upper()) and ('username' in (table_sql or '').lower())
+                        if has_unique_username:
+                            print("[MIGRATION] UNIQUE em 'username' detectado na DDL. Recriando tabela 'users'...")
+                            # Desativar FKs temporariamente
+                            db.session.execute(text("PRAGMA foreign_keys=OFF"))
+                            # Criar nova tabela sem UNIQUE em username (mantendo UNIQUE em email)
+                            db.session.execute(text(
+                                """
+                                CREATE TABLE IF NOT EXISTS users_new (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    username VARCHAR(80) NOT NULL,
+                                    email VARCHAR(120) NOT NULL UNIQUE,
+                                    password_hash VARCHAR(256),
+                                    role VARCHAR(20) NOT NULL DEFAULT 'user',
+                                    telefone VARCHAR(20) NOT NULL,
+                                    data_nascimento DATE NOT NULL,
+                                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                    email_verified BOOLEAN NOT NULL DEFAULT 0,
+                                    first_login BOOLEAN DEFAULT 1
+                                )
+                                """
+                            ))
+                            # Copiar dados existentes
+                            db.session.execute(text(
+                                """
+                                INSERT INTO users_new (id, username, email, password_hash, role, telefone, data_nascimento, created_at, email_verified, first_login)
+                                SELECT id, username, email, password_hash,
+                                       COALESCE(role, 'user'),
+                                       COALESCE(telefone, ''),
+                                       COALESCE(data_nascimento, '1990-01-01'),
+                                       COALESCE(created_at, CURRENT_TIMESTAMP),
+                                       COALESCE(email_verified, 0),
+                                       COALESCE(first_login, 1)
+                                FROM users
+                                """
+                            ))
+                            # Substituir tabela antiga
+                            db.session.execute(text("DROP TABLE users"))
+                            db.session.execute(text("ALTER TABLE users_new RENAME TO users"))
+                            # Reativar FKs
+                            db.session.execute(text("PRAGMA foreign_keys=ON"))
+                            db.session.commit()
+                            print("✅ [MIGRATION] Tabela 'users' recriada sem UNIQUE em 'username'")
+                        else:
+                            print("✅ [MIGRATION] DDL de 'users' não contém UNIQUE em 'username'")
+                    except Exception as sqlite_rebuild_error:
+                        print(f"[WARNING] Falha ao recriar tabela 'users' em SQLite: {sqlite_rebuild_error}")
+                        db.session.rollback()
+            except Exception as e_unq:
+                print(f"[WARNING] Erro geral ao verificar/remover unicidade de username: {e_unq}")
+                db.session.rollback()
             
-            if admin_count == 0:
-                print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário a admin...")
-                # Promover o primeiro usuário a admin se não houver nenhum
-                
-            # População automática de campos obrigatórios para usuários existentes
-            print("[STARTUP] Verificando e populando campos obrigatórios...")
-            
-            # Verificar usuários sem telefone
-            users_without_phone = db.session.execute(
-                text("SELECT COUNT(*) FROM users WHERE telefone IS NULL OR telefone = ''")
-            ).scalar()
-            
-            if users_without_phone > 0:
-                print(f"[STARTUP] Encontrados {users_without_phone} usuário(s) sem telefone")
-                
-                # Popular usuários sem telefone com valor padrão
-                result = db.session.execute(
-                    text("UPDATE users SET telefone = '(00) 00000-0000' WHERE telefone IS NULL OR telefone = ''")
-                )
-                db.session.commit()
-                
-                print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com telefone padrão")
-            else:
-                print("✅ [STARTUP] Todos os usuários já possuem telefone definido")
-            
-            # Verificar usuários sem data de nascimento
-            users_without_birthdate = db.session.execute(
-                text("SELECT COUNT(*) FROM users WHERE data_nascimento IS NULL")
-            ).scalar()
-            
-            if users_without_birthdate > 0:
-                print(f"[STARTUP] Encontrados {users_without_birthdate} usuário(s) sem data de nascimento")
-                
-                # Popular usuários sem data de nascimento com valor padrão
-                result = db.session.execute(
-                    text("UPDATE users SET data_nascimento = '1990-01-01' WHERE data_nascimento IS NULL")
-                )
-                db.session.commit()
-                
-                print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com data de nascimento padrão")
-            else:
-                print("✅ [STARTUP] Todos os usuários já possuem data de nascimento definida")
-            
-            # Verificar se há pelo menos um administrador
-            admin_count = db.session.execute(
-                text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
-            ).scalar()
-            
-            if admin_count == 0:
-                print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário...")
-                # Promover o primeiro usuário a admin se não houver nenhum
-                first_user = db.session.execute(
-                    text("SELECT id FROM users ORDER BY id LIMIT 1")
-                ).first()
-                
-                if first_user:
-                    db.session.execute(
-                        text("UPDATE users SET role = 'admin' WHERE id = :user_id"),
-                        {"user_id": first_user[0]}
+            try:
+                # População automática de roles para usuários existentes
+                print("[STARTUP] Verificando e populando roles de usuários...")
+
+                # Contar usuários sem role ou com role vazio
+                users_without_role = db.session.execute(
+                    text("SELECT COUNT(*) FROM users WHERE role IS NULL OR role = ''")
+                ).scalar()
+
+                if users_without_role > 0:
+                    print(f"[STARTUP] Encontrados {users_without_role} usuário(s) sem role definido")
+
+                    # Popular usuários sem role com 'user'
+                    result = db.session.execute(
+                        text("UPDATE users SET role = 'user' WHERE role IS NULL OR role = ''")
                     )
                     db.session.commit()
-                    print(f"✅ [STARTUP] Usuário ID {first_user[0]} promovido a administrador")
-            else:
-                print(f"✅ [STARTUP] {admin_count} administrador(es) encontrado(s)")
-                
-        except Exception as migration_error:
-            print(f"[WARNING] Erro na migração/população de roles: {migration_error}")
-            db.session.rollback()
+
+                    print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com role 'user'")
+                else:
+                    print("✅ [STARTUP] Todos os usuários já possuem roles definidos")
+
+                # Garantir que existe pelo menos um admin
+                admin_count = db.session.execute(
+                    text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+                ).scalar()
+
+                if admin_count == 0:
+                    print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário a admin...")
+                    # Promover o primeiro usuário a admin se não houver nenhum
+
+                # População automática de campos obrigatórios para usuários existentes
+                print("[STARTUP] Verificando e populando campos obrigatórios...")
+
+                # Verificar usuários sem telefone
+                users_without_phone = db.session.execute(
+                    text("SELECT COUNT(*) FROM users WHERE telefone IS NULL OR telefone = ''")
+                ).scalar()
+
+                if users_without_phone > 0:
+                    print(f"[STARTUP] Encontrados {users_without_phone} usuário(s) sem telefone")
+
+                    # Popular usuários sem telefone com valor padrão
+                    result = db.session.execute(
+                        text("UPDATE users SET telefone = '(00) 00000-0000' WHERE telefone IS NULL OR telefone = ''")
+                    )
+                    db.session.commit()
+
+                    print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com telefone padrão")
+                else:
+                    print("✅ [STARTUP] Todos os usuários já possuem telefone definido")
+
+                # Verificar usuários sem data de nascimento
+                users_without_birthdate = db.session.execute(
+                    text("SELECT COUNT(*) FROM users WHERE data_nascimento IS NULL")
+                ).scalar()
+
+                if users_without_birthdate > 0:
+                    print(f"[STARTUP] Encontrados {users_without_birthdate} usuário(s) sem data de nascimento")
+
+                    # Popular usuários sem data de nascimento com valor padrão
+                    result = db.session.execute(
+                        text("UPDATE users SET data_nascimento = '1990-01-01' WHERE data_nascimento IS NULL")
+                    )
+                    db.session.commit()
+
+                    print(f"✅ [STARTUP] {result.rowcount} usuário(s) populado(s) com data de nascimento padrão")
+                else:
+                    print("✅ [STARTUP] Todos os usuários já possuem data de nascimento definida")
+
+                # Verificar se há pelo menos um administrador
+                admin_count = db.session.execute(
+                    text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+                ).scalar()
+
+                if admin_count == 0:
+                    print("[STARTUP] Nenhum administrador encontrado. Promovendo primeiro usuário...")
+                    # Promover o primeiro usuário a admin se não houver nenhum
+                    first_user = db.session.execute(
+                        text("SELECT id FROM users ORDER BY id LIMIT 1")
+                    ).first()
+
+                    if first_user:
+                        db.session.execute(
+                            text("UPDATE users SET role = 'admin' WHERE id = :user_id"),
+                            {"user_id": first_user[0]}
+                        )
+                        db.session.commit()
+                        print(f"✅ [STARTUP] Usuário ID {first_user[0]} promovido a administrador")
+                else:
+                    print(f"✅ [STARTUP] {admin_count} administrador(es) encontrado(s)")
+
+            except Exception as startup_population_error:
+                print(f"[WARNING] Erro na população inicial de roles/campos: {startup_population_error}")
+                db.session.rollback()
+
+            except Exception as migration_error:
+                print(f"[WARNING] Erro na migração/população de roles: {migration_error}")
+                db.session.rollback()
         
         print("[STARTUP] Verificando usuário administrador...")
         

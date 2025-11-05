@@ -274,6 +274,41 @@ small {
     min-height: 20px;
 }
 
+/* Requisitos de senha - resetar senha */
+.requirements {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #718096; /* cinza neutro */
+}
+.requirements .requirement {
+  display: block; /* empilhar verticalmente */
+  margin: 4px 0;
+}
+.requirements .requirement.valid {
+  color: #2f855a; /* verde aprovado */
+}
+.requirements .requirement.invalid {
+  color: #e53e3e; /* vermelho reprovado */
+}
+
+/* Estados visuais do input de senha */
+.input-valid {
+  border-color: #38a169 !important;
+  box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.2) !important;
+}
+.input-invalid {
+  border-color: #e53e3e !important;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+}
+
+/* Exemplos de senha visíveis */
+.password-examples {
+  display: block;
+  margin-top: 6px;
+  color: #718096;
+  font-size: 12px;
+}
+
 .error-message.show {
     display: block !important;
     opacity: 1 !important;

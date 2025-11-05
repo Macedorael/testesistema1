@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificação de Email - Link Inválido</title>
+    <link rel="stylesheet" href="css/entrar.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2024">
+    <link rel="icon" href="favicon.ico?v=2024" type="image/x-icon">
+    <style>
+        .welcome-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .welcome-box { background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 32px; max-width: 520px; width: 100%; text-align: center; }
+        /* Elevar acima do overlay do body definido em css/entrar.css */
+        .welcome-container { position: relative; z-index: 2; }
+        .welcome-box { position: relative; z-index: 3; }
+        /* Evitar bloqueio de cliques por overlay global */
+        body::before { pointer-events: none; }
+        .welcome-icon { font-size: 48px; color: #ef4444; margin-bottom: 12px; }
+        .welcome-title { font-size: 22px; font-weight: 700; margin: 8px 0; color: #111827; }
+        .welcome-subtitle { color: #6b7280; margin-bottom: 20px; }
+        .actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer; text-decoration: none; }
+        .btn-secondary { background: transparent; color: #667eea; border: 2px solid #667eea; border-radius: 10px; padding: 10px 16px; text-decoration: none; }
+        .resend-box { margin-top: 16px; padding: 14px 16px; border-radius: 10px; border: 1px solid #fbd38d; background: #FEEBC8; color: #7B341E; text-align: left; }
+        .resend-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .resend-input { flex: 1; padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; }
+        .resend-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+        .resend-feedback { margin-top: 10px; font-weight: 500; display: none; }
+    </style>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="welcome-box">
+            <div class="welcome-icon">⚠️</div>
+            <h1 class="welcome-title">Link de verificação inválido ou expirado</h1>
+            <p class="welcome-subtitle">O link que você tentou acessar não é válido. Se precisar, solicite um novo email de verificação.</p>
+            <div class="actions">
+                <a id="goSessionsInvalid" href="/paciente-agendamentos.html" class="btn-primary">Ir para Sessões</a>
+                <a id="goHomeInvalid" href="/inicial.html" class="btn-secondary">Voltar ao Início</a>
+            </div>
+            <div class="resend-box">
+                <div>Reenviar email de verificação</div>
+                <div class="resend-actions">
+                    <input id="resendEmail" type="email" class="resend-input" placeholder="seu@email.com" />
+                    <button id="resendBtn" class="resend-btn" type="button">Reenviar</button>
+                </div>
+                <div id="resendFeedback" class="resend-feedback"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function(){
+            // Reforçar navegação dos botões
+            function safeNavigate(url){
+                try { window.location.href = url; } catch(_) { window.location.assign(url); }
+            }
+            var s = document.getElementById('goSessionsInvalid');
+            var h = document.getElementById('goHomeInvalid');
+            if (s) { s.addEventListener('click', function(e){ e.preventDefault(); safeNavigate('/paciente-agendamentos.html'); }); }
+            if (h) { h.addEventListener('click', function(e){ e.preventDefault(); safeNavigate('/inicial.html'); }); }
+
+            const emailInput = document.getElementById('resendEmail');
+            const btn = document.getElementById('resendBtn');
+            const fb = document.getElementById('resendFeedback');
+            btn.addEventListener('click', async function(){
+                const email = (emailInput.value || '').trim();
+                if (!email) {
+                    fb.style.display = 'block';
+                    fb.style.color = '#7B341E';
+                    fb.textContent = 'Informe seu email para reenviar.';
+                    return;
+                }
+                const original = btn.textContent;
+                btn.textContent = 'Enviando...';
+                btn.disabled = true;
+                fb.style.display = 'none';
+                try {
+                    const resp = await fetch('/api/resend-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email }),
+                        credentials: 'same-origin'
+                    });
+                    const payload = await resp.json();
+                    fb.style.display = 'block';
+                    if (resp.ok && payload && payload.success) {
+                        fb.style.color = '#22543d';
+                        fb.textContent = 'Email reenviado com sucesso. Verifique sua caixa de entrada!';
+                    } else {
+                        fb.style.color = '#7B341E';
+                        fb.textContent = (payload && payload.error) ? payload.error : 'Falha ao reenviar email.';
+                    }
+                } catch (e) {
+                    fb.style.display = 'block';
+                    fb.style.color = '#7B341E';
+                    fb.textContent = 'Erro de conexão. Tente novamente.';
+                } finally {
+                    btn.textContent = original;
+                    btn.disabled = false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

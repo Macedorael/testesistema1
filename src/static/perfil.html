@@ -28,9 +28,9 @@
                                     <div class="col-md-6">
                                         <div class="perfil-form-group">
                                             <label for="username" class="form-label">
-                                                <i class="bi bi-person"></i>Nome de Usuário
+                                                <i class="bi bi-person"></i>Nome Completo
                                             </label>
-                                            <input type="text" class="form-control perfil-input" id="username" name="username" required placeholder="seu_usuario">
+                                            <input type="text" class="form-control perfil-input" id="username" name="username" required placeholder="Seu nome completo">
                                         </div>
                                     </div>
 
@@ -105,11 +105,18 @@
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="new_password" class="form-label text-white">Nova Senha</label>
-                                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6" placeholder="••••••" autocomplete="new-password">
+                                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" placeholder="Digite a nova senha" autocomplete="new-password" aria-describedby="perfilPasswordRequirements" pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$" title="Mínimo 8 caracteres, 1 letra maiúscula e 1 caractere especial">
+                                        <small id="perfilPasswordRequirements" class="form-text">Mínimo de 8 caracteres, 1 letra maiúscula e 1 caractere especial</small>
+                                        <div id="passwordCriteriaPerfil" class="requirements" aria-live="polite">
+                                            <span class="requirement" data-req="length">• Mínimo 8 caracteres</span>
+                                            <span class="requirement" data-req="uppercase">• 1 letra maiúscula</span>
+                                            <span class="requirement" data-req="special">• 1 caractere especial</span>
+                                        </div>
+                                        <small id="perfilPasswordExamples" class="password-examples form-text">Exemplos: Exemplo!123, Clinica@2024</small>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="confirm_password" class="form-label text-white">Confirmar Nova Senha</label>
-                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6" placeholder="••••••" autocomplete="new-password">
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Digite a nova senha" autocomplete="new-password">
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end gap-3 flex-wrap">

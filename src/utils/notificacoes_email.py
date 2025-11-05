@@ -18,6 +18,76 @@ def is_email_enabled():
     email_enabled = os.getenv('EMAIL_ENABLED', 'true').lower()
     return email_enabled in ['true', '1', 'yes', 'on']
 
+def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
+    """
+    Envia email de verificação de conta com link para confirmação.
+
+    Args:
+        email (str): Email do destinatário
+        username (str): Nome de usuário
+        token (str): Token de verificação
+
+    Returns:
+        bool: True se o email foi enviado com sucesso, False caso contrário
+    """
+
+    # Verificar se envio está habilitado
+    if not is_email_enabled():
+        print("[INFO] Envio de emails desabilitado. Email de verificação não será enviado.")
+        return True
+
+    try:
+        # Configurações SMTP
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+        sender_email = os.getenv('SMTP_EMAIL')
+        sender_password = os.getenv('SMTP_PASSWORD')
+
+        # URL base para construir o link de verificação
+        base_url = os.getenv('BASE_URL', 'http://localhost:5000')
+        verify_link = f"{base_url}/api/verify-email?token={token}"
+
+        if not sender_email or not sender_password:
+            print("[ERROR] Configurações de email não encontradas no .env")
+            return False
+
+        # Criar mensagem
+        msg = MIMEMultipart('alternative')
+        msg['From'] = sender_email
+        msg['To'] = email
+        msg['Subject'] = "Verifique seu email - Sistema Consultório"
+
+        html_body = f"""
+        <html>
+        <body>
+            <h2>Confirmação de Email</h2>
+            <p>Olá {username},</p>
+            <p>Obrigado por se cadastrar. Para concluir o processo, confirme seu email clicando no botão abaixo:</p>
+            <p>
+                <a href="{verify_link}" target="_blank" rel="noopener noreferrer" 
+                   style="background-color: #4CAF50; color: white; padding: 10px 16px; text-decoration: none; border-radius: 4px;">
+                    Confirmar meu email
+                </a>
+            </p>
+            <p>Se você não solicitou este cadastro, ignore esta mensagem.</p>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html_body, 'html'))
+
+        # Enviar email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, email, msg.as_string())
+
+        print(f"[DEBUG] Email de verificação enviado para {email}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Erro ao enviar email de verificação: {e}")
+        return False
+
 def gerar_link_google_calendar(titulo, data_inicio, data_fim=None, descricao="", local=""):
     """Gera um link para adicionar evento ao Google Calendar"""
     from datetime import timedelta

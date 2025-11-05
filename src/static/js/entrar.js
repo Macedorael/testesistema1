@@ -199,6 +199,117 @@ document.addEventListener('DOMContentLoaded', async function() {
     const loginForm = document.getElementById('loginForm');
     const errorMessage = document.getElementById('errorMessage');
 
+    // Helper: exibe aviso de verificação pendente + botão de reenvio
+    function showVerificationPrompt(email) {
+        try {
+            const container = document.querySelector('.login-container');
+            if (!container) return;
+            // Remover bloco anterior se existir
+            const existing = document.getElementById('verificationPrompt');
+            if (existing) existing.remove();
+
+            const box = document.createElement('div');
+            box.id = 'verificationPrompt';
+            box.style.marginTop = '16px';
+            box.style.padding = '14px 16px';
+            box.style.borderRadius = '10px';
+            box.style.border = '1px solid #fbd38d';
+            box.style.background = '#FEEBC8';
+            box.style.color = '#7B341E';
+            box.style.fontWeight = '600';
+            box.style.textAlign = 'left';
+            box.style.boxShadow = '0 4px 10px rgba(0,0,0,0.06)';
+
+            const title = document.createElement('div');
+            title.textContent = 'Seu email ainda não foi verificado.';
+            title.style.marginBottom = '8px';
+
+            const desc = document.createElement('div');
+            desc.textContent = 'Confirme sua caixa de entrada ou reenvie o email de verificação.';
+            desc.style.fontWeight = '500';
+            desc.style.marginBottom = '12px';
+
+            const actions = document.createElement('div');
+            actions.style.display = 'flex';
+            actions.style.gap = '10px';
+            actions.style.alignItems = 'center';
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'email';
+            emailInput.placeholder = 'seu@email.com';
+            emailInput.value = (email || '').trim();
+            emailInput.style.flex = '1';
+            emailInput.style.padding = '10px 12px';
+            emailInput.style.border = '1px solid #E2E8F0';
+            emailInput.style.borderRadius = '8px';
+
+            const resendBtn = document.createElement('button');
+            resendBtn.type = 'button';
+            resendBtn.textContent = 'Reenviar verificação';
+            resendBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            resendBtn.style.color = '#fff';
+            resendBtn.style.border = 'none';
+            resendBtn.style.borderRadius = '8px';
+            resendBtn.style.padding = '10px 14px';
+            resendBtn.style.cursor = 'pointer';
+
+            const feedback = document.createElement('div');
+            feedback.id = 'verificationPromptFeedback';
+            feedback.style.marginTop = '10px';
+            feedback.style.fontWeight = '500';
+            feedback.style.display = 'none';
+
+            actions.appendChild(emailInput);
+            actions.appendChild(resendBtn);
+
+            box.appendChild(title);
+            box.appendChild(desc);
+            box.appendChild(actions);
+            box.appendChild(feedback);
+            container.appendChild(box);
+
+            resendBtn.addEventListener('click', async function() {
+                const targetEmail = (emailInput.value || '').trim();
+                if (!targetEmail) {
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#7B341E';
+                    feedback.textContent = 'Informe seu email para reenviar.';
+                    return;
+                }
+                resendBtn.disabled = true;
+                const original = resendBtn.textContent;
+                resendBtn.textContent = 'Enviando...';
+                feedback.style.display = 'none';
+                try {
+                    const resp = await fetch('/api/resend-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: targetEmail }),
+                        credentials: 'same-origin'
+                    });
+                    const payload = await resp.json();
+                    feedback.style.display = 'block';
+                    if (resp.ok && payload && payload.success) {
+                        feedback.style.color = '#22543d';
+                        feedback.textContent = 'Email reenviado com sucesso. Verifique sua caixa de entrada!';
+                    } else {
+                        feedback.style.color = '#7B341E';
+                        feedback.textContent = (payload && payload.error) ? payload.error : 'Falha ao reenviar email.';
+                    }
+                } catch (err) {
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#7B341E';
+                    feedback.textContent = 'Erro de conexão. Tente novamente.';
+                } finally {
+                    resendBtn.textContent = original;
+                    resendBtn.disabled = false;
+                }
+            });
+        } catch (e) {
+            console.warn('Falha ao exibir prompt de verificação:', e);
+        }
+    }
+
     // Formulário de login
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -342,6 +453,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     errorMessage.classList.remove('show');
                 }, 5000);
                 
+                // Caso seja bloqueio por email não verificado, mostrar prompt de reenvio
+                if (data && data.need_verification) {
+                    showVerificationPrompt(email);
+                }
+
                 // Limpar os campos se for erro de senha
                 if (data.error && data.error.includes('Senha incorreta')) {
                     document.getElementById('password').value = '';

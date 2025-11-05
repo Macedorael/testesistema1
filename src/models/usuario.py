@@ -6,13 +6,14 @@ class User(db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    username = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     role = db.Column(db.String(20), default='user', nullable=False)  # 'user', 'admin' ou 'patient'
     telefone = db.Column(db.String(20), nullable=False)  # Campo para telefone (obrigatório)
     data_nascimento = db.Column(db.Date, nullable=False)  # Campo para data de nascimento (obrigatório)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
     first_login = db.Column(db.Boolean, default=True)  # Indica se é o primeiro login do usuário
     
     # Relacionamento com Subscription (um usuário pode ter uma assinatura)

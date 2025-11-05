@@ -23,13 +23,19 @@
                 
                 <div class="input-group">
                     <label for="password">Nova Senha:</label>
-                    <input type="password" id="password" name="password" required minlength="6" placeholder="••••••" autocomplete="new-password">
-                    <small>Mínimo de 6 caracteres</small>
+                    <input type="password" id="password" name="password" required minlength="8" placeholder="Digite a nova senha" autocomplete="new-password" pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$" title="Mínimo 8 caracteres, 1 letra maiúscula e 1 caractere especial" aria-describedby="resetPasswordRequirements">
+                    <small id="resetPasswordRequirements">Mínimo de 8 caracteres, 1 letra maiúscula e 1 caractere especial</small>
+                    <div id="passwordCriteriaReset" class="requirements" aria-live="polite">
+                        <span class="requirement" data-req="length">• Mínimo 8 caracteres</span>
+                        <span class="requirement" data-req="uppercase">• 1 letra maiúscula</span>
+                        <span class="requirement" data-req="special">• 1 caractere especial</span>
+                    </div>
+                    <small class="password-examples">Exemplos: Exemplo!123, Clinica@2024</small>
                 </div>
                 
                 <div class="input-group">
                     <label for="confirmPassword">Confirmar Nova Senha:</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6" placeholder="••••••" autocomplete="new-password">
+                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" placeholder="Digite a nova senha" autocomplete="new-password">
                 </div>
                 
                 <button type="submit" id="submitBtn" class="login-btn">

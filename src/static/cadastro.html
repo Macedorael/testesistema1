@@ -32,8 +32,8 @@
             <form id="registerForm" class="register-form" method="post" action="#" autocomplete="off" novalidate>
                 <div class="form-row">
                     <div class="input-group">
-                        <label for="username">Nome de Usuário</label>
-                        <input type="text" id="username" name="username" required>
+                        <label for="username">Nome Completo</label>
+                        <input type="text" id="username" name="username" required placeholder="Seu nome completo">
                         <span class="input-focus"></span>
                     </div>
                 </div>
@@ -41,8 +41,18 @@
                 <div class="form-row">
                     <div class="input-group">
                         <label for="email">E-mail</label>
-                        <input type="email" id="email" name="email" required>
+                        <input type="email" id="email" name="email" required placeholder="seu@email.com">
                         <span class="input-focus"></span>
+                        <small id="emailFeedback" class="input-feedback" style="display:none;"></small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="confirmEmail">Confirmar E-mail</label>
+                        <input type="email" id="confirmEmail" name="confirmEmail" required autocomplete="email" placeholder="Confirme seu e-mail">
+                        <span class="input-focus"></span>
+                        <small id="confirmEmailFeedback" class="input-feedback" style="display:none;"></small>
                     </div>
                 </div>
 
@@ -51,32 +61,35 @@
                         <label for="telefone">Telefone</label>
                         <input type="tel" id="telefone" name="telefone" placeholder="(21) 99999-9999" required>
                         <span class="input-focus"></span>
-                        <small class="password-hint">Formato: (21) 99999-9999</small>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="input-group">
                         <label for="data_nascimento">Data de Nascimento</label>
-                        <input type="date" id="data_nascimento" name="data_nascimento" required>
+                        <input type="text" id="data_nascimento" name="data_nascimento" required placeholder="dd/mm/aaaa">
                         <span class="input-focus"></span>
-                        <small class="password-hint">Ex: 15/03/1990</small>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="input-group">
                         <label for="password">Senha</label>
-                        <input type="password" id="password" name="password" required autocomplete="new-password">
+                        <input type="password" id="password" name="password" required autocomplete="new-password" pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$" title="Mínimo 8 caracteres, 1 letra maiúscula e 1 caractere especial" placeholder="Mínimo 8 caracteres, 1 maiúscula e 1 especial" aria-describedby="passwordRequirements">
                         <span class="input-focus"></span>
-                        <small class="password-hint">Mínimo de 6 caracteres</small>
+                        <div id="passwordCriteria" class="requirements" aria-live="polite">
+                            <span class="requirement" data-req="length">• Mínimo 8 caracteres</span>
+                            <span class="requirement" data-req="uppercase">• 1 letra maiúscula</span>
+                            <span class="requirement" data-req="special">• 1 caractere especial</span>
+                        </div>
+                        <small class="password-examples">Exemplos: Exemplo!123, Clinica@2024</small>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="input-group">
                         <label for="confirmPassword">Confirmar Senha</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
+                        <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password" placeholder="Repita a senha">
                         <span class="input-focus"></span>
                     </div>
                 </div>

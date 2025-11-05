@@ -285,8 +285,10 @@ function validatePasswordForm() {
         return false;
     }
     
-    if (newPassword.length < 6) {
-        showToast('A nova senha deve ter pelo menos 6 caracteres', 'error');
+    // Força da senha: mínimo 8 caracteres, 1 maiúscula e 1 especial
+    const strongPasswordRegex = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!strongPasswordRegex.test(newPassword)) {
+        showToast('A nova senha deve ter 8+ caracteres, 1 maiúscula e 1 especial', 'error');
         $('#new_password').focus();
         return false;
     }
@@ -299,6 +301,55 @@ function validatePasswordForm() {
     
     return true;
 }
+
+// Validação em tempo real da força da senha e confirmação
+$(document).ready(function() {
+    const $newPassword = $('#new_password');
+    const $confirmPassword = $('#confirm_password');
+    const $criteriaItems = $('#passwordCriteriaPerfil .requirement');
+
+    function updatePerfilPasswordIndicators() {
+        const value = $newPassword.val() || '';
+        const hasLength = value.length >= 8;
+        const hasUpper = /[A-Z]/.test(value);
+        const hasSpecial = /[^A-Za-z0-9]/.test(value);
+
+        $criteriaItems.each(function() {
+            const req = $(this).data('req');
+            let ok = false;
+            if (req === 'length') ok = hasLength;
+            if (req === 'uppercase') ok = hasUpper;
+            if (req === 'special') ok = hasSpecial;
+            $(this).toggleClass('valid', ok);
+            $(this).toggleClass('invalid', !ok && value.length > 0);
+        });
+
+        const allOk = hasLength && hasUpper && hasSpecial;
+        $newPassword.toggleClass('input-valid', allOk);
+        $newPassword.toggleClass('input-invalid', !allOk && value.length > 0);
+    }
+
+    function updateConfirmMatch() {
+        const pass = $newPassword.val();
+        const confirm = $confirmPassword.val();
+        const mismatch = confirm && pass !== confirm;
+        $confirmPassword.toggleClass('input-invalid', mismatch);
+        if (mismatch) {
+            $confirmPassword[0].setCustomValidity('As senhas não coincidem');
+        } else {
+            $confirmPassword[0].setCustomValidity('');
+        }
+    }
+
+    $newPassword.on('input blur', function() {
+        updatePerfilPasswordIndicators();
+        updateConfirmMatch();
+    });
+    $confirmPassword.on('input blur', updateConfirmMatch);
+
+    // Inicializa indicadores
+    updatePerfilPasswordIndicators();
+});
 
 /**
  * Mostra o spinner de carregamento

@@ -1,8 +1,9 @@
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, jsonify, request, session, redirect, make_response
 from src.models.usuario import User, db
 from src.models.assinatura import Subscription
 from src.models.historico_assinatura import SubscriptionHistory
 from src.models.password_reset import PasswordResetToken
+from src.models.email_verification import EmailVerificationToken
 from src.models.paciente import Patient
 from src.models.funcionario import Funcionario
 from src.models.especialidade import Especialidade
@@ -15,6 +16,36 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 user_bp = Blueprint("user", __name__)
+
+# Utilitários de validação
+import re
+import socket
+
+def validate_email_format(email: str) -> bool:
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email or '') is not None
+
+def check_email_domain_dns(email: str) -> bool:
+    """Valida se o domínio do email resolve (A/AAAA). Não garante caixa postal ativa."""
+    try:
+        domain = (email.split('@', 1)[1] or '').strip()
+        if not domain or '.' not in domain:
+            return False
+        # Tenta resolver o domínio
+        socket.getaddrinfo(domain, None)
+        return True
+    except Exception:
+        return False
+
+def is_strong_password(password: str) -> tuple[bool, str]:
+    """Valida força da senha: min 8, 1 maiúscula, 1 caractere especial."""
+    if not password or len(password) < 8:
+        return False, "A senha deve ter pelo menos 8 caracteres"
+    if not re.search(r'[A-Z]', password):
+        return False, "A senha deve conter pelo menos 1 letra maiúscula"
+    if not re.search(r'[^A-Za-z0-9]', password):
+        return False, "A senha deve conter pelo menos 1 caractere especial"
+    return True, ""
 
 @user_bp.route("/login", methods=["POST"])
 def login():
@@ -35,6 +66,27 @@ def login():
     # Verificar se a senha está correta
     if not user.check_password(password):
         return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
+
+    # Verificação de email: bloquear apenas para NOVOS usuários
+    # Exceções: permitir login para administradores e usuários LEGADOS (sem fluxo de verificação)
+    if not bool(getattr(user, 'email_verified', False)):
+        # Admin sempre pode logar
+        if getattr(user, 'role', None) != 'admin':
+            has_verification_flow = False
+            try:
+                # Usuários novos têm registro de token de verificação criado no cadastro
+                from src.models.email_verification import EmailVerificationToken
+                has_verification_flow = EmailVerificationToken.query.filter_by(user_id=user.id).first() is not None
+            except Exception:
+                # Se der erro ao checar, não travar login do legado
+                has_verification_flow = False
+
+            if has_verification_flow:
+                return jsonify({
+                    "error": "Email não verificado. Verifique sua caixa de entrada ou solicite reenvio.",
+                    "need_verification": True,
+                    "email_verified": False
+                }), 403
 
     # Login bem-sucedido
     session['user_id'] = user.id
@@ -142,6 +194,56 @@ def logout():
     session.clear()
     return jsonify({"message": "Logout realizado com sucesso"}), 200
 
+@user_bp.route("/resend-verification", methods=["POST"])
+def resend_verification():
+    """Reenvia email de verificação com novo token."""
+    try:
+        data = request.json or {}
+        target_email = (data.get("email") or "").strip()
+
+        # Identificar usuário
+        user = None
+        if target_email:
+            user = User.query.filter_by(email=target_email).first()
+        else:
+            # Tentar pelo usuário logado
+            if session.get('user_id'):
+                user = User.query.get(session['user_id'])
+
+        if not user:
+            return jsonify({"error": "Usuário não encontrado"}), 404
+
+        # Se já verificado, informar
+        if bool(getattr(user, 'email_verified', False)):
+            return jsonify({
+                "success": True,
+                "message": "Email já verificado. Nenhum envio necessário."
+            }), 200
+
+        # Verificar se envio de emails está habilitado
+        from src.utils.notificacoes_email import enviar_email_verificacao, is_email_enabled
+        if not is_email_enabled():
+            return jsonify({
+                "success": False,
+                "error": "Envio de emails está desabilitado. Ative EMAIL_ENABLED=true e configure SMTP no .env."
+            }), 200
+
+        # Criar novo token e enviar
+        verification_token = EmailVerificationToken.create_for_user(user.id)
+        enviar_ok = enviar_email_verificacao(user.email, user.username, verification_token.token)
+
+        if enviar_ok:
+            return jsonify({
+                "success": True,
+                "message": "Email de verificação reenviado com sucesso",
+            }), 200
+        else:
+            return jsonify({"error": "Falha ao enviar email de verificação"}), 500
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Erro ao reenviar verificação: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
 @user_bp.route("/register", methods=["POST"])
 def register():
     print("[DEBUG] Iniciando processo de registro de usuário")
@@ -160,9 +262,11 @@ def register():
     
     print("[DEBUG] Todos os campos obrigatórios presentes")
     
-    if len(password) < 6:
-        print(f"[ERROR] Senha muito curta: {len(password)} caracteres")
-        return jsonify({"error": "A senha deve ter pelo menos 6 caracteres"}), 400
+    # Validação forte da senha para NOVOS usuários
+    valid_pwd, pwd_msg = is_strong_password(password)
+    if not valid_pwd:
+        print(f"[ERROR] Validação de senha falhou: {pwd_msg}")
+        return jsonify({"error": pwd_msg}), 400
     
     print("[DEBUG] Senha atende aos critérios de comprimento")
     
@@ -177,13 +281,9 @@ def register():
             print(f"[ERROR] Data de nascimento inválida: {data_nascimento}")
             return jsonify({"error": "Data de nascimento deve estar no formato YYYY-MM-DD"}), 400
     
-    # Verificar se usuário já existe
-    print(f"[DEBUG] Verificando se username já existe: {username}")
-    if User.query.filter_by(username=username).first():
-        print(f"[ERROR] Username já cadastrado: {username}")
-        return jsonify({"error": "Nome de usuário já existe"}), 400
-    
-    print("[DEBUG] Username disponível")
+    # Permitir nomes de usuário iguais (diferenciador é o email)
+    # Removemos a verificação de unicidade de username
+    print("[DEBUG] Pulando verificação de unicidade de username (permitir nomes iguais)")
     
     print(f"[DEBUG] Verificando se email já existe: {email}")
     if User.query.filter_by(email=email).first():
@@ -191,6 +291,16 @@ def register():
         return jsonify({"error": "Email já está cadastrado"}), 400
     
     print("[DEBUG] Email disponível")
+
+    # Validação de formato de email
+    if not validate_email_format(email):
+        print(f"[ERROR] Formato de email inválido: {email}")
+        return jsonify({"error": "Formato de email inválido"}), 400
+
+    # Checagem simples de DNS do domínio
+    if not check_email_domain_dns(email):
+        print(f"[ERROR] Domínio de email não resolve DNS: {email}")
+        return jsonify({"error": "Domínio de email inválido ou não resolvível"}), 400
     
     try:
         print("[DEBUG] Iniciando criação do novo usuário")
@@ -224,7 +334,7 @@ def register():
         print("[DEBUG] Fazendo commit no banco de dados")
         db.session.commit()
         print(f"[DEBUG] Commit realizado com sucesso - ID final: {user.id}")
-        
+
         # Verificar se o usuário foi realmente salvo
         print(f"[DEBUG] Verificando se usuário foi salvo no banco")
         saved_user = User.query.filter_by(id=user.id).first()
@@ -247,6 +357,20 @@ def register():
             db.session.rollback()
             print(f"[WARNING] Falha ao criar assinatura de teste: {trial_err}")
             trial_created = False
+
+        # Criar token de verificação de email e enviar email
+        try:
+            print("[DEBUG] Gerando token de verificação de email")
+            verification_token = EmailVerificationToken.create_for_user(user.id)
+            print(f"[DEBUG] Token de verificação criado: {verification_token.token}")
+            from src.utils.notificacoes_email import enviar_email_verificacao, is_email_enabled
+            if is_email_enabled():
+                enviar_ok = enviar_email_verificacao(user.email, user.username, verification_token.token)
+                print(f"[DEBUG] Envio de email de verificação status: {enviar_ok}")
+            else:
+                print("[INFO] Envio de emails desabilitado, pulando verificação por email")
+        except Exception as ver_err:
+            print(f"[WARNING] Falha ao preparar envio de verificação de email: {ver_err}")
 
         return jsonify({
             "message": "Usuário cadastrado com sucesso!",
@@ -287,6 +411,56 @@ def register():
             print(f"[ERROR] Erro no rollback: {str(rollback_error)}")
         
         return jsonify({"error": "Erro ao cadastrar usuário"}), 500
+
+@user_bp.route("/check-email", methods=["POST"])
+def check_email():
+    """Valida disponibilidade e formato de email antes do cadastro."""
+    try:
+        data = request.json or {}
+        email = (data.get("email") or "").strip()
+
+        if not email:
+            return jsonify({
+                "success": False,
+                "available": False,
+                "error": "Email é obrigatório"
+            }), 200
+
+        # Validar formato
+        if not validate_email_format(email):
+            return jsonify({
+                "success": True,
+                "available": False,
+                "message": "Formato de email inválido"
+            }), 200
+
+        # Checagem simples do domínio (DNS)
+        try:
+            if not check_email_domain_dns(email):
+                return jsonify({
+                    "success": True,
+                    "available": False,
+                    "message": "Domínio de email inválido ou não resolvível"
+                }), 200
+        except Exception:
+            # Se falhar a checagem de DNS, não bloquear — apenas prosseguir
+            pass
+
+        exists = User.query.filter_by(email=email).first() is not None
+        if exists:
+            return jsonify({
+                "success": True,
+                "available": False,
+                "message": "Email já está cadastrado"
+            }), 200
+
+        return jsonify({
+            "success": True,
+            "available": True
+        }), 200
+    except Exception as e:
+        print(f"[ERROR] Erro ao verificar email: {e}")
+        return jsonify({"success": False, "available": False, "error": "Erro interno"}), 500
 
 @user_bp.route("/users", methods=["GET"])
 @login_required
@@ -344,8 +518,7 @@ def update_user(user_id):
         
         # Validações
         if username and username != user.username:
-            if User.query.filter_by(username=username).first():
-                return jsonify({"error": "Nome de usuário já existe"}), 400
+            # Permitir nomes iguais: não validar unicidade de username
             user.username = username
         
         if email and email != user.email:
@@ -457,7 +630,8 @@ def get_me():
             "username": current_user.username,
             "email": current_user.email,
             "role": current_user.role,
-            "first_login": current_user.first_login
+            "first_login": current_user.first_login,
+            "email_verified": bool(getattr(current_user, 'email_verified', False))
         })
     except Exception as e:
         print(f"[ERROR] Erro ao buscar dados do usuário: {e}")
@@ -495,6 +669,18 @@ def forgot_password():
         print(f"[ERROR] Erro ao processar recuperação de senha: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
+@user_bp.route("/password-reset/<token>", methods=["GET"])
+def persist_token_and_redirect(token):
+    """Recebe token via URL, grava em cookie HttpOnly e redireciona para a página estática."""
+    try:
+        resp = make_response(redirect('/static/resetar-senha.html', code=302))
+        # Cookie HttpOnly para evitar exposição em JS; 1h de validade
+        resp.set_cookie('password_reset_token', token, httponly=True, samesite='Lax', secure=False, max_age=3600)
+        return resp
+    except Exception as e:
+        print(f"[ERROR] Falha ao persistir token de reset: {e}")
+        return jsonify({"error": "Erro ao processar token"}), 400
+
 
 # Marcar que o usuário já viu o modal de primeiro login (não-pacientes)
 @user_bp.route("/ack-first-login", methods=["PUT"])
@@ -527,15 +713,19 @@ def ack_first_login():
 @user_bp.route("/resetar-senha", methods=["POST"])
 def reset_password():
     """Rota para resetar senha com token"""
-    data = request.json
-    token = data.get("token")
+    data = request.json or {}
+    token = data.get("token") or request.cookies.get("password_reset_token")
     new_password = data.get("password")
     
-    if not token or not new_password:
-        return jsonify({"error": "Token e nova senha são obrigatórios"}), 400
+    if not new_password:
+        return jsonify({"error": "Nova senha é obrigatória"}), 400
+    if not token:
+        return jsonify({"error": "Token é obrigatório"}), 400
     
-    if len(new_password) < 6:
-        return jsonify({"error": "A senha deve ter pelo menos 6 caracteres"}), 400
+    # Validação forte de senha
+    valid_pwd, pwd_msg = is_strong_password(new_password)
+    if not valid_pwd:
+        return jsonify({"error": f"{pwd_msg}. Regras: mínimo 8 caracteres, 1 letra maiúscula e 1 caractere especial."}), 400
     
     # Verificar se o token é válido
     reset_token = PasswordResetToken.find_valid_token(token)
@@ -556,9 +746,12 @@ def reset_password():
         
         db.session.commit()
         
-        return jsonify({
+        # Limpar cookie de token após uso
+        response = jsonify({
             "message": "Senha alterada com sucesso! Você já pode fazer login com a nova senha."
-        }), 200
+        })
+        response.set_cookie('password_reset_token', '', expires=0, httponly=True, samesite='Lax')
+        return response, 200
         
     except Exception as e:
         db.session.rollback()
@@ -582,7 +775,8 @@ def send_password_reset_email(email, username, token):
         sender_password = os.getenv('SMTP_PASSWORD')
         # URL base para construir o link de redefinição
         base_url = os.getenv('BASE_URL', 'http://localhost:5000')
-        reset_link = f"{base_url}/static/resetar-senha.html?token={token}"
+        # Link seguro: passa pelo endpoint que grava cookie HttpOnly e redireciona
+        reset_link = f"{base_url}/api/password-reset/{token}"
         
         # Verificar se as configurações estão disponíveis
         if not sender_email or not sender_password:
@@ -628,6 +822,69 @@ def send_password_reset_email(email, username, token):
         print(f"[ERROR] Erro ao enviar email: {e}")
         return False
 
+@user_bp.route("/verify-email", methods=["GET", "POST"])
+def verify_email():
+    """Confirma o email do usuário a partir de um token de verificação."""
+    try:
+        token = request.args.get('token')
+        if not token and request.is_json:
+            token = (request.get_json(silent=True) or {}).get('token')
+        if not token:
+            # Em acesso via navegador, mostrar página amigável
+            if request.method == 'GET' and not request.is_json:
+                from flask import redirect
+                return redirect('/verificacao-invalida.html', code=302)
+            return jsonify({"error": "Token é obrigatório"}), 400
+
+        verification = EmailVerificationToken.find_valid_token(token)
+        if not verification:
+            # Em acesso via navegador, redirecionar para página de erro amigável
+            if request.method == 'GET' and not request.is_json:
+                from flask import redirect
+                return redirect('/verificacao-invalida.html', code=302)
+            return jsonify({"error": "Token inválido ou expirado"}), 400
+
+        user = User.query.get(verification.user_id)
+        if not user:
+            if request.method == 'GET' and not request.is_json:
+                from flask import redirect
+                return redirect('/verificacao-invalida.html', code=302)
+            return jsonify({"error": "Usuário não encontrado"}), 404
+
+        # Marcar email como verificado e token como usado
+        user.email_verified = True
+        verification.mark_as_used()
+        db.session.commit()
+
+        # Em acesso via navegador, redirecionar para página de boas-vindas
+        if request.method == 'GET' and not request.is_json:
+            from flask import redirect, make_response
+            # Extrair primeiro nome para saudação
+            raw_name = (user.username or '').strip()
+            first_name = raw_name.split()[0] if raw_name else ''
+            resp = make_response(redirect('/email-verificado.html', code=302))
+            try:
+                # Definir cookie curto com primeiro nome (10 minutos)
+                resp.set_cookie('welcome_name', first_name, max_age=600, httponly=False, samesite='Lax')
+            except Exception:
+                pass
+            return resp
+
+        return jsonify({
+            "success": True,
+            "message": "Email verificado com sucesso",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "email_verified": True
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Erro ao verificar email: {e}")
+        return jsonify({"error": "Erro interno do servidor"}), 500
+
 @user_bp.route("/profile", methods=["GET"])
 @login_required
 def get_profile():
@@ -672,10 +929,7 @@ def update_profile():
         if existing_user:
             return jsonify({"error": "Este email já está sendo usado por outro usuário"}), 400
         
-        # Verificar se o username já está em uso por outro usuário
-        existing_username = User.query.filter(User.username == data.get('username'), User.id != current_user.id).first()
-        if existing_username:
-            return jsonify({"error": "Este nome de usuário já está sendo usado"}), 400
+        # Permitir nomes de usuário iguais: não validar unicidade de username
         
         # Atualizar dados do usuário
         current_user.username = data.get('username')
@@ -736,9 +990,10 @@ def change_password():
         if new_password != confirm_password:
             return jsonify({"error": "As novas senhas não coincidem"}), 400
         
-        # Validar tamanho da nova senha
-        if len(new_password) < 6:
-            return jsonify({"error": "A nova senha deve ter pelo menos 6 caracteres"}), 400
+        # Validação forte da nova senha
+        valid_pwd, pwd_msg = is_strong_password(new_password)
+        if not valid_pwd:
+            return jsonify({"error": f"{pwd_msg}. Regras: mínimo 8 caracteres, 1 letra maiúscula e 1 caractere especial."}), 400
         
         # Atualizar senha
         current_user.set_password(new_password)
@@ -783,9 +1038,10 @@ def first_login_change_password():
         if new_password != confirm_password:
             return jsonify({"error": "As novas senhas não coincidem"}), 400
         
-        # Validar tamanho da nova senha
-        if len(new_password) < 6:
-            return jsonify({"error": "A nova senha deve ter pelo menos 6 caracteres"}), 400
+        # Validação forte da nova senha
+        valid_pwd, pwd_msg = is_strong_password(new_password)
+        if not valid_pwd:
+            return jsonify({"error": f"{pwd_msg}. Regras: mínimo 8 caracteres, 1 letra maiúscula e 1 caractere especial."}), 400
         
         # Atualizar senha e marcar que não é mais o primeiro login
         current_user.set_password(new_password)

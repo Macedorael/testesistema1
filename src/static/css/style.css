@@ -1248,3 +1248,42 @@ body.perfil-page {
   }
 }
 
+/* Indicadores de requisitos de senha - globais (perfil) */
+.requirements {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+}
+/* Tornar requisitos legíveis dentro do card de senha do perfil */
+.perfil-password-card .requirements {
+  color: #856404; /* cor compatível com card amarelo */
+}
+.requirements .requirement {
+  display: block; /* empilhar verticalmente */
+  margin: 4px 0;
+}
+.requirements .requirement.valid {
+  color: #48bb78; /* verde aprovado */
+}
+.requirements .requirement.invalid {
+  color: #f56565; /* vermelho reprovado */
+}
+
+.input-valid {
+  border-color: #38a169 !important;
+  box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.2) !important;
+}
+.input-invalid {
+  border-color: #e53e3e !important;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+}
+
+/* Exemplos de senha (perfil) */
+.password-examples {
+  display: block;
+  margin-top: 6px;
+}
+.perfil-password-card .password-examples {
+  color: #856404; /* garantir contraste no card */
+}
+

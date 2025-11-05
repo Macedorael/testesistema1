@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnRegister = document.querySelector('.btn-register');
     const btnText = document.querySelector('.btn-text');
     const btnLoading = document.querySelector('.btn-loading');
+    const apiBase = (location.port === '8000') ? 'http://localhost:5000/api' : '/api';
 
     // Add focus effects to inputs
     const inputs = document.querySelectorAll('input');
@@ -20,6 +21,98 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Pré-validação de email em tempo real
+    const emailInput = document.getElementById('email');
+    const emailFeedback = document.getElementById('emailFeedback');
+    const confirmEmailInput = document.getElementById('confirmEmail');
+    const confirmEmailFeedback = document.getElementById('confirmEmailFeedback');
+
+    function setFeedback(el, text, color) {
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.display = text ? 'block' : 'none';
+        el.style.color = color || '#7B341E';
+    }
+
+    // Debounce util para validação em tempo real
+    function debounce(fn, delay) {
+        let t;
+        return function(...args) {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+
+    function setInputErrorState(inputEl, hasError) {
+        if (!inputEl || !inputEl.parentElement) return;
+        if (hasError) {
+            inputEl.parentElement.classList.add('error');
+        } else {
+            inputEl.parentElement.classList.remove('error');
+        }
+    }
+
+    async function validateEmailInline() {
+        const email = (emailInput.value || '').trim();
+        if (!email) { setFeedback(emailFeedback, '', undefined); setInputErrorState(emailInput, false); return; }
+        // Durante digitação: não mostrar "formato inválido"; apenas checar disponibilidade se formato for válido
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            // Não exibir mensagem de formato inválido enquanto digita
+            setFeedback(emailFeedback, '', undefined);
+            setInputErrorState(emailInput, false);
+            return;
+        }
+        const check = await checkEmailAvailability(email);
+        if (!check.available) {
+            setFeedback(emailFeedback, check.message || 'Email já está cadastrado.', '#7B341E');
+            setInputErrorState(emailInput, true); // borda vermelha para duplicado
+        } else {
+            setFeedback(emailFeedback, '', undefined);
+            setInputErrorState(emailInput, false);
+        }
+    }
+
+    function validateEmailOnBlur() {
+        const email = (emailInput.value || '').trim();
+        if (!email) { setFeedback(emailFeedback, '', undefined); setInputErrorState(emailInput, false); return; }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Ao finalizar (blur): se formato inválido, mostrar aviso
+        if (!emailRegex.test(email)) {
+            setFeedback(emailFeedback, 'Formato de e-mail inválido.', '#7B341E');
+            // Borda vermelha apenas para email duplicado, não para formato inválido
+            setInputErrorState(emailInput, false);
+            return;
+        }
+        // Se formato válido, aproveitar a checagem inline para duplicado
+        validateEmailInline();
+    }
+
+    if (emailInput) {
+        const debounced = debounce(validateEmailInline, 400);
+        emailInput.addEventListener('input', debounced);
+        emailInput.addEventListener('blur', validateEmailOnBlur);
+    }
+
+    function validateConfirmEmailInline() {
+        const email = (emailInput.value || '').trim();
+        const confirmEmail = (confirmEmailInput.value || '').trim();
+        if (!confirmEmail) { setFeedback(confirmEmailFeedback, '', undefined); return; }
+        if (email && confirmEmail && email !== confirmEmail) {
+            setFeedback(confirmEmailFeedback, 'Os e-mails não coincidem.', '#7B341E');
+        } else {
+            setFeedback(confirmEmailFeedback, '', undefined);
+        }
+    }
+
+    if (confirmEmailInput) {
+        confirmEmailInput.addEventListener('input', debounce(validateConfirmEmailInline, 200));
+        confirmEmailInput.addEventListener('blur', validateConfirmEmailInline);
+        if (emailInput) {
+            emailInput.addEventListener('input', debounce(validateConfirmEmailInline, 200));
+        }
+    }
+
     // Form submission
     registerForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -30,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dataNascimento = document.getElementById('data_nascimento').value;
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
+        const confirmEmail = document.getElementById('confirmEmail').value.trim();
         
         // Ocultar mensagens anteriores
         hideMessages();
@@ -38,7 +132,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!validateForm(username, email, telefone, dataNascimento, password, confirmPassword)) {
             return;
         }
+
+        // Confirmar e-mail igual
+        if (email !== confirmEmail) {
+            setFeedback(confirmEmailFeedback, 'Os e-mails não coincidem.', '#7B341E');
+            document.getElementById('confirmEmail').focus();
+            return;
+        }
         
+        // Pré-validação: verificar disponibilidade de email antes de enviar
+        const emailCheck = await checkEmailAvailability(email);
+        if (!emailCheck.available) {
+            setFeedback(emailFeedback, emailCheck.message || 'Email já está cadastrado.', '#7B341E');
+            document.getElementById('email').focus();
+            return;
+        }
+
         // Mostrar estado de carregamento
         showLoading();
         
@@ -164,9 +273,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Validar comprimento da senha
-        if (password.length < 6) {
-            showError('A senha deve ter pelo menos 6 caracteres.');
+        // Validar força da senha: mínimo 8 caracteres, 1 maiúscula e 1 especial
+        const strongPasswordRegex = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+        if (!strongPasswordRegex.test(password)) {
+            showError('A senha deve ter no mínimo 8 caracteres, conter 1 letra maiúscula e 1 caractere especial.');
             return false;
         }
         
@@ -213,10 +323,57 @@ document.addEventListener('DOMContentLoaded', function() {
         btnLoading.style.display = 'none';
         btnRegister.disabled = false;
     }
+
+    async function checkEmailAvailability(email) {
+        try {
+            const response = await fetch(`${apiBase}/check-email`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            // Normalizar estrutura de retorno
+            return {
+                success: !!data.success || response.ok,
+                available: !!data.available,
+                message: data.message,
+                error: data.error
+            };
+        } catch (e) {
+            return { success: false, available: false, error: 'Falha ao validar email' };
+        }
+    }
     
     // Validação de confirmação de senha em tempo real
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirmPassword');
+    const passwordCriteria = document.getElementById('passwordCriteria');
+    const criteriaItems = passwordCriteria ? passwordCriteria.querySelectorAll('.requirement') : [];
+    
+    function updatePasswordIndicators() {
+        if (!passwordInput || !criteriaItems || criteriaItems.length === 0) return;
+        const value = passwordInput.value || '';
+        const hasLength = value.length >= 8;
+        const hasUpper = /[A-Z]/.test(value);
+        const hasSpecial = /[^A-Za-z0-9]/.test(value);
+
+        criteriaItems.forEach(item => {
+            const req = item.getAttribute('data-req');
+            let ok = false;
+            if (req === 'length') ok = hasLength;
+            if (req === 'uppercase') ok = hasUpper;
+            if (req === 'special') ok = hasSpecial;
+
+            item.classList.toggle('valid', ok);
+            item.classList.toggle('invalid', !ok && value.length > 0);
+        });
+
+        const allOk = hasLength && hasUpper && hasSpecial;
+        passwordInput.classList.toggle('input-valid', allOk);
+        passwordInput.classList.toggle('input-invalid', !allOk && value.length > 0);
+    }
     
     function checkPasswordMatch() {
         const password = passwordInput.value;
@@ -232,7 +389,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     passwordInput.addEventListener('input', checkPasswordMatch);
+    passwordInput.addEventListener('input', updatePasswordIndicators);
+    passwordInput.addEventListener('blur', updatePasswordIndicators);
     confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+    // Inicializar indicadores ao carregar
+    updatePasswordIndicators();
     
     // Verificar se o usuário já está logado
     const token = localStorage.getItem('token');

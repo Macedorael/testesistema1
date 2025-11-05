@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verificado - Consultório</title>
+    <link rel="stylesheet" href="css/entrar.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2024">
+    <link rel="icon" href="favicon.ico?v=2024" type="image/x-icon">
+    <style>
+        .welcome-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .welcome-box { background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 32px; max-width: 520px; width: 100%; text-align: center; }
+        /* Elevar acima do overlay do body definido em css/entrar.css */
+        .welcome-container { position: relative; z-index: 2; }
+        .welcome-box { position: relative; z-index: 3; }
+        /* Evitar bloqueio de cliques por overlay global */
+        body::before { pointer-events: none; }
+        .welcome-icon { font-size: 48px; color: #22c55e; margin-bottom: 12px; }
+        .welcome-title { font-size: 24px; font-weight: 700; margin: 8px 0; color: #111827; }
+        .welcome-subtitle { color: #6b7280; margin-bottom: 20px; }
+        .welcome-username { color: #374151; font-weight: 600; }
+        .actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; padding: 10px 16px; cursor: pointer; text-decoration: none; }
+        .btn-secondary { background: transparent; color: #667eea; border: 2px solid #667eea; border-radius: 10px; padding: 10px 16px; text-decoration: none; }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ler primeiro nome do cookie 'welcome_name'
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            }
+            const firstName = getCookie('welcome_name');
+            if (firstName) {
+                const nameEl = document.getElementById('welcomeName');
+                nameEl.textContent = firstName;
+                nameEl.style.display = 'inline';
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="welcome-box">
+            <div class="welcome-icon">✅</div>
+            <h1 class="welcome-title">Bem-vindo!</h1>
+            <p class="welcome-subtitle">Seu email foi confirmado com sucesso. Obrigado por realizar seu cadastro.</p>
+            <p>Estamos felizes em ter você por aqui, <span id="welcomeName" class="welcome-username" style="display:none"></span>!</p>
+            <div class="actions">
+                <a id="goSessions" href="/paciente-agendamentos.html" class="btn-primary">Ir para Sessões</a>
+                <a id="goHome" href="/inicial.html" class="btn-secondary">Voltar ao Início</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Reforçar navegação em ambientes onde o clique possa ser interceptado
+        (function(){
+            function safeNavigate(url){
+                try { window.location.href = url; } catch(_) { window.location.assign(url); }
+            }
+            var s = document.getElementById('goSessions');
+            var h = document.getElementById('goHome');
+            if (s) { s.addEventListener('click', function(e){ e.preventDefault(); safeNavigate('/paciente-agendamentos.html'); }); }
+            if (h) { h.addEventListener('click', function(e){ e.preventDefault(); safeNavigate('/inicial.html'); }); }
+        })();
+    </script>
+</body>
+</html>
