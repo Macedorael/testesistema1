@@ -8,6 +8,23 @@ from src.models.paciente import Patient
 from src.models.usuario import User
 from urllib.parse import quote
 
+# Utilitários simples para normalizar/validar URL base
+def _is_local(url: str) -> bool:
+    try:
+        u = (url or '').lower()
+        return ('localhost' in u) or ('127.0.0.1' in u)
+    except Exception:
+        return False
+
+def _ensure_https(url: str) -> str:
+    try:
+        u = (url or '').strip()
+        if u.startswith('http://'):
+            u = 'https://' + u[len('http://'):]
+        return u
+    except Exception:
+        return (url or '')
+
 def is_email_enabled():
     """
     Verifica se o envio de emails está habilitado
@@ -26,12 +43,16 @@ def resolve_base_url() -> str:
     # 1) Preferir BASE_URL explícita
     base = os.getenv('BASE_URL')
     if base:
-        return base.rstrip('/')
+        base = _ensure_https(base)
+        if not _is_local(base):
+            return base.rstrip('/')
 
     # 1b) Preferir DEFAULT_BASE_URL se fornecida (independente do modo)
     default_env = os.getenv('DEFAULT_BASE_URL')
     if default_env:
-        return default_env.rstrip('/')
+        default_env = _ensure_https(default_env)
+        if not _is_local(default_env):
+            return default_env.rstrip('/')
 
     # 2) Fallbacks comuns de plataformas
     for env_name in (
@@ -41,10 +62,11 @@ def resolve_base_url() -> str:
         val = os.getenv(env_name)
         if val:
             if val.startswith('http://') or val.startswith('https://'):
-                base = val
+                base = _ensure_https(val)
             else:
                 base = f"https://{val}"
-            return base.rstrip('/')
+            if not _is_local(base):
+                return base.rstrip('/')
 
     # 3) Tentar contexto da requisição (se existir) e headers de proxy
     try:
@@ -80,13 +102,20 @@ def resolve_base_url() -> str:
     if is_production:
         # Permite override por DEFAULT_BASE_URL, senão usa domínio padrão do projeto
         default_prod = os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br')
-        return default_prod.rstrip('/')
+        return _ensure_https(default_prod).rstrip('/')
 
     # 5) Último fallback: localhost conforme configuração
     host = os.getenv('HOST', 'localhost')
     port = os.getenv('PORT', '5000')
     scheme = os.getenv('URL_SCHEME', 'http')
-    return f"{scheme}://{host}:{port}".rstrip('/')
+    final_local = f"{scheme}://{host}:{port}".rstrip('/')
+    # Mesmo no último fallback, se houver DEFAULT_BASE_URL, preferir evitar localhost
+    preferred = os.getenv('DEFAULT_BASE_URL') or os.getenv('BASE_URL')
+    if preferred:
+        preferred = _ensure_https(preferred).rstrip('/')
+        if not _is_local(preferred):
+            return preferred
+    return final_local
 
 def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
     """
@@ -116,12 +145,16 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
         # URL base para construir o link de verificação (robusto em produção)
         preferred = os.getenv('BASE_URL') or os.getenv('DEFAULT_BASE_URL')
         if preferred:
-            base_url = preferred.rstrip('/')
+            preferred = _ensure_https(preferred)
+            if not _is_local(preferred):
+                base_url = preferred.rstrip('/')
+            else:
+                preferred = None
         else:
             resolved = resolve_base_url()
             # Evitar localhost/127.0.0.1 no link de e-mail
-            if ('localhost' in resolved) or ('127.0.0.1' in resolved):
-                base_url = os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br').rstrip('/')
+            if _is_local(resolved):
+                base_url = _ensure_https(os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br')).rstrip('/')
             else:
                 base_url = resolved.rstrip('/')
         try:
