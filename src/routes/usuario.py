@@ -598,6 +598,11 @@ def delete_user(user_id):
         for t in tokens:
             db.session.delete(t)
 
+        # 6b) Tokens de verificação de email do usuário
+        email_tokens = EmailVerificationToken.query.filter_by(user_id=user.id).all()
+        for et in email_tokens:
+            db.session.delete(et)
+
         # 7) Finalmente, remover o usuário
         db.session.delete(user)
         db.session.commit()
