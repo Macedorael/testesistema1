@@ -58,7 +58,16 @@ def resolve_base_url() -> str:
         # Fallback para host_url/url_root
         url_root = getattr(request, 'host_url', None) or getattr(request, 'url_root', None)
         if url_root:
-            return url_root.rstrip('/')
+            candidate = url_root.rstrip('/')
+            # Se o candidate apontar para localhost/127, preferir domínio padrão se disponível
+            if 'localhost' in candidate or '127.0.0.1' in candidate:
+                preferred = os.getenv('DEFAULT_BASE_URL') or os.getenv('BASE_URL')
+                if preferred:
+                    return preferred.rstrip('/')
+                # Como último recurso neste ponto, cair para o domínio padrão em produção
+                default_prod = os.getenv('DEFAULT_BASE_URL', 'https://www.sistemadeconsultorio.com.br')
+                return default_prod.rstrip('/')
+            return candidate
     except Exception:
         pass
 
