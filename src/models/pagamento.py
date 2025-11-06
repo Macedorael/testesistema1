@@ -9,6 +9,7 @@ class PaymentMethod(Enum):
     CARTAO_DEBITO = 'CARTAO_DEBITO'
     LINK_PAGAMENTO = 'LINK_PAGAMENTO'
     OUTROS = 'OUTROS'
+    PARCERIA = 'PARCERIA'
 
 class Payment(db.Model):
     __tablename__ = 'payments'
