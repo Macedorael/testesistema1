@@ -30,6 +30,11 @@ body {
     /* Removida transição para melhor performance */
 }
 
+/* Fundo suave para páginas da Área do Paciente, combinando com o tema */
+.patient-area {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+}
+
 .navbar-brand {
     font-weight: 600;
     /* font-size: 1.25rem; - Comentado para não conflitar com styles.css */
