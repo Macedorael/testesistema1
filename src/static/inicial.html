@@ -6,8 +6,8 @@
     <title>Sistema de Consultório</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2024">
-    <link rel="icon" type="image/x-icon" href="favicon.ico?v=2024">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=black1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=black1">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -272,26 +272,26 @@
             <div class="row text-center">
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">500+</h2>
+                        <h2 class="display-4 fw-bold mb-2">10+</h2>
                         <p class="mb-0">Pacientes Atendidos</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">98%</h2>
-                        <p class="mb-0">Satisfação</p>
+                        <h2 class="display-4 fw-bold mb-2">90%</h2>
+                        <p class="mb-0">Satisfação Inicial</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">24/7</h2>
-                        <p class="mb-0">Suporte</p>
+                        <h2 class="display-4 fw-bold mb-2">08h–18h</h2>
+                        <p class="mb-0">Suporte (dias úteis)</p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="stat-item">
-                        <h2 class="display-4 fw-bold mb-2">5+</h2>
-                        <p class="mb-0">Anos de Experiência</p>
+                        <h2 class="display-4 fw-bold mb-2">1º</h2>
+                        <p class="mb-0">Ano de Operação</p>
                     </div>
                 </div>
             </div>
@@ -439,7 +439,7 @@
             <hr class="my-4">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <p class="mb-0 text-light">&copy; 2024 Sistema de Consultório. Todos os direitos reservados.</p>
+                    <p class="mb-0 text-light">&copy; <span id="currentYear"></span> Sistema de Consultório. Todos os direitos reservados.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <small class="text-light">Desenvolvido com <i class="bi bi-heart-fill text-danger"></i> para consultórios</small>
@@ -457,6 +457,11 @@
       document.addEventListener('DOMContentLoaded', function() {
         var navbarCollapse = document.getElementById('navbarNav');
         var toggler = document.querySelector('button[data-bs-target="#navbarNav"]');
+        // Atualiza o ano do rodapé para o ano corrente
+        var yearEl = document.getElementById('currentYear');
+        if (yearEl) {
+          yearEl.textContent = new Date().getFullYear();
+        }
         if (navbarCollapse && toggler) {
           var selectors = ['.nav-link', '.dropdown-item', '.btn'];
           navbarCollapse.querySelectorAll(selectors.join(',')).forEach(function(el) {
