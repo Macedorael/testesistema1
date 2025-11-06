@@ -5,6 +5,7 @@ from src.models.consulta import Appointment, Session, PaymentStatus
 from src.models.pagamento import Payment
 from src.models.diario import DiaryEntry
 from src.utils.auth import login_required, login_and_subscription_required, get_current_user
+from src.utils.validation import validate_required, error_response_missing
 from datetime import datetime
 from sqlalchemy import func, and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -158,14 +159,15 @@ def create_patient():
             
         data = request.get_json()
         
-        # Validações básicas
-        required_fields = ["nome_completo", "telefone", "email", "data_nascimento"]
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    "success": False,
-                    "message": f"Campo obrigatório: {field}"
-                }), 400
+        # Validações básicas com nomes amigáveis
+        missing = validate_required(data, {
+            "nome_completo": "Nome completo",
+            "telefone": "Telefone",
+            "email": "Email",
+            "data_nascimento": "Data de nascimento"
+        })
+        if missing:
+            return error_response_missing(missing)
         
         # Converter data de nascimento
         try:
@@ -305,14 +307,15 @@ def update_patient(patient_id):
             
         data = request.get_json()
         
-        # Validações básicas
-        required_fields = ["nome_completo", "telefone", "email", "data_nascimento"]
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    "success": False,
-                    "message": f"Campo obrigatório: {field}"
-                }), 400
+        # Validações básicas com nomes amigáveis
+        missing = validate_required(data, {
+            "nome_completo": "Nome completo",
+            "telefone": "Telefone",
+            "email": "Email",
+            "data_nascimento": "Data de nascimento"
+        })
+        if missing:
+            return error_response_missing(missing)
         
         # Converter data de nascimento
         try:

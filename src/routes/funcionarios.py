@@ -4,6 +4,7 @@ from src.models.especialidade import Especialidade
 from src.models.consulta import Appointment
 from src.models.usuario import db
 from src.utils.auth import login_required, get_current_user
+from src.utils.validation import validate_required, error_response_missing
 import re
 
 funcionarios_bp = Blueprint('funcionarios', __name__)
@@ -80,18 +81,13 @@ def create_funcionario():
             
         data = request.get_json()
         
-        # Validar dados obrigatórios
-        if not data.get('nome'):
-            return jsonify({
-                'success': False,
-                'message': 'Nome é obrigatório'
-            }), 400
-            
-        if not data.get('especialidade_id'):
-            return jsonify({
-                'success': False,
-                'message': 'Especialidade é obrigatória'
-            }), 400
+        # Validar dados obrigatórios (mensagens específicas)
+        missing = validate_required(data, {
+            'nome': 'Nome',
+            'especialidade_id': 'Especialidade'
+        })
+        if missing:
+            return error_response_missing(missing)
         
         # Validar email se fornecido
         if data.get('email') and not validate_email(data['email']):
@@ -190,12 +186,15 @@ def update_funcionario(funcionario_id):
             
         data = request.get_json()
         
-        # Validar dados
-        if 'nome' in data and not data['nome']:
-            return jsonify({
-                'success': False,
-                'message': 'Nome é obrigatório'
-            }), 400
+        # Validar dados obrigatórios quando fornecidos
+        fields_to_check = {}
+        if 'nome' in data:
+            fields_to_check['nome'] = 'Nome'
+        if 'especialidade_id' in data:
+            fields_to_check['especialidade_id'] = 'Especialidade'
+        missing = validate_required(data, fields_to_check) if fields_to_check else None
+        if missing:
+            return error_response_missing(missing)
         
         # Validar email se fornecido
         if data.get('email') and not validate_email(data['email']):
