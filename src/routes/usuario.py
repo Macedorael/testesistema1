@@ -7,6 +7,9 @@ from src.models.email_verification import EmailVerificationToken
 from src.models.paciente import Patient
 from src.models.funcionario import Funcionario
 from src.models.especialidade import Especialidade
+from src.models.consulta import Appointment, Session
+from src.models.pagamento import Payment, PaymentSession
+from src.models.diario import DiaryEntry
 from src.utils.auth import login_required, get_current_user
 from datetime import datetime, timedelta
 from sqlalchemy import text
@@ -567,10 +570,37 @@ def delete_user(user_id):
         if user.is_admin() and not current_user.is_admin():
             return jsonify({"error": "Não é permitido excluir um usuário administrador"}), 403
 
-        # Limpeza ordenada de dependências (evitar violações de FK)
-        # 1) Pacientes do usuário (cascade: appointments, payments, diary_entries)
+        # Limpeza ordenada de dependências (evitar violações de FK no MySQL)
+        # 1) Pacientes do usuário e seus relacionamentos (appointments/sessions/payment_sessions/payments/diary_entries)
         patients = Patient.query.filter_by(user_id=user.id).all()
         for p in patients:
+            # Agendamentos do paciente
+            appointments = Appointment.query.filter_by(user_id=user.id, patient_id=p.id).all()
+            for appt in appointments:
+                # Sessões do agendamento
+                sessions = Session.query.filter_by(appointment_id=appt.id).all()
+                for sess in sessions:
+                    # Associação pagamento-sessão
+                    sess_payment_links = PaymentSession.query.filter_by(session_id=sess.id).all()
+                    for ps in sess_payment_links:
+                        db.session.delete(ps)
+                    db.session.delete(sess)
+                db.session.delete(appt)
+
+            # Pagamentos do paciente
+            payments = Payment.query.filter_by(user_id=user.id, patient_id=p.id).all()
+            for pay in payments:
+                pay_links = PaymentSession.query.filter_by(payment_id=pay.id).all()
+                for ps in pay_links:
+                    db.session.delete(ps)
+                db.session.delete(pay)
+
+            # Diários do paciente
+            diaries = DiaryEntry.query.filter_by(user_id=user.id, patient_id=p.id).all()
+            for de in diaries:
+                db.session.delete(de)
+
+            # Finalmente, remover o paciente
             db.session.delete(p)
 
         # 2) Funcionários do usuário (após remoção de appointments, não deve haver dependências)

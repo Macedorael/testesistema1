@@ -7,6 +7,9 @@ from src.models.funcionario import Funcionario
 from src.models.especialidade import Especialidade
 from src.models.password_reset import PasswordResetToken
 from src.models.email_verification import EmailVerificationToken
+from src.models.consulta import Appointment, Session
+from src.models.pagamento import Payment, PaymentSession
+from src.models.diario import DiaryEntry
 from src.models.base import db
 from src.utils.auth import login_required
 from datetime import datetime, timedelta
@@ -601,28 +604,70 @@ def delete_user(user_id):
         reset_tokens_count = PasswordResetToken.query.filter_by(user_id=user_id).count()
         email_tokens_count = EmailVerificationToken.query.filter_by(user_id=user_id).count()
         
-        # Limpeza ordenada de dependências
-        # 1. Excluir pacientes (cascata remove agendamentos, pagamentos, diários)
-        Patient.query.filter_by(user_id=user_id).delete()
-        
-        # 2. Excluir funcionários
-        Funcionario.query.filter_by(user_id=user_id).delete()
-        
-        # 3. Excluir especialidades
-        Especialidade.query.filter_by(user_id=user_id).delete()
-        
+        # Limpeza ordenada de dependências evitando bulk delete para não violar FKs no MySQL
+        # 1. Excluir dados relacionados a pacientes do usuário, na ordem: payment_sessions -> sessions -> appointments -> payments -> diary_entries -> patient
+        patients = Patient.query.filter_by(user_id=user_id).all()
+        for patient in patients:
+            # Appointments e suas sessões/pagamentos
+            appointments = Appointment.query.filter_by(user_id=user_id, patient_id=patient.id).all()
+            for appt in appointments:
+                # Sessions e suas associações de pagamento
+                sessions = Session.query.filter_by(appointment_id=appt.id).all()
+                for sess in sessions:
+                    # PaymentSessions vinculados à sessão
+                    sess_payment_links = PaymentSession.query.filter_by(session_id=sess.id).all()
+                    for ps in sess_payment_links:
+                        db.session.delete(ps)
+                    db.session.delete(sess)
+                # Após remover sessões, remover o agendamento
+                db.session.delete(appt)
+
+            # Pagamentos do paciente e suas associações
+            payments = Payment.query.filter_by(user_id=user_id, patient_id=patient.id).all()
+            for pay in payments:
+                pay_links = PaymentSession.query.filter_by(payment_id=pay.id).all()
+                for ps in pay_links:
+                    db.session.delete(ps)
+                db.session.delete(pay)
+
+            # Diário do paciente
+            diaries = DiaryEntry.query.filter_by(user_id=user_id, patient_id=patient.id).all()
+            for de in diaries:
+                db.session.delete(de)
+
+            # Finalmente, remover o paciente
+            db.session.delete(patient)
+
+        # 2. Excluir funcionários do usuário
+        funcionarios = Funcionario.query.filter_by(user_id=user_id).all()
+        for func in funcionarios:
+            db.session.delete(func)
+
+        # 3. Excluir especialidades do usuário
+        especialidades = Especialidade.query.filter_by(user_id=user_id).all()
+        for esp in especialidades:
+            db.session.delete(esp)
+
         # 4. Excluir histórico de assinaturas
-        SubscriptionHistory.query.filter_by(user_id=user_id).delete()
-        
+        subs_hist = SubscriptionHistory.query.filter_by(user_id=user_id).all()
+        for sh in subs_hist:
+            db.session.delete(sh)
+
         # 5. Excluir assinaturas
-        Subscription.query.filter_by(user_id=user_id).delete()
-        
+        subs = Subscription.query.filter_by(user_id=user_id).all()
+        for s in subs:
+            db.session.delete(s)
+
         # 6. Excluir tokens de reset de senha
-        PasswordResetToken.query.filter_by(user_id=user_id).delete()
-        
-        # 6b. Excluir tokens de verificação de email (evitar violação de FK em MySQL)
-        EmailVerificationToken.query.filter_by(user_id=user_id).delete()
-        
+        reset_tokens = PasswordResetToken.query.filter_by(user_id=user_id).all()
+        for rt in reset_tokens:
+            db.session.delete(rt)
+
+        # 6b. Excluir tokens de verificação de email
+        email_tokens = EmailVerificationToken.query.filter_by(user_id=user_id).all()
+        for et in email_tokens:
+            db.session.delete(et)
+
         # 7. Finalmente, excluir o usuário
         db.session.delete(user)
         
