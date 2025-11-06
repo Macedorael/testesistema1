@@ -509,6 +509,8 @@ window.Appointments = {
             console.log('Dados do agendamento carregados:', appointment);
             console.log('funcionario_nome:', appointment.funcionario_nome);
             
+            // Guardar sessões atuais para operações de edição inline
+            this.currentAppointmentSessions = appointment.sessions || [];
             this.showAppointmentDetailsModal(appointment);
         } catch (error) {
             console.error('Error loading appointment details:', error);
@@ -602,6 +604,22 @@ window.Appointments = {
                                 </div>
                             </div>
                             
+                            <!-- Legend between Info and Sessions -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-light border rounded py-2 px-3 mb-0">
+                                        <div class="fw-semibold mb-1">Legenda de ações</div>
+                                        <div class="d-flex flex-wrap gap-3 small">
+                                            <span class="d-inline-flex align-items-center"><i class="bi bi-check text-success me-1"></i>Marcar como realizada</span>
+                                            <span class="d-inline-flex align-items-center"><i class="bi bi-x text-warning me-1"></i>Marcar como falta</span>
+                                            <span class="d-inline-flex align-items-center"><i class="bi bi-arrow-clockwise text-info me-1"></i>Reagendar sessão</span>
+                                            <span class="d-inline-flex align-items-center"><i class="bi bi-journal-text text-primary me-1"></i>Pensamentos do período</span>
+                                            <span class="d-inline-flex align-items-center"><i class="bi bi-card-text text-secondary me-1"></i>Observação da sessão</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Sessions List -->
                             <div class="row mt-3">
                                 <div class="col-12">
@@ -646,6 +664,12 @@ window.Appointments = {
 
         // Add new modal
         document.getElementById('modals-container').innerHTML = modalHtml;
+        // Initialize tooltips inside the modal content
+        try {
+            document.querySelectorAll('#appointmentDetailsModal [data-bs-toggle="tooltip"]').forEach(el => {
+                new bootstrap.Tooltip(el);
+            });
+        } catch (e) { /* ignore init errors */ }
         
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('appointmentDetailsModal'));
@@ -684,8 +708,8 @@ window.Appointments = {
                                     ${window.app.formatDateTime(session.data_sessao)}
                                     ${session.status === 'reagendada' && session.data_original ? 
                                         `<br><small class="text-muted">Original: ${window.app.formatDateTime(session.data_original)}</small>` : ''}
-                                    ${session.observacoes_reagendamento ? 
-                                        `<br><small class="text-info"><i class="bi bi-info-circle"></i> ${session.observacoes_reagendamento}</small>` : ''}
+                                    ${session.observacoes ? 
+                                        `<br><small class="text-secondary"><i class="bi bi-card-text"></i> ${session.observacoes}</small>` : ''}
                                 </td>
                                 <td><span class="status-badge status-${session.status}">${session.status}</span></td>
                                 <td>
@@ -717,6 +741,9 @@ window.Appointments = {
                                         </button>
                                         <button class="btn btn-outline-primary btn-sm" onclick="Appointments.showPeriodThoughts(${this.currentAppointmentId}, ${session.id})" title="Ver pensamentos do período">
                                             <i class="bi bi-journal-text"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="Appointments.showSessionObservationModal(${session.id})" title="Adicionar/editar observação">
+                                            <i class="bi bi-card-text"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -844,6 +871,81 @@ window.Appointments = {
         } catch (error) {
             console.error('Error rescheduling session:', error);
             window.app.showError(error.message || 'Erro ao reagendar sessão');
+        }
+    },
+
+    showSessionObservationModal(sessionId) {
+        // Encontrar sessão atual para preencher observação existente
+        const session = (this.currentAppointmentSessions || []).find(s => s.id === sessionId) || {};
+        const existing = session.observacoes || '';
+
+        const modalHtml = `
+            <div class="modal fade" id="sessionObservationModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-card-text me-2"></i>
+                                Observação da Sessão #${session.numero_sessao || ''}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="session_observacoes" class="form-label">Observação</label>
+                                <textarea class="form-control" id="session_observacoes" rows="4" placeholder="Escreva observações sobre esta sessão...">${existing}</textarea>
+                                <div class="form-text">Ex.: pontos discutidos, alertas, próximos passos.</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="Appointments.confirmSessionObservation(${sessionId})">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remover modal existente
+        const existingModal = document.getElementById('sessionObservationModal');
+        if (existingModal) existingModal.remove();
+
+        // Injetar e mostrar
+        const container = document.getElementById('modals-container');
+        if (container) {
+            container.innerHTML = modalHtml;
+            const modal = new bootstrap.Modal(document.getElementById('sessionObservationModal'));
+            modal.show();
+        } else {
+            window.app.showError('Container de modais não encontrado');
+        }
+    },
+
+    async confirmSessionObservation(sessionId) {
+        const textarea = document.getElementById('session_observacoes');
+        const texto = textarea ? textarea.value : '';
+
+        try {
+            const response = await window.app.apiCall(`/sessions/${sessionId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ observacoes: texto })
+            });
+
+            window.app.showSuccess(response.message || 'Observação salva');
+
+            // Fechar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('sessionObservationModal'));
+            if (modal) modal.hide();
+
+            // Recarregar detalhes do agendamento para refletir alteração
+            if (this.currentAppointmentId) {
+                this.viewAppointment(this.currentAppointmentId);
+            } else {
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Error saving session observation:', error);
+            window.app.showError(error.message || 'Erro ao salvar observação da sessão');
         }
     },
 
