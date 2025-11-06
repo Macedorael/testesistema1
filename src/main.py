@@ -615,6 +615,11 @@ with app.app_context():
                     'postgresql' in uri or
                     uri.startswith('postgres://') or uri.startswith('postgresql://')
                 )
+                is_mysql = (
+                    engine_name == 'mysql' or
+                    'mysql' in uri or
+                    uri.startswith('mysql://') or uri.startswith('mysql+mysqldb://') or uri.startswith('mysql+pymysql://')
+                )
 
                 if is_postgres:
                     try:
@@ -643,6 +648,34 @@ with app.app_context():
                     except Exception as e_drop_pg:
                         print(f"[WARNING] Falha ao remover unicidade de username em PostgreSQL: {e_drop_pg}")
                         db.session.rollback()
+                elif is_mysql:
+                    # MySQL: identificar índices únicos envolvendo 'username' e removê-los
+                    try:
+                        res = db.session.execute(text(
+                            """
+                            SELECT DISTINCT INDEX_NAME
+                            FROM INFORMATION_SCHEMA.STATISTICS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = 'users'
+                              AND NON_UNIQUE = 0
+                              AND COLUMN_NAME = 'username'
+                            """
+                        )).fetchall()
+                        idx_names = [row[0] for row in res]
+                        for idx_name in idx_names:
+                            try:
+                                db.session.execute(text(f"ALTER TABLE users DROP INDEX {idx_name}"))
+                            except Exception:
+                                pass
+                        if idx_names:
+                            db.session.commit()
+                            print(f"✅ [MIGRATION] Índices únicos removidos em MySQL: {idx_names}")
+                        else:
+                            print("✅ [MIGRATION] Nenhum índice único de 'username' encontrado em MySQL")
+                    except Exception as e_drop_mysql:
+                        print(f"[WARNING] Falha ao remover unicidade de username em MySQL: {e_drop_mysql}")
+                        db.session.rollback()
+
                 else:
                     # SQLite: identificar índices únicos envolvendo 'username' e removê-los
                     try:
