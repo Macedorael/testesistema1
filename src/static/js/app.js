@@ -1196,11 +1196,11 @@ class App {
                 </div>
             </div>
             
-            <!-- Pacientes por Médico -->
+            <!-- Pacientes por Profissional -->
             <div class="row mb-4">
                 <div class="col-12">
                     <h3 class="mb-3">
-                        <i class="bi bi-people-fill me-2"></i>Pacientes por Médico
+                        <i class="bi bi-people-fill me-2"></i>Pacientes por Profissional
                     </h3>
                 </div>
             </div>
@@ -1214,9 +1214,9 @@ class App {
                                     <i class="bi bi-person-lines-fill me-2"></i>Detalhamento de Pacientes por Profissional
                                 </h5>
                                 <div class="col-md-4">
-                                    <label for="patients-psychologist-filter" class="form-label">Filtrar por Médico</label>
+                                    <label for="patients-psychologist-filter" class="form-label">Filtrar por Profissional</label>
                                     <select class="form-select" id="patients-psychologist-filter">
-                                        <option value="">Todos os médicos</option>
+                                        <option value="">Todos os profissionais</option>
                                         <!-- Será preenchido via JavaScript -->
                                     </select>
                                 </div>
@@ -1271,11 +1271,11 @@ class App {
                 </div>
             </div>
             
-            <!-- Atendimentos por Médico -->
+            <!-- Atendimentos por Profissional -->
             <div class="row mb-4">
                 <div class="col-12">
                     <h3 class="mb-3">
-                        <i class="bi bi-person-badge me-2"></i>Atendimentos por Médico
+                        <i class="bi bi-person-badge me-2"></i>Atendimentos por Profissional
                     </h3>
                 </div>
             </div>
@@ -1297,11 +1297,11 @@ class App {
                 </div>
             </div>
             
-            <!-- Agenda dos Próximos 10 Dias por Médico -->
+            <!-- Agenda dos Próximos 10 Dias por Profissional -->
             <div class="row mb-4">
                 <div class="col-12">
                     <h3 class="mb-3">
-                        <i class="bi bi-calendar-week me-2"></i>Agenda dos Próximos 10 Dias por Médico
+                        <i class="bi bi-calendar-week me-2"></i>Agenda dos Próximos 10 Dias por Profissional
                     </h3>
                 </div>
             </div>

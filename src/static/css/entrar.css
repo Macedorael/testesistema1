@@ -60,7 +60,7 @@ body::before {
     }
 }
 
-/* Ícone do médico no topo */
+/* Ícone no topo */
 .login-container::before {
     content: '';
     position: absolute;

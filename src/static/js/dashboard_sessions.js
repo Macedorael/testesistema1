@@ -53,7 +53,7 @@ window.DashboardSessions = {
 
         if (psychologistFilter) {
             psychologistFilter.addEventListener('change', () => {
-                // Recarregar apenas a seção de pacientes por médico
+    // Recarregar apenas a seção de pacientes por profissional
                 this.loadPatientsByPsychologist();
             });
         }
@@ -66,7 +66,7 @@ window.DashboardSessions = {
 
     async loadDashboard() {
         try {
-            // Carregar lista de médicos primeiro
+    // Carregar lista de profissionais primeiro
             await this.loadPsychologistsList();
             
             await Promise.all([
@@ -229,7 +229,7 @@ window.DashboardSessions = {
                 this.togglePsychologistSections();
             }
         } catch (error) {
-            console.error('Erro ao carregar lista de médicos:', error);
+            console.error('Erro ao carregar lista de profissionais:', error);
         }
     },
 
@@ -243,9 +243,9 @@ window.DashboardSessions = {
         const allH3 = document.querySelectorAll('h3');
         allH3.forEach(h3 => {
             const text = h3.textContent.trim();
-            if (text.includes('Atendimentos por Médico') || 
-                text.includes('Agenda dos Próximos 10 Dias por Médico') || 
-                text.includes('Pacientes por Médico')) {
+            if (text.includes('Atendimentos por Profissional') || 
+                text.includes('Agenda dos Próximos 10 Dias por Profissional') || 
+                text.includes('Pacientes por Profissional')) {
                 // Pegar o elemento pai que contém toda a seção (row)
                 sectionsToToggle.push(h3.closest('.row'));
             }
@@ -279,7 +279,7 @@ window.DashboardSessions = {
             select.removeChild(select.lastChild);
         }
         
-        // Adicionar opções dos médicos
+    // Adicionar opções dos profissionais
         this.currentData.psychologistsList.forEach(psychologist => {
             const option = document.createElement('option');
             option.value = psychologist.id;
@@ -635,7 +635,7 @@ window.DashboardSessions = {
                 throw new Error(result.message);
             }
         } catch (error) {
-            console.error('Erro ao carregar estatísticas de médicos:', error);
+            console.error('Erro ao carregar estatísticas de profissionais:', error);
             throw error;
         }
     },
@@ -645,7 +645,7 @@ window.DashboardSessions = {
         if (!container) return;
 
         if (!this.currentData.psychologistsStats || this.currentData.psychologistsStats.length === 0) {
-            container.innerHTML = '<p class="text-muted">Nenhum médico com atendimentos encontrado.</p>';
+            container.innerHTML = '<p class="text-muted">Nenhum profissional com atendimentos encontrado.</p>';
             return;
         }
 
@@ -719,7 +719,7 @@ window.DashboardSessions = {
                 throw new Error(result.message);
             }
         } catch (error) {
-            console.error('Erro ao carregar sessões futuras por médico:', error);
+            console.error('Erro ao carregar sessões futuras por profissional:', error);
             throw error;
         }
     },
@@ -785,10 +785,10 @@ window.DashboardSessions = {
                 this.currentData.patientsByPsychologist = result.data;
                 this.renderPatientsByPsychologist();
             } else {
-                console.error('Erro ao carregar pacientes por médico:', result.message);
+                console.error('Erro ao carregar pacientes por profissional:', result.message);
             }
         } catch (error) {
-            console.error('Erro ao carregar pacientes por médico:', error);
+            console.error('Erro ao carregar pacientes por profissional:', error);
         }
     },
 
@@ -899,7 +899,7 @@ window.DashboardSessions = {
                     `;
                 }).join('');
             } else {
-                patientsHtml = '<div class="col-12"><p class="text-muted text-center">Nenhum paciente encontrado para este médico.</p></div>';
+                patientsHtml = '<div class="col-12"><p class="text-muted text-center">Nenhum paciente encontrado para este profissional.</p></div>';
             }
             
             return `

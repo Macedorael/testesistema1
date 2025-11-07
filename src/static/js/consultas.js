@@ -42,13 +42,13 @@ window.Appointments = {
 
     async loadMedicos() {
         try {
-            LoadingManager.show('appointments-loading', 'Carregando médicos...');
+            LoadingManager.show('appointments-loading', 'Carregando profissionais...');
             const response = await window.app.apiCall('/medicos');
             // O endpoint /medicos retorna uma lista diretamente, não um objeto com data
             this.medicos = Array.isArray(response) ? response : (response.data || []);
-            console.log('Médicos carregados:', this.medicos);
+            console.log('Profissionais carregados:', this.medicos);
         } catch (error) {
-            console.error('Error loading médicos:', error);
+            console.error('Error loading profissionais:', error);
             this.medicos = [];
         } finally {
             LoadingManager.hide('appointments-loading');
@@ -248,9 +248,9 @@ window.Appointments = {
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="funcionario_id" class="form-label">Médico</label>
+                                            <label for="funcionario_id" class="form-label">Profissional</label>
                                         <select class="form-select" id="funcionario_id">
-                                            <option value="">Selecione um médico</option>
+                                            <option value="">Selecione um profissional</option>
                                                 ${(this.medicos || []).map(medico => `
                                     <option value="${medico.id}" 
                                         ${isEdit && this.currentAppointment.funcionario_id === medico.id ? 'selected' : ''}>
@@ -548,7 +548,7 @@ window.Appointments = {
                                             </div>
                                             ${appointment.funcionario_nome ? `
                                                 <div class="row mb-2">
-                                                    <div class="col-sm-5"><strong>Médico:</strong></div>
+                                                    <div class="col-sm-5"><strong>Profissional:</strong></div>
                                                     <div class="col-sm-7"><span class="badge bg-info">${appointment.funcionario_nome}</span></div>
                                                 </div>
                                             ` : ''}
