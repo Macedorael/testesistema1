@@ -458,12 +458,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     showVerificationPrompt(email);
                 }
 
-                // Limpar os campos se for erro de senha
-                if (data.error && data.error.includes('Senha incorreta')) {
-                    document.getElementById('password').value = '';
-                    document.getElementById('password').focus();
-                } else if (data.error && data.error.includes('Usuário não encontrado')) {
-                    document.getElementById('email').focus();
+                // Tratamento genérico: para erros de credenciais (401), limpar apenas a senha
+                // sem revelar qual campo está incorreto.
+                if (response.status === 401) {
+                    const pwdInput = document.getElementById('password');
+                    if (pwdInput) pwdInput.value = '';
                 }
             }
         } catch (error) {

@@ -64,11 +64,13 @@ def login():
 
     # Verificar se o usuário existe
     if not user:
-        return jsonify({"error": "Usuário não encontrado. Verifique o email digitado."}), 401
+        # Mensagem genérica para não revelar se o email existe
+        return jsonify({"error": "Email ou senha incorretos."}), 401
     
     # Verificar se a senha está correta
     if not user.check_password(password):
-        return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
+        # Mensagem genérica para não revelar qual credencial está incorreta
+        return jsonify({"error": "Email ou senha incorretos."}), 401
 
     # Verificação de email: bloquear apenas para NOVOS usuários
     # Exceções: permitir login para administradores e usuários LEGADOS (sem fluxo de verificação)
