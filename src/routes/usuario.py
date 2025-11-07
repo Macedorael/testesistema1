@@ -346,11 +346,11 @@ def register():
         else:
             print("[ERROR] Usuário não encontrado após commit")
         
-        # Conceder acesso inicial de 2 dias (plano 'trial')
+        # Conceder acesso inicial de 7 dias (plano 'trial')
         try:
             trial_sub = Subscription(user_id=user.id, plan_type='trial', auto_renew=False)
-            # Garantir exatamente 2 dias de acesso
-            trial_sub.end_date = trial_sub.start_date + timedelta(days=2)
+            # Garantir exatamente 7 dias de acesso
+            trial_sub.end_date = trial_sub.start_date + timedelta(days=7)
             trial_sub.price = 0.0
             trial_sub.status = 'active'
             db.session.add(trial_sub)

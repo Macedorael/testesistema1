@@ -26,7 +26,7 @@ class Subscription(db.Model):
         'quarterly': 79.90,  # 3 meses com desconto
         'biannual': 149.90,  # 6 meses com desconto
         'annual': 279.90,    # 12 meses com desconto
-        'trial': 0.0         # Plano de acesso temporário (2 dias)
+        'trial': 0.0         # Plano de acesso temporário (7 dias)
     }
     
     # Duração dos planos em meses
@@ -47,9 +47,9 @@ class Subscription(db.Model):
         
     def calculate_end_date(self):
         """Calcula a data de término baseada no tipo de plano"""
-        # Suporte especial para plano de teste (2 dias)
+        # Suporte especial para plano de teste (7 dias)
         if self.plan_type == 'trial':
-            return self.start_date + timedelta(days=2)
+            return self.start_date + timedelta(days=7)
 
         duration_months = self.PLAN_DURATION.get(self.plan_type, 1)
         # Adiciona os meses à data de início
