@@ -132,7 +132,7 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
 
     # Verificar se envio está habilitado
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Email de verificação não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Email de verificação não será enviado.")
         return True
 
     try:
@@ -158,13 +158,14 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
             else:
                 base_url = resolved.rstrip('/')
         try:
-            print(f"[DEBUG] Base URL para verificação (final): {base_url}")
+            # print(f"[DEBUG] Base URL para verificação (final): {base_url}")
+            pass
         except Exception:
             pass
         verify_link = f"{base_url}/api/verify-email?token={token}"
 
         if not sender_email or not sender_password:
-            print("[ERROR] Configurações de email não encontradas no .env")
+            # print("[ERROR] Configurações de email não encontradas no .env")
             return False
 
         # Criar mensagem
@@ -198,10 +199,10 @@ def enviar_email_verificacao(email: str, username: str, token: str) -> bool:
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, email, msg.as_string())
 
-        print(f"[DEBUG] Email de verificação enviado para {email}")
+        # print(f"[DEBUG] Email de verificação enviado para {email}")
         return True
     except Exception as e:
-        print(f"[ERROR] Erro ao enviar email de verificação: {e}")
+        # print(f"[ERROR] Erro ao enviar email de verificação: {e}")
         return False
 
 def gerar_link_google_calendar(titulo, data_inicio, data_fim=None, descricao="", local=""):
@@ -241,20 +242,20 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
     
     # Verificar se emails estão habilitados
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Email de confirmação não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Email de confirmação não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações do agendamento
         agendamento = Appointment.query.get(id_agendamento)
         if not agendamento:
-            print(f"Agendamento com ID {id_agendamento} não encontrado")
+            # print(f"Agendamento com ID {id_agendamento} não encontrado")
             return False
         
         # Buscar informações do paciente
         paciente = Patient.query.get(agendamento.patient_id)
         if not paciente:
-            print(f"Paciente não encontrado para o agendamento {id_agendamento}")
+            # print(f"Paciente não encontrado para o agendamento {id_agendamento}")
             return False
         
         # Buscar informações do funcionário (médico)
@@ -317,7 +318,7 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
         senha_email = os.getenv('SMTP_PASSWORD')
         
         if not all([servidor_smtp, email_remetente, senha_email]):
-            print("Configurações de email não encontradas no arquivo .env")
+            # print("Configurações de email não encontradas no arquivo .env")
             return False
         
         # Criar mensagem de email
@@ -418,11 +419,11 @@ def enviar_email_confirmacao_agendamento(id_agendamento):
             servidor.login(email_remetente, senha_email)
             servidor.send_message(msg)
         
-        print(f"Email de confirmação enviado com sucesso para {paciente.email}")
+        # print(f"Email de confirmação enviado com sucesso para {paciente.email}")
         return True
-        
+
     except Exception as e:
-        print(f"Erro ao enviar email de confirmação: {str(e)}")
+        # print(f"Erro ao enviar email de confirmação: {str(e)}")
         return False
 
 def enviar_lembrete_sessao(id_sessao):
@@ -438,26 +439,26 @@ def enviar_lembrete_sessao(id_sessao):
     
     # Verificar se emails estão habilitados
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Lembrete de sessão não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Lembrete de sessão não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações da sessão
         sessao = Session.query.get(id_sessao)
         if not sessao:
-            print(f"Sessão com ID {id_sessao} não encontrada")
+            # print(f"Sessão com ID {id_sessao} não encontrada")
             return False
         
         # Buscar agendamento relacionado
         agendamento = Appointment.query.get(sessao.appointment_id)
         if not agendamento:
-            print(f"Agendamento não encontrado para a sessão {id_sessao}")
+            # print(f"Agendamento não encontrado para a sessão {id_sessao}")
             return False
         
         # Buscar informações do paciente
         paciente = Patient.query.get(agendamento.patient_id)
         if not paciente:
-            print(f"Paciente não encontrado para a sessão {id_sessao}")
+            # print(f"Paciente não encontrado para a sessão {id_sessao}")
             return False
         
         # Buscar informações do funcionário (médico)
@@ -484,7 +485,7 @@ def enviar_lembrete_sessao(id_sessao):
         senha_email = os.getenv('SMTP_PASSWORD')
         
         if not all([servidor_smtp, email_remetente, senha_email]):
-            print("Configurações de email não encontradas no arquivo .env")
+            # print("Configurações de email não encontradas no arquivo .env")
             return False
         
         # Criar mensagem de email
@@ -570,11 +571,11 @@ def enviar_lembrete_sessao(id_sessao):
             servidor.login(email_remetente, senha_email)
             servidor.send_message(msg)
         
-        print(f"Lembrete de sessão enviado com sucesso para {paciente.email}")
+        # print(f"Lembrete de sessão enviado com sucesso para {paciente.email}")
         return True
-        
+
     except Exception as e:
-        print(f"Erro ao enviar lembrete de sessão: {str(e)}")
+        # print(f"Erro ao enviar lembrete de sessão: {str(e)}")
         return False
 
 def enviar_email_atualizacao_agendamento(id_agendamento):
@@ -590,20 +591,20 @@ def enviar_email_atualizacao_agendamento(id_agendamento):
     
     # Verificar se emails estão habilitados
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Email de atualização não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Email de atualização não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações do agendamento
         agendamento = Appointment.query.get(id_agendamento)
         if not agendamento:
-            print(f"Agendamento com ID {id_agendamento} não encontrado")
+            # print(f"Agendamento com ID {id_agendamento} não encontrado")
             return False
         
         # Buscar informações do paciente
         paciente = Patient.query.get(agendamento.patient_id)
         if not paciente:
-            print(f"Paciente não encontrado para o agendamento {id_agendamento}")
+            # print(f"Paciente não encontrado para o agendamento {id_agendamento}")
             return False
         
         # Buscar informações do funcionário (médico)
@@ -630,7 +631,7 @@ def enviar_email_atualizacao_agendamento(id_agendamento):
         senha_email = os.getenv('SMTP_PASSWORD')
         
         if not all([servidor_smtp, email_remetente, senha_email]):
-            print("Configurações de email não encontradas no arquivo .env")
+            # print("Configurações de email não encontradas no arquivo .env")
             return False
         
         # Criar mensagem de email
@@ -754,11 +755,11 @@ def enviar_email_atualizacao_agendamento(id_agendamento):
             servidor.login(email_remetente, senha_email)
             servidor.send_message(msg)
         
-        print(f"Email de atualização enviado com sucesso para {paciente.email}")
+        # print(f"Email de atualização enviado com sucesso para {paciente.email}")
         return True
-        
+
     except Exception as e:
-        print(f"Erro ao enviar email de atualização: {str(e)}")
+        # print(f"Erro ao enviar email de atualização: {str(e)}")
         return False
 
 def enviar_email_cancelamento_agendamento(agendamento_data):
@@ -774,7 +775,7 @@ def enviar_email_cancelamento_agendamento(agendamento_data):
     
     # Verificar se emails estão habilitados
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Email de cancelamento não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Email de cancelamento não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
@@ -785,7 +786,7 @@ def enviar_email_cancelamento_agendamento(agendamento_data):
         senha_email = os.getenv('SMTP_PASSWORD')
         
         if not all([servidor_smtp, email_remetente, senha_email]):
-            print("Configurações de email não encontradas no arquivo .env")
+            # print("Configurações de email não encontradas no arquivo .env")
             return False
         
         # Criar mensagem de email
@@ -851,11 +852,11 @@ def enviar_email_cancelamento_agendamento(agendamento_data):
             servidor.login(email_remetente, senha_email)
             servidor.send_message(msg)
         
-        print(f"Email de cancelamento enviado com sucesso para {agendamento_data['patient_email']}")
+        # print(f"Email de cancelamento enviado com sucesso para {agendamento_data['patient_email']}")
         return True
-        
+
     except Exception as e:
-        print(f"Erro ao enviar email de cancelamento: {str(e)}")
+        # print(f"Erro ao enviar email de cancelamento: {str(e)}")
         return False
 
 def enviar_email_reagendamento_sessao(id_sessao):
@@ -871,26 +872,26 @@ def enviar_email_reagendamento_sessao(id_sessao):
     
     # Verificar se emails estão habilitados
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Email de reagendamento não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Email de reagendamento não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
         # Buscar informações da sessão
         sessao = Session.query.get(id_sessao)
         if not sessao:
-            print(f"Sessão com ID {id_sessao} não encontrada")
+            # print(f"Sessão com ID {id_sessao} não encontrada")
             return False
         
         # Buscar agendamento relacionado
         agendamento = Appointment.query.get(sessao.appointment_id)
         if not agendamento:
-            print(f"Agendamento não encontrado para a sessão {id_sessao}")
+            # print(f"Agendamento não encontrado para a sessão {id_sessao}")
             return False
         
         # Buscar informações do paciente
         paciente = Patient.query.get(agendamento.patient_id)
         if not paciente:
-            print(f"Paciente não encontrado para a sessão {id_sessao}")
+            # print(f"Paciente não encontrado para a sessão {id_sessao}")
             return False
         
         # Buscar informações do funcionário (médico)
@@ -913,7 +914,7 @@ def enviar_email_reagendamento_sessao(id_sessao):
         senha_email = os.getenv('SMTP_PASSWORD')
         
         if not all([servidor_smtp, email_remetente, senha_email]):
-            print("Configurações de email não encontradas no arquivo .env")
+            # print("Configurações de email não encontradas no arquivo .env")
             return False
         
         # Criar mensagem de email
@@ -1002,9 +1003,9 @@ def enviar_email_reagendamento_sessao(id_sessao):
             servidor.login(email_remetente, senha_email)
             servidor.send_message(msg)
         
-        print(f"Email de reagendamento enviado com sucesso para {paciente.email}")
+        # print(f"Email de reagendamento enviado com sucesso para {paciente.email}")
         return True
-        
+
     except Exception as e:
-        print(f"Erro ao enviar email de reagendamento: {str(e)}")
+        # print(f"Erro ao enviar email de reagendamento: {str(e)}")
         return False

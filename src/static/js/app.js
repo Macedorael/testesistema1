@@ -1,4 +1,17 @@
 // Main Application JavaScript
+// Global console mute for production-like environments (keeps errors visible)
+(function(){
+  // Toggle this flag to enable/disable debug logging
+  window.APP_DEBUG = false;
+  if (!window.APP_DEBUG && typeof console !== 'undefined') {
+    const noop = function(){};
+    try { console.log = noop; } catch(_) {}
+    try { console.debug = noop; } catch(_) {}
+    try { console.info = noop; } catch(_) {}
+    try { console.warn = noop; } catch(_) {}
+    // Do NOT mute console.error to keep failures visible
+  }
+})();
 class App {
     constructor() {
         this.currentPage = 'dashboard';

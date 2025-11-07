@@ -20,7 +20,7 @@ def get_appointments():
     logger.info("[GET /appointments] Iniciando busca de agendamentos")
     try:
         current_user = get_current_user()
-        logger.debug(f"[GET /appointments] Usuário atual: {current_user.id if current_user else 'None'}")
+        # logger.debug(f"[GET /appointments] Usuário atual: {current_user.id if current_user else 'None'}")
         
         if not current_user:
             logger.warning("[GET /appointments] Usuário não encontrado")
@@ -29,7 +29,7 @@ def get_appointments():
                 'message': 'Usuário não encontrado'
             }), 401
             
-        logger.debug(f"[GET /appointments] Buscando agendamentos para user_id: {current_user.id}")
+        # logger.debug(f"[GET /appointments] Buscando agendamentos para user_id: {current_user.id}")
         appointments = Appointment.query.filter_by(user_id=current_user.id).join(Patient).order_by(Appointment.data_primeira_sessao.desc()).all()
         logger.info(f"[GET /appointments] Encontrados {len(appointments)} agendamentos")
         
@@ -70,7 +70,7 @@ def get_appointment(appointment_id):
     logger.info(f"[GET /appointments/{appointment_id}] Iniciando busca de agendamento específico")
     try:
         current_user = get_current_user()
-        logger.debug(f"[GET /appointments/{appointment_id}] Usuário atual: {current_user.id if current_user else 'None'}")
+        # logger.debug(f"[GET /appointments/{appointment_id}] Usuário atual: {current_user.id if current_user else 'None'}")
         
         if not current_user:
             logger.warning(f"[GET /appointments/{appointment_id}] Usuário não encontrado")
@@ -79,7 +79,7 @@ def get_appointment(appointment_id):
                 'message': 'Usuário não encontrado'
             }), 401
             
-        logger.debug(f"[GET /appointments/{appointment_id}] Buscando agendamento para user_id: {current_user.id}")
+        # logger.debug(f"[GET /appointments/{appointment_id}] Buscando agendamento para user_id: {current_user.id}")
         appointment = Appointment.query.filter_by(id=appointment_id, user_id=current_user.id).first()
         
         if not appointment:
@@ -226,7 +226,7 @@ def create_appointment():
             email_success = enviar_email_confirmacao_agendamento(appointment.id)
             
         except Exception as e:
-            print(f"[ERROR] Erro ao enviar e-mail de confirmação: {e}")
+            # print(f"[ERROR] Erro ao enviar e-mail de confirmação: {e}")
         
         # Construir mensagem de resposta baseada no resultado do e-mail
         if email_success:
@@ -338,7 +338,7 @@ def update_appointment(appointment_id):
             from src.utils.notificacoes_email import enviar_email_atualizacao_agendamento
             enviar_email_atualizacao_agendamento(appointment.id)
         except Exception as e:
-            print(f"[WARNING] Erro ao enviar e-mail de atualização: {e}")
+            # print(f"[WARNING] Erro ao enviar e-mail de atualização: {e}")
         
         return jsonify({
             'success': True,
@@ -379,7 +379,7 @@ def resend_confirmation_email(appointment_id):
             email_success = enviar_email_confirmacao_agendamento(appointment.id)
             
         except Exception as e:
-            print(f"[ERROR] Erro ao reenviar e-mail de confirmação: {e}")
+            # print(f"[ERROR] Erro ao reenviar e-mail de confirmação: {e}")
         
         if email_success:
             return jsonify({
@@ -456,7 +456,7 @@ def delete_appointment(appointment_id):
             from src.utils.notificacoes_email import enviar_email_cancelamento_agendamento
             enviar_email_cancelamento_agendamento(agendamento_data)
         except Exception as e:
-            print(f"[WARNING] Erro ao enviar e-mail de cancelamento: {e}")
+            # print(f"[WARNING] Erro ao enviar e-mail de cancelamento: {e}")
         
         return jsonify({
             'success': True,
@@ -551,7 +551,7 @@ def update_session(session_id):
                 from src.utils.notificacoes_email import enviar_email_reagendamento_sessao
                 enviar_email_reagendamento_sessao(session.id)
             except Exception as e:
-                print(f"Erro ao enviar e-mail de reagendamento: {str(e)}")
+                # print(f"Erro ao enviar e-mail de reagendamento: {str(e)}")
                 # Não falha a operação se o e-mail não for enviado
         
         return jsonify({

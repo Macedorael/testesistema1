@@ -23,7 +23,7 @@ logging.getLogger('src.routes.assinaturas').setLevel(logging.INFO)
 # logging.getLogger('src.utils.mercadopago_config').setLevel(logging.INFO)
 # logging.getLogger('src.routes.mercadopago_webhook').setLevel(logging.INFO)
 
-print("[DEBUG] Configuração de logging aplicada - logs detalhados habilitados")
+# print("[DEBUG] Configuração de logging aplicada - logs detalhados habilitados")
 
 from flask import Flask, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
@@ -33,126 +33,146 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 try:
     from src.models.base import db
     from src.models.usuario import User
-    print("[DEBUG] Importação de usuario OK")
+    # print("[DEBUG] Importação de usuario OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar usuario: {e}")
+    # print(f"[ERROR] Erro ao importar usuario: {e}")
+    pass
 
 try:
     from src.models.paciente import Patient
-    print("[DEBUG] Importação de paciente OK")
+    # print("[DEBUG] Importação de paciente OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar paciente: {e}")
+    # print(f"[ERROR] Erro ao importar paciente: {e}")
+    pass
 
 try:
     from src.models.consulta import Appointment, Session
-    print("[DEBUG] Importação de consulta OK")
+    # print("[DEBUG] Importação de consulta OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar consulta: {e}")
+    # print(f"[ERROR] Erro ao importar consulta: {e}")
+    pass
 
 try:
     from src.models.pagamento import Payment, PaymentSession
-    print("[DEBUG] Importação de pagamento OK")
+    # print("[DEBUG] Importação de pagamento OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar pagamento: {e}")
+    # print(f"[ERROR] Erro ao importar pagamento: {e}")
+    pass
 
 try:
     from src.models.diario import DiaryEntry
-    print("[DEBUG] Importação de diario model OK")
+    # print("[DEBUG] Importação de diario model OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar diario model: {e}")
+    # print(f"[ERROR] Erro ao importar diario model: {e}")
+    pass
 
 try:
     from src.models.password_reset import PasswordResetToken
-    print("[DEBUG] Importação de password_reset OK")
+    # print("[DEBUG] Importação de password_reset OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar password_reset: {e}")
+    # print(f"[ERROR] Erro ao importar password_reset: {e}")
+    pass
 
 try:
     from src.models.especialidade import Especialidade
-    print("[DEBUG] Importação de especialidade OK")
+    # print("[DEBUG] Importação de especialidade OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar especialidade: {e}")
+    # print(f"[ERROR] Erro ao importar especialidade: {e}")
+    pass
 
 try:
     from src.models.funcionario import Funcionario
-    print("[DEBUG] Importação de funcionario OK")
+    # print("[DEBUG] Importação de funcionario OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar funcionario: {e}")
+    # print(f"[ERROR] Erro ao importar funcionario: {e}")
+    pass
 
 try:
     from src.models.assinatura import Subscription
     from src.models.historico_assinatura import SubscriptionHistory
-    print("[DEBUG] Importação de assinatura e historico OK")
+    # print("[DEBUG] Importação de assinatura e historico OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar assinatura: {e}")
+    # print(f"[ERROR] Erro ao importar assinatura: {e}")
+    pass
 
 # Importações de rotas
 try:
     from src.routes.usuario import user_bp
-    print("[DEBUG] Importação de usuario routes OK")
+    # print("[DEBUG] Importação de usuario routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar usuario routes: {e}")
+    # print(f"[ERROR] Erro ao importar usuario routes: {e}")
+    pass
 
 try:
     from src.routes.pacientes import patients_bp
-    print("[DEBUG] Importação de pacientes routes OK")
+    # print("[DEBUG] Importação de pacientes routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar pacientes routes: {e}")
+    # print(f"[ERROR] Erro ao importar pacientes routes: {e}")
+    pass
 
 try:
     from src.routes.consultas import appointments_bp
-    print("[DEBUG] Importação de consultas routes OK")
+    # print("[DEBUG] Importação de consultas routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar consultas routes: {e}")
+    # print(f"[ERROR] Erro ao importar consultas routes: {e}")
+    pass
 
 try:
     from src.routes.pagamentos import payments_bp
-    print("[DEBUG] Importação de pagamentos routes OK")
+    # print("[DEBUG] Importação de pagamentos routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar pagamentos routes: {e}")
+    # print(f"[ERROR] Erro ao importar pagamentos routes: {e}")
+    pass
 
 try:
     from src.routes.dashboard import dashboard_bp
-    print("[DEBUG] Importação de dashboard routes OK")
+    # print("[DEBUG] Importação de dashboard routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar dashboard routes: {e}")
+    # print(f"[ERROR] Erro ao importar dashboard routes: {e}")
+    pass
 
 try:
     from src.routes.dashboard_payments import dashboard_payments_bp
-    print("[DEBUG] Importação de dashboard_payments routes OK")
+    # print("[DEBUG] Importação de dashboard_payments routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar dashboard_payments routes: {e}")
+    # print(f"[ERROR] Erro ao importar dashboard_payments routes: {e}")
+    pass
 
 try:
     from src.routes.dashboard_sessions import dashboard_sessions_bp
-    print("[DEBUG] Importação de dashboard_sessions routes OK")
+    # print("[DEBUG] Importação de dashboard_sessions routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar dashboard_sessions routes: {e}")
+    # print(f"[ERROR] Erro ao importar dashboard_sessions routes: {e}")
+    pass
 
 try:
     from src.routes.diarios import diaries_bp
-    print("[DEBUG] Importação de diarios routes OK")
+    # print("[DEBUG] Importação de diarios routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar diarios routes: {e}")
+    # print(f"[ERROR] Erro ao importar diarios routes: {e}")
+    pass
 
 try:
     # Importar após inicialização do Mercado Pago
     from src.routes.assinaturas import subscriptions_bp
-    print("[DEBUG] Importação de assinaturas routes OK")
+    # print("[DEBUG] Importação de assinaturas routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar assinaturas routes: {e}")
+    # print(f"[ERROR] Erro ao importar assinaturas routes: {e}")
+    pass
 
 try:
     from src.routes.especialidades import especialidades_bp
-    print("[DEBUG] Importação de especialidades routes OK")
+    # print("[DEBUG] Importação de especialidades routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar especialidades routes: {e}")
+    # print(f"[ERROR] Erro ao importar especialidades routes: {e}")
+    pass
 
 try:
     from src.routes.funcionarios import funcionarios_bp
-    print("[DEBUG] Importação de funcionarios routes OK")
+    # print("[DEBUG] Importação de funcionarios routes OK")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar funcionarios routes: {e}")
+    # print(f"[ERROR] Erro ao importar funcionarios routes: {e}")
+    pass
 
 # Comentado - removendo importação do mercadopago_webhook
 # try:
@@ -165,8 +185,8 @@ except Exception as e:
 
 # Configuração do Flask com debug de static folder
 static_path = os.path.join(os.path.dirname(__file__), 'static')
-print(f"[DEBUG] Static folder path: {static_path}")
-print(f"[DEBUG] Static folder exists: {os.path.exists(static_path)}")
+# print(f"[DEBUG] Static folder path: {static_path}")
+# print(f"[DEBUG] Static folder exists: {os.path.exists(static_path)}")
 
 app = Flask(__name__, static_folder=static_path)
 # Configuração da SECRET_KEY
@@ -178,15 +198,15 @@ app.config['SESSION_COOKIE_SECURE'] = False    # Para desenvolvimento local (HTT
 app.config['SESSION_COOKIE_SAMESITE'] = None   # Permite cookies cross-site
 app.config['SESSION_COOKIE_DOMAIN'] = None     # Permite localhost
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hora
-print("[DEBUG] Configurações de sessão aplicadas para desenvolvimento")
+# print("[DEBUG] Configurações de sessão aplicadas para desenvolvimento")
 
-print(f"[DEBUG] Flask static_folder: {app.static_folder}")
-print(f"[DEBUG] Flask static_url_path: {app.static_url_path}")
+# print(f"[DEBUG] Flask static_folder: {app.static_folder}")
+# print(f"[DEBUG] Flask static_url_path: {app.static_url_path}")
 
 # Verificar se inicial.html existe
 inicial_path = os.path.join(static_path, 'inicial.html')
-print(f"[DEBUG] inicial.html path: {inicial_path}")
-print(f"[DEBUG] inicial.html exists: {os.path.exists(inicial_path)}")
+# print(f"[DEBUG] inicial.html path: {inicial_path}")
+# print(f"[DEBUG] inicial.html exists: {os.path.exists(inicial_path)}")
 
 # Configurar CORS para produção
 if os.getenv('FLASK_ENV') == 'production':
@@ -208,7 +228,7 @@ else:
 @app.before_request
 def log_request_info():
     from flask import request
-    print(f"[DEBUG] >>> REQUISIÇÃO: {request.method} {request.path}")
+    # print(f"[DEBUG] >>> REQUISIÇÃO: {request.method} {request.path}")
 
 @app.after_request
 def log_response_info(response):
@@ -231,10 +251,10 @@ def handle_exception(e):
     # Para exceções não-HTTP, logar detalhes e retornar erro 500
     error_id = str(hash(str(e)))[:8]  # ID único para rastreamento
     
-    print(f"[ERROR] EXCEÇÃO NÃO TRATADA [ID: {error_id}]: {str(e)}")
-    print(f"[ERROR] Tipo da exceção: {type(e).__name__}")
-    print(f"[ERROR] Traceback completo:")
-    print(traceback.format_exc())
+    # print(f"[ERROR] EXCEÇÃO NÃO TRATADA [ID: {error_id}]: {str(e)}")
+    # print(f"[ERROR] Tipo da exceção: {type(e).__name__}")
+    # print(f"[ERROR] Traceback completo:")
+    # print(traceback.format_exc())
     
     # Em desenvolvimento, retornar detalhes do erro
     if os.getenv('FLASK_ENV') != 'production':
@@ -257,7 +277,7 @@ def handle_exception(e):
 def handle_500_error(e):
     """Handler específico para erros 500"""
     error_id = str(hash(str(e)))[:8]
-    print(f"[ERROR] ERRO 500 [ID: {error_id}]: {str(e)}")
+    # print(f"[ERROR] ERRO 500 [ID: {error_id}]: {str(e)}")
     
     return jsonify({
         'error': 'Erro Interno do Servidor',
@@ -268,63 +288,73 @@ def handle_500_error(e):
 # Registrar blueprints
 try:
     app.register_blueprint(user_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint user_bp registrado")
+    # print("[DEBUG] Blueprint user_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar user_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar user_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(patients_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint patients_bp registrado")
+    # print("[DEBUG] Blueprint patients_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar patients_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar patients_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(appointments_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint appointments_bp registrado")
+    # print("[DEBUG] Blueprint appointments_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar appointments_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar appointments_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(payments_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint payments_bp registrado")
+    # print("[DEBUG] Blueprint payments_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar payments_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar payments_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(dashboard_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint dashboard_bp registrado")
+    # print("[DEBUG] Blueprint dashboard_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar dashboard_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar dashboard_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(dashboard_payments_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint dashboard_payments_bp registrado")
+    # print("[DEBUG] Blueprint dashboard_payments_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar dashboard_payments_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar dashboard_payments_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(dashboard_sessions_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint dashboard_sessions_bp registrado")
+    # print("[DEBUG] Blueprint dashboard_sessions_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar dashboard_sessions_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar dashboard_sessions_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(diaries_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint diaries_bp registrado")
+    # print("[DEBUG] Blueprint diaries_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar diaries_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar diaries_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(especialidades_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint especialidades_bp registrado")
+    # print("[DEBUG] Blueprint especialidades_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar especialidades_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar especialidades_bp: {e}")
+    pass
 
 try:
     app.register_blueprint(funcionarios_bp, url_prefix='/api')
-    print("[DEBUG] Blueprint funcionarios_bp registrado")
+    # print("[DEBUG] Blueprint funcionarios_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar funcionarios_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar funcionarios_bp: {e}")
+    pass
 
 
 
@@ -332,18 +362,18 @@ except Exception as e:
 if os.getenv('DATABASE_URL'):
     # Produção - PostgreSQL no Render
     database_url = os.getenv('DATABASE_URL')
-    print(f"[DEBUG] DATABASE_URL encontrada: {database_url[:50]}...")
+    # print(f"[DEBUG] DATABASE_URL encontrada: {database_url[:50]}...")
     # Render usa postgres:// mas SQLAlchemy precisa de postgresql://
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        print("[DEBUG] URL do PostgreSQL corrigida de postgres:// para postgresql://")
+        # print("[DEBUG] URL do PostgreSQL corrigida de postgres:// para postgresql://")
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    print("[DEBUG] Configuração do banco PostgreSQL aplicada")
+    # print("[DEBUG] Configuração do banco PostgreSQL aplicada")
 else:
     # Desenvolvimento - SQLite local
     sqlite_path = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
     app.config['SQLALCHEMY_DATABASE_URI'] = sqlite_path
-    print(f"[DEBUG] Configuração do banco SQLite aplicada: {sqlite_path}")
+    # print(f"[DEBUG] Configuração do banco SQLite aplicada: {sqlite_path}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
@@ -860,7 +890,7 @@ with app.app_context():
                 print(f"[WARNING] Erro na migração/população de roles: {migration_error}")
                 db.session.rollback()
         
-        print("[STARTUP] Verificando usuário administrador...")
+        # print("[STARTUP] Verificando usuário administrador...")
         
         # Verificar se já existe um usuário admin (por email OU username)
         existing_admin = User.query.filter(
@@ -873,9 +903,11 @@ with app.app_context():
         
         if not existing_admin:
             if is_production:
-                print("[PRODUCTION] Criando usuário administrador automaticamente...")
+                # print("[PRODUCTION] Criando usuário administrador automaticamente...")
+                pass
             else:
-                print("[STARTUP] Criando usuário administrador...")
+                # print("[STARTUP] Criando usuário administrador...")
+                pass
             
             # Criar usuário administrador
             admin_user = User(
@@ -904,22 +936,26 @@ with app.app_context():
             db.session.commit()
             
             if is_production:
-                print("🚀 [PRODUCTION] Usuário administrador criado automaticamente no deploy!")
-                print("📧 Email: admin@consultorio.com")
-                print("🔑 Senha: admin123")
-                print("⚠️  IMPORTANTE: Altere a senha após o primeiro login!")
+                # print("🚀 [PRODUCTION] Usuário administrador criado automaticamente no deploy!")
+                # print("📧 Email: admin@consultorio.com")
+                # print("🔑 Senha: admin123")
+                # print("⚠️  IMPORTANTE: Altere a senha após o primeiro login!")
+                pass
             else:
-                print("✅ Usuário administrador criado com sucesso!")
-                print("📧 Email: admin@consultorio.com")
-                print("🔑 Senha: admin123 (ALTERE APÓS O PRIMEIRO LOGIN)")
+                # print("✅ Usuário administrador criado com sucesso!")
+                # print("📧 Email: admin@consultorio.com")
+                # print("🔑 Senha: admin123 (ALTERE APÓS O PRIMEIRO LOGIN)")
+                pass
         else:
             if is_production:
-                print("✅ [PRODUCTION] Usuário administrador já existe no ambiente de produção.")
+                # print("✅ [PRODUCTION] Usuário administrador já existe no ambiente de produção.")
+                pass
             else:
-                print("✅ Usuário administrador já existe.")
+                # print("✅ Usuário administrador já existe.")
+                pass
             
     except Exception as e:
-        print(f"[ERROR] Erro ao criar usuário administrador: {e}")
+        # print(f"[ERROR] Erro ao criar usuário administrador: {e}")
         db.session.rollback()
 
 # Comentado - removendo inicialização do Mercado Pago
@@ -934,9 +970,10 @@ with app.app_context():
 # Assinaturas desativadas: não registrar rotas de assinatura de usuário
 try:
     app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
-    print("[DEBUG] Blueprint subscriptions_bp registrado")
+    # print("[DEBUG] Blueprint subscriptions_bp registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao registrar subscriptions_bp: {e}")
+    # print(f"[ERROR] Erro ao registrar subscriptions_bp: {e}")
+    pass
 
 # Comentado - removendo registro do mercadopago_webhook_bp
 # try:
@@ -949,9 +986,10 @@ except Exception as e:
 try:
     from src.routes.admin import admin_bp
     app.register_blueprint(admin_bp)
-    print("[DEBUG] Blueprint admin_bp importado e registrado")
+    # print("[DEBUG] Blueprint admin_bp importado e registrado")
 except Exception as e:
-    print(f"[ERROR] Erro ao importar/registrar admin_bp: {e}")
+    # print(f"[ERROR] Erro ao importar/registrar admin_bp: {e}")
+    pass
 
 # Definir rotas específicas ANTES da rota catch-all
 @app.route('/')
@@ -1012,8 +1050,10 @@ def home():
 @app.route('/assinaturas')
 def assinaturas():
     """Rota específica para a página de assinaturas"""
-    print("[DEBUG] Rota /assinaturas acessada")
-    return send_from_directory(app.static_folder, 'assinaturas.html')
+    print("[DEBUG] Rota /assinaturas acessada - convertendo para /app")
+    # Manter URL genérica pós-login: sinalizar vista desejada e redirecionar
+    session['app_view'] = 'subscriptions'
+    return redirect('/app')
 
 @app.route('/acesso_expirado.html')
 def acesso_expirado():
@@ -1023,15 +1063,128 @@ def acesso_expirado():
 
 @app.route('/historico-assinaturas.html')
 def historico_assinaturas():
-    """Rota específica para a página de histórico de assinaturas"""
-    print("[DEBUG] Rota /historico-assinaturas.html acessada")
-    return send_from_directory(app.static_folder, 'historico-assinaturas.html')
+    """Redireciona histórico de assinaturas para /app mantendo URL genérica"""
+    print("[DEBUG] Rota /historico-assinaturas.html acessada - convertendo para /app")
+    session['app_view'] = 'subscriptions_history'
+    return redirect('/app')
 
 @app.route('/perfil')
 def perfil():
     """Rota específica para a página de perfil do usuário"""
-    print("[DEBUG] Rota /perfil acessada")
-    return send_from_directory(app.static_folder, 'perfil.html')
+    print("[DEBUG] Rota /perfil acessada - convertendo para /app")
+    # Manter URL genérica pós-login: sinalizar vista desejada e redirecionar
+    session['app_view'] = 'profile'
+    return redirect('/app')
+
+# --- Rotas específicas convertidas para URL genérica /app ---
+@app.route('/index.html')
+def index_html():
+    print("[DEBUG] Rota /index.html acessada - convertendo para /app")
+    session['app_view'] = 'home'
+    return redirect('/app')
+
+@app.route('/assinaturas.html')
+def assinaturas_html():
+    print("[DEBUG] Rota /assinaturas.html acessada - convertendo para /app")
+    session['app_view'] = 'subscriptions'
+    return redirect('/app')
+
+@app.route('/perfil.html')
+def perfil_html():
+    print("[DEBUG] Rota /perfil.html acessada - convertendo para /app")
+    session['app_view'] = 'profile'
+    return redirect('/app')
+
+@app.route('/especialidades.html')
+def especialidades_html():
+    print("[DEBUG] Rota /especialidades.html acessada - convertendo para /app")
+    session['app_view'] = 'specialties'
+    return redirect('/app')
+
+@app.route('/funcionarios.html')
+def funcionarios_html():
+    print("[DEBUG] Rota /funcionarios.html acessada - convertendo para /app")
+    session['app_view'] = 'staff'
+    return redirect('/app')
+
+@app.route('/historico-assinaturas')
+def historico_assinaturas_short():
+    print("[DEBUG] Rota /historico-assinaturas acessada - convertendo para /app")
+    session['app_view'] = 'subscriptions_history'
+    return redirect('/app')
+
+@app.route('/paciente-dashboard.html')
+def paciente_dashboard_html():
+    print("[DEBUG] Rota /paciente-dashboard.html acessada - convertendo para /app")
+    session['app_view'] = 'patient_dashboard'
+    return redirect('/app')
+
+@app.route('/paciente-agendamentos.html')
+def paciente_agendamentos_html():
+    print("[DEBUG] Rota /paciente-agendamentos.html acessada - convertendo para /app")
+    session['app_view'] = 'patient_appointments'
+    return redirect('/app')
+
+@app.route('/paciente-diarios.html')
+def paciente_diarios_html():
+    print("[DEBUG] Rota /paciente-diarios.html acessada - convertendo para /app")
+    session['app_view'] = 'patient_diaries'
+    return redirect('/app')
+
+@app.route('/paciente-primeiro-login.html')
+def paciente_primeiro_login_html():
+    print("[DEBUG] Rota /paciente-primeiro-login.html acessada - convertendo para /app")
+    session['app_view'] = 'patient_first_login'
+    return redirect('/app')
+
+# Rota genérica pós-login: mantém a URL estável independente da página real
+@app.route('/app')
+def app_shell():
+    try:
+        if 'user_id' not in session:
+            # Usuário não logado: mandar para página inicial pública
+            return send_from_directory(app.static_folder, 'inicial.html')
+
+        user = User.query.get(session['user_id'])
+        # Admin continua indo para o dashboard administrativo
+        if user and hasattr(user, 'is_admin') and user.is_admin():
+            return redirect('/admin/dashboard')
+
+        # Verificar se há uma visão específica solicitada via flag de sessão
+        view = session.pop('app_view', None)
+        if view == 'home':
+            return send_from_directory(app.static_folder, 'index.html')
+        if view == 'profile':
+            return send_from_directory(app.static_folder, 'perfil.html')
+        if view == 'subscriptions':
+            return send_from_directory(app.static_folder, 'assinaturas.html')
+        if view == 'subscriptions_history':
+            return send_from_directory(app.static_folder, 'historico-assinaturas.html')
+        if view == 'specialties':
+            return send_from_directory(app.static_folder, 'especialidades.html')
+        if view == 'staff':
+            return send_from_directory(app.static_folder, 'funcionarios.html')
+        if view in ['patient_dashboard', 'patient_appointments', 'patient_diaries', 'patient_first_login']:
+            role = getattr(user, 'role', 'user') if user else 'user'
+            if role != 'patient':
+                # Fallback seguro: não expor páginas de paciente a outros perfis
+                return send_from_directory(app.static_folder, 'index.html')
+            mapping = {
+                'patient_dashboard': 'paciente-dashboard.html',
+                'patient_appointments': 'paciente-agendamentos.html',
+                'patient_diaries': 'paciente-diarios.html',
+                'patient_first_login': 'paciente-primeiro-login.html'
+            }
+            return send_from_directory(app.static_folder, mapping.get(view, 'paciente-dashboard.html'))
+
+        # Caso contrário, escolher página conforme papel, mantendo URL /app
+        role = getattr(user, 'role', 'user') if user else 'user'
+        page = 'paciente-dashboard.html' if role == 'patient' else 'index.html'
+        return send_from_directory(app.static_folder, page)
+    except Exception as e:
+        print(f"[ERROR] Falha na rota /app: {e}")
+        # Em caso de erro, retornar inicial para não vazar detalhes
+        return send_from_directory(app.static_folder, 'inicial.html')
 
 # Rotas de pagamento desabilitadas - funcionalidade removida
 # @app.route('/payment/success')

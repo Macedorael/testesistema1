@@ -11,11 +11,11 @@ subscription_payment_handler = None
 try:
     from src.utils.mercadopago_config import get_mercadopago_config
     from src.utils.subscription_payment_handler import subscription_payment_handler
-    print("[DEBUG] Mercado Pago importado com sucesso")
+    # print("[DEBUG] Mercado Pago importado com sucesso")
 except ImportError as e:
-    print(f"[WARNING] Mercado Pago não disponível: {e}")
+    # print(f"[WARNING] Mercado Pago não disponível: {e}")
 except Exception as e:
-    print(f"[WARNING] Erro ao configurar Mercado Pago: {e}")
+    # print(f"[WARNING] Erro ao configurar Mercado Pago: {e}")
 
 from datetime import datetime
 import json
@@ -148,59 +148,59 @@ def get_my_subscription():
 def create_subscription():
     """Cria uma nova assinatura para o usuário"""
     try:
-        print(f"[DEBUG] Iniciando create_subscription")
+        # print(f"[DEBUG] Iniciando create_subscription")
         user_id = session.get('user_id')
-        print(f"[DEBUG] user_id da sessão: {user_id}")
+        # print(f"[DEBUG] user_id da sessão: {user_id}")
         
         user = User.query.get(user_id)
-        print(f"[DEBUG] Usuário encontrado: {user is not None}")
+        # print(f"[DEBUG] Usuário encontrado: {user is not None}")
         
         if not user:
-            print(f"[DEBUG] Usuário não encontrado para ID: {user_id}")
+            # print(f"[DEBUG] Usuário não encontrado para ID: {user_id}")
             return jsonify({'error': 'Usuário não encontrado'}), 404
         
         # Verificar se já tem assinatura ativa
-        print(f"[DEBUG] Verificando assinatura ativa...")
+        # print(f"[DEBUG] Verificando assinatura ativa...")
         has_active = user.has_active_subscription()
-        print(f"[DEBUG] Tem assinatura ativa: {has_active}")
+        # print(f"[DEBUG] Tem assinatura ativa: {has_active}")
         
         if has_active:
-            print(f"[DEBUG] Usuário já possui assinatura ativa")
+            # print(f"[DEBUG] Usuário já possui assinatura ativa")
             return jsonify({
                 'error': 'Usuário já possui uma assinatura ativa'
             }), 400
         
         data = request.json
-        print(f"[DEBUG] Dados recebidos: {data}")
+        # print(f"[DEBUG] Dados recebidos: {data}")
         
         plan_type = data.get('plan_type')
         auto_renew = data.get('auto_renew', True)
-        print(f"[DEBUG] plan_type: {plan_type}, auto_renew: {auto_renew}")
+        # print(f"[DEBUG] plan_type: {plan_type}, auto_renew: {auto_renew}")
         
         # Validar tipo de plano
-        print(f"[DEBUG] Validando tipo de plano...")
-        print(f"[DEBUG] PLAN_PRICES disponíveis: {Subscription.PLAN_PRICES}")
+        # print(f"[DEBUG] Validando tipo de plano...")
+        # print(f"[DEBUG] PLAN_PRICES disponíveis: {Subscription.PLAN_PRICES}")
         
         if plan_type not in Subscription.PLAN_PRICES:
-            print(f"[DEBUG] Tipo de plano inválido: {plan_type}")
+            # print(f"[DEBUG] Tipo de plano inválido: {plan_type}")
             return jsonify({
                 'error': 'Tipo de plano inválido. Opções: monthly, quarterly, biannual, anual'
             }), 400
         
         # Usar transação para evitar condições de corrida
-        print(f"[DEBUG] Iniciando operações de banco...")
+        # print(f"[DEBUG] Iniciando operações de banco...")
         try:
-            print(f"[DEBUG] Dentro da transação")
+            # print(f"[DEBUG] Dentro da transação")
             # Cancelar todas as assinaturas ativas anteriores com lock
             active_subscriptions = db.session.query(Subscription).filter_by(
                 user_id=user_id,
                 status='active'
             ).filter(Subscription.end_date > datetime.utcnow()).with_for_update().all()
             
-            print(f"[DEBUG] Assinaturas ativas encontradas: {len(active_subscriptions)}")
+            # print(f"[DEBUG] Assinaturas ativas encontradas: {len(active_subscriptions)}")
             
             for sub in active_subscriptions:
-                print(f"[DEBUG] Cancelando assinatura ID: {sub.id}")
+                # print(f"[DEBUG] Cancelando assinatura ID: {sub.id}")
                 sub.cancel()
                 # Registrar cancelamento no histórico
                 SubscriptionHistory.create_history_entry(
@@ -213,26 +213,26 @@ def create_subscription():
                 )
             
             # Criar nova assinatura
-            print(f"[DEBUG] Criando nova assinatura...")
+            # print(f"[DEBUG] Criando nova assinatura...")
             subscription = Subscription(
                 user_id=user_id,
                 plan_type=plan_type,
                 auto_renew=auto_renew
             )
             
-            print(f"[DEBUG] Assinatura criada em memória")
+            # print(f"[DEBUG] Assinatura criada em memória")
             db.session.add(subscription)
-            print(f"[DEBUG] Assinatura adicionada à sessão")
+            # print(f"[DEBUG] Assinatura adicionada à sessão")
             db.session.flush()  # Para obter o ID da assinatura
-            print(f"[DEBUG] Flush executado, ID da assinatura: {subscription.id}")
+            # print(f"[DEBUG] Flush executado, ID da assinatura: {subscription.id}")
             
             # Verificar se foi criada corretamente
             if not subscription.id:
-                print(f"[DEBUG] ERRO: Falha ao criar assinatura - ID não gerado")
+                # print(f"[DEBUG] ERRO: Falha ao criar assinatura - ID não gerado")
                 raise Exception("Falha ao criar assinatura")
             
             # Registrar criação no histórico
-            print(f"[DEBUG] Registrando no histórico...")
+            # print(f"[DEBUG] Registrando no histórico...")
             SubscriptionHistory.create_history_entry(
                 user_id=user_id,
                 action='created',
@@ -243,28 +243,28 @@ def create_subscription():
                 end_date=subscription.end_date,
                 details=f'Assinatura {plan_type} criada'
             )
-            print(f"[DEBUG] Histórico registrado com sucesso")
+            # print(f"[DEBUG] Histórico registrado com sucesso")
             
             # Commit das alterações
             db.session.commit()
-            print(f"[DEBUG] Commit realizado com sucesso")
+            # print(f"[DEBUG] Commit realizado com sucesso")
             
         except Exception as e:
-            print(f"[DEBUG] ERRO durante operações de banco: {str(e)}")
+            # print(f"[DEBUG] ERRO durante operações de banco: {str(e)}")
             db.session.rollback()
             raise e
         
-        print(f"[DEBUG] Operações de banco concluídas com sucesso")
+        # print(f"[DEBUG] Operações de banco concluídas com sucesso")
         return jsonify({
             'success': True,
             'message': 'Assinatura criada com sucesso',
             'subscription_id': subscription.id
         })
     except Exception as e:
-        print(f"[DEBUG] ERRO na create_subscription: {str(e)}")
-        print(f"[DEBUG] Tipo do erro: {type(e)}")
+        # print(f"[DEBUG] ERRO na create_subscription: {str(e)}")
+        # print(f"[DEBUG] Tipo do erro: {type(e)}")
         import traceback
-        print(f"[DEBUG] Traceback completo: {traceback.format_exc()}")
+        # print(f"[DEBUG] Traceback completo: {traceback.format_exc()}")
         db.session.rollback()
         return jsonify({'error': 'Erro interno do servidor. Tente novamente.'}), 500
 
@@ -283,7 +283,7 @@ def update_subscription():
         new_plan_type = data.get('plan_type')
         auto_renew = data.get('auto_renew')
         
-        print(f"[DEBUG UPDATE] Dados recebidos: plan_type={new_plan_type}, auto_renew={auto_renew}")
+        # print(f"[DEBUG UPDATE] Dados recebidos: plan_type={new_plan_type}, auto_renew={auto_renew}")
         
         # Validar tipo de plano
         if new_plan_type and new_plan_type not in Subscription.PLAN_PRICES:
@@ -296,7 +296,7 @@ def update_subscription():
         old_price = subscription.price
         old_auto_renew = subscription.auto_renew
         
-        print(f"[DEBUG UPDATE] Estado anterior: auto_renew={old_auto_renew}")
+        # print(f"[DEBUG UPDATE] Estado anterior: auto_renew={old_auto_renew}")
         
         # Atualizar plano se fornecido
         if new_plan_type and new_plan_type != subscription.plan_type:
@@ -306,9 +306,9 @@ def update_subscription():
         
         # Atualizar auto_renew se fornecido
         if auto_renew is not None:
-            print(f"[DEBUG UPDATE] Atualizando auto_renew de {subscription.auto_renew} para {auto_renew}")
+            # print(f"[DEBUG UPDATE] Atualizando auto_renew de {subscription.auto_renew} para {auto_renew}")
             subscription.auto_renew = auto_renew
-            print(f"[DEBUG UPDATE] auto_renew atualizado: {subscription.auto_renew}")
+            # print(f"[DEBUG UPDATE] auto_renew atualizado: {subscription.auto_renew}")
         
         subscription.updated_at = datetime.utcnow()
         
@@ -333,13 +333,13 @@ def update_subscription():
             details='; '.join(details) if details else 'Assinatura atualizada'
         )
         
-        print(f"[DEBUG UPDATE] Antes do commit: auto_renew={subscription.auto_renew}")
+        # print(f"[DEBUG UPDATE] Antes do commit: auto_renew={subscription.auto_renew}")
         db.session.commit()
-        print(f"[DEBUG UPDATE] Após commit: auto_renew={subscription.auto_renew}")
+        # print(f"[DEBUG UPDATE] Após commit: auto_renew={subscription.auto_renew}")
         
         # Verificar se foi salvo corretamente
         subscription_check = Subscription.query.get(subscription.id)
-        print(f"[DEBUG UPDATE] Verificação pós-commit: auto_renew={subscription_check.auto_renew}")
+        # print(f"[DEBUG UPDATE] Verificação pós-commit: auto_renew={subscription_check.auto_renew}")
         
         return jsonify({
             'success': True,
@@ -349,7 +349,7 @@ def update_subscription():
         
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR UPDATE] Erro ao atualizar: {str(e)}")
+        # print(f"[ERROR UPDATE] Erro ao atualizar: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @subscriptions_bp.route('/cancel', methods=['POST'])

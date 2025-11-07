@@ -364,10 +364,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (p === '/dashboard.html' || p === 'dashboard.html') return '/index.html';
                         return p;
                     };
-                    let target = normalizeRedirect(data.redirect) || 'index.html';
-                    if (loginScope === 'patient' || (data.user && data.user.role === 'patient')) {
-                        target = '/paciente-dashboard.html';
-                    }
+                    let target = normalizeRedirect(data.redirect) || '/app';
                     showStayInfo('Login efetuado com sucesso.', 'Ir para o destino', target);
                     return;
                 }
@@ -379,11 +376,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (p === '/dashboard.html' || p === 'dashboard.html') return '/index.html';
                     return p;
                 };
-                let target = normalizeRedirect(data.redirect) || 'index.html';
-                // Garantir que paciente vá para o dashboard do paciente
-                if (loginScope === 'patient' || (data.user && data.user.role === 'patient')) {
-                    target = '/paciente-dashboard.html';
-                }
+                let target = normalizeRedirect(data.redirect) || '/app';
 
                 // Aviso de renovação: 1 a 5 dias restantes, apenas para usuários
                 console.log('[LOGIN] Usuário logado:', data.user.role, 'Verificando modal de renovação...');

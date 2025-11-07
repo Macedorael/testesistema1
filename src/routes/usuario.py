@@ -246,14 +246,14 @@ def resend_verification():
             return jsonify({"error": "Falha ao enviar email de verificação"}), 500
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao reenviar verificação: {e}")
+        # print(f"[ERROR] Erro ao reenviar verificação: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/register", methods=["POST"])
 def register():
-    print("[DEBUG] Iniciando processo de registro de usuário")
+    # print("[DEBUG] Iniciando processo de registro de usuário")
     data = request.json
-    print(f"[DEBUG] Dados recebidos: {data}")
+    # print(f"[DEBUG] Dados recebidos: {data}")
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
@@ -262,18 +262,18 @@ def register():
     
     # Validações básicas
     if not username or not email or not password:
-        print(f"[ERROR] Campos obrigatórios ausentes - username: {bool(username)}, email: {bool(email)}, password: {bool(password)}")
+        # print(f"[ERROR] Campos obrigatórios ausentes - username: {bool(username)}, email: {bool(email)}, password: {bool(password)}")
         return jsonify({"error": "Todos os campos são obrigatórios"}), 400
-    
-    print("[DEBUG] Todos os campos obrigatórios presentes")
+
+    # print("[DEBUG] Todos os campos obrigatórios presentes")
     
     # Validação forte da senha para NOVOS usuários
     valid_pwd, pwd_msg = is_strong_password(password)
     if not valid_pwd:
-        print(f"[ERROR] Validação de senha falhou: {pwd_msg}")
+        # print(f"[ERROR] Validação de senha falhou: {pwd_msg}")
         return jsonify({"error": pwd_msg}), 400
-    
-    print("[DEBUG] Senha atende aos critérios de comprimento")
+
+    # print("[DEBUG] Senha atende aos critérios de comprimento")
     
     # Validar data de nascimento se fornecida
     parsed_data_nascimento = None
@@ -281,72 +281,74 @@ def register():
         try:
             from datetime import datetime
             parsed_data_nascimento = datetime.strptime(data_nascimento, '%Y-%m-%d').date()
-            print(f"[DEBUG] Data de nascimento válida: {parsed_data_nascimento}")
+            # print(f"[DEBUG] Data de nascimento válida: {parsed_data_nascimento}")
         except ValueError:
-            print(f"[ERROR] Data de nascimento inválida: {data_nascimento}")
+            # print(f"[ERROR] Data de nascimento inválida: {data_nascimento}")
             return jsonify({"error": "Data de nascimento deve estar no formato YYYY-MM-DD"}), 400
     
     # Permitir nomes de usuário iguais (diferenciador é o email)
     # Removemos a verificação de unicidade de username
-    print("[DEBUG] Pulando verificação de unicidade de username (permitir nomes iguais)")
-    
-    print(f"[DEBUG] Verificando se email já existe: {email}")
+    # print("[DEBUG] Pulando verificação de unicidade de username (permitir nomes iguais)")
+
+    # print(f"[DEBUG] Verificando se email já existe: {email}")
     if User.query.filter_by(email=email).first():
-        print(f"[ERROR] Email já cadastrado: {email}")
+        # print(f"[ERROR] Email já cadastrado: {email}")
         return jsonify({"error": "Email já está cadastrado"}), 400
-    
-    print("[DEBUG] Email disponível")
+
+    # print("[DEBUG] Email disponível")
 
     # Validação de formato de email
     if not validate_email_format(email):
-        print(f"[ERROR] Formato de email inválido: {email}")
+        # print(f"[ERROR] Formato de email inválido: {email}")
         return jsonify({"error": "Formato de email inválido"}), 400
 
     # Checagem simples de DNS do domínio
     if not check_email_domain_dns(email):
-        print(f"[ERROR] Domínio de email não resolve DNS: {email}")
+        # print(f"[ERROR] Domínio de email não resolve DNS: {email}")
         return jsonify({"error": "Domínio de email inválido ou não resolvível"}), 400
     
     try:
-        print("[DEBUG] Iniciando criação do novo usuário")
+        # print("[DEBUG] Iniciando criação do novo usuário")
         
         # Verificar conexão com banco de dados
-        print("[DEBUG] Verificando conexão com banco de dados")
+        # print("[DEBUG] Verificando conexão com banco de dados")
         try:
             db.session.execute(text('SELECT 1'))
-            print("[DEBUG] Conexão com banco de dados OK")
+            # print("[DEBUG] Conexão com banco de dados OK")
         except Exception as db_test_error:
-            print(f"[ERROR] Falha na conexão com banco: {str(db_test_error)}")
+            # print(f"[ERROR] Falha na conexão com banco: {str(db_test_error)}")
             raise db_test_error
         
         # Criar novo usuário
-        print(f"[DEBUG] Criando objeto User para usuário: {username}")
+        # print(f"[DEBUG] Criando objeto User para usuário: {username}")
         user = User(username=username, email=email, telefone=telefone, data_nascimento=parsed_data_nascimento)
-        print("[DEBUG] Objeto User criado com sucesso")
+        # print("[DEBUG] Objeto User criado com sucesso")
         
-        print(f"[DEBUG] Gerando hash da senha para usuário: {username}")
+        # print(f"[DEBUG] Gerando hash da senha para usuário: {username}")
         user.set_password(password)
-        print("[DEBUG] Hash da senha gerado com sucesso")
+        # print("[DEBUG] Hash da senha gerado com sucesso")
         
-        print("[DEBUG] Adicionando usuário à sessão do banco")
+        # print("[DEBUG] Adicionando usuário à sessão do banco")
         db.session.add(user)
-        print("[DEBUG] Usuário adicionado à sessão")
+        # print("[DEBUG] Usuário adicionado à sessão")
         
-        print("[DEBUG] Fazendo flush para obter ID temporário")
+        # print("[DEBUG] Fazendo flush para obter ID temporário")
         db.session.flush()
-        print(f"[DEBUG] Flush realizado - ID temporário: {user.id}")
+        # print(f"[DEBUG] Flush realizado - ID temporário: {user.id}")
         
-        print("[DEBUG] Fazendo commit no banco de dados")
+        # print("[DEBUG] Fazendo commit no banco de dados")
         db.session.commit()
-        print(f"[DEBUG] Commit realizado com sucesso - ID final: {user.id}")
+        # print(f"[DEBUG] Commit realizado com sucesso - ID final: {user.id}")
 
         # Verificar se o usuário foi realmente salvo
-        print(f"[DEBUG] Verificando se usuário foi salvo no banco")
+        # print(f"[DEBUG] Verificando se usuário foi salvo no banco")
         saved_user = User.query.filter_by(id=user.id).first()
         if saved_user:
-            print(f"[DEBUG] Usuário confirmado no banco - Username: {saved_user.username}")
+            # print(f"[DEBUG] Usuário confirmado no banco - Username: {saved_user.username}")
+            pass
         else:
-            print("[ERROR] Usuário não encontrado após commit")
+            # print("[ERROR] Usuário não encontrado após commit")
+            pass
         
         # Conceder acesso inicial de 7 dias (plano 'trial')
         try:
@@ -360,22 +362,24 @@ def register():
             trial_created = True
         except Exception as trial_err:
             db.session.rollback()
-            print(f"[WARNING] Falha ao criar assinatura de teste: {trial_err}")
+            # print(f"[WARNING] Falha ao criar assinatura de teste: {trial_err}")
             trial_created = False
 
         # Criar token de verificação de email e enviar email
         try:
-            print("[DEBUG] Gerando token de verificação de email")
+            # print("[DEBUG] Gerando token de verificação de email")
             verification_token = EmailVerificationToken.create_for_user(user.id)
-            print(f"[DEBUG] Token de verificação criado: {verification_token.token}")
+            # print(f"[DEBUG] Token de verificação criado: {verification_token.token}")
             from src.utils.notificacoes_email import enviar_email_verificacao, is_email_enabled
             if is_email_enabled():
                 enviar_ok = enviar_email_verificacao(user.email, user.username, verification_token.token)
-                print(f"[DEBUG] Envio de email de verificação status: {enviar_ok}")
+                # print(f"[DEBUG] Envio de email de verificação status: {enviar_ok}")
             else:
-                print("[INFO] Envio de emails desabilitado, pulando verificação por email")
+                # print("[INFO] Envio de emails desabilitado, pulando verificação por email")
+                pass
         except Exception as ver_err:
-            print(f"[WARNING] Falha ao preparar envio de verificação de email: {ver_err}")
+            # print(f"[WARNING] Falha ao preparar envio de verificação de email: {ver_err}")
+            pass
 
         return jsonify({
             "message": "Usuário cadastrado com sucesso!",
@@ -389,31 +393,36 @@ def register():
         }), 201
         
     except Exception as e:
-        print(f"[ERROR] Erro ao criar usuário: {str(e)}")
-        print(f"[ERROR] Tipo do erro: {type(e).__name__}")
+        # print(f"[ERROR] Erro ao criar usuário: {str(e)}")
+        # print(f"[ERROR] Tipo do erro: {type(e).__name__}")
         
         # Log detalhado do erro para PostgreSQL
         import traceback
-        print(f"[ERROR] Traceback completo:")
-        print(traceback.format_exc())
+        # print(f"[ERROR] Traceback completo:")
+        # print(traceback.format_exc())
         
         # Verificar se é erro específico do PostgreSQL
         error_str = str(e).lower()
         if 'connection' in error_str:
-            print("[ERROR] Possível problema de conexão com PostgreSQL")
+            # print("[ERROR] Possível problema de conexão com PostgreSQL")
+            pass
         elif 'constraint' in error_str or 'unique' in error_str:
-            print("[ERROR] Possível violação de constraint (duplicata)")
+            # print("[ERROR] Possível violação de constraint (duplicata)")
+            pass
         elif 'timeout' in error_str:
-            print("[ERROR] Possível timeout na operação")
+            # print("[ERROR] Possível timeout na operação")
+            pass
         elif 'permission' in error_str or 'denied' in error_str:
-            print("[ERROR] Possível problema de permissão no banco")
+            # print("[ERROR] Possível problema de permissão no banco")
+            pass
         
         try:
-            print("[DEBUG] Tentando rollback da transação")
+            # print("[DEBUG] Tentando rollback da transação")
             db.session.rollback()
-            print("[DEBUG] Rollback realizado com sucesso")
+            # print("[DEBUG] Rollback realizado com sucesso")
         except Exception as rollback_error:
-            print(f"[ERROR] Erro no rollback: {str(rollback_error)}")
+            # print(f"[ERROR] Erro no rollback: {str(rollback_error)}")
+            pass
         
         return jsonify({"error": "Erro ao cadastrar usuário"}), 500
 
@@ -464,7 +473,7 @@ def check_email():
             "available": True
         }), 200
     except Exception as e:
-        print(f"[ERROR] Erro ao verificar email: {e}")
+        # print(f"[ERROR] Erro ao verificar email: {e}")
         return jsonify({"success": False, "available": False, "error": "Erro interno"}), 500
 
 @user_bp.route("/users", methods=["GET"])
@@ -671,7 +680,7 @@ def get_me():
             "email_verified": bool(getattr(current_user, 'email_verified', False))
         })
     except Exception as e:
-        print(f"[ERROR] Erro ao buscar dados do usuário: {e}")
+        # print(f"[ERROR] Erro ao buscar dados do usuário: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/esqueci-senha", methods=["POST"])
@@ -703,7 +712,7 @@ def forgot_password():
             return jsonify({"error": "Erro ao enviar email. Tente novamente mais tarde."}), 500
             
     except Exception as e:
-        print(f"[ERROR] Erro ao processar recuperação de senha: {e}")
+        # print(f"[ERROR] Erro ao processar recuperação de senha: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/password-reset/<token>", methods=["GET"])
@@ -715,7 +724,7 @@ def persist_token_and_redirect(token):
         resp.set_cookie('password_reset_token', token, httponly=True, samesite='Lax', secure=False, max_age=3600)
         return resp
     except Exception as e:
-        print(f"[ERROR] Falha ao persistir token de reset: {e}")
+        # print(f"[ERROR] Falha ao persistir token de reset: {e}")
         return jsonify({"error": "Erro ao processar token"}), 400
 
 
@@ -744,7 +753,7 @@ def ack_first_login():
         return jsonify({"success": True})
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao marcar primeiro login como concluído: {e}")
+        # print(f"[ERROR] Erro ao marcar primeiro login como concluído: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/resetar-senha", methods=["POST"])
@@ -792,7 +801,7 @@ def reset_password():
         
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao resetar senha: {e}")
+        # print(f"[ERROR] Erro ao resetar senha: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 def send_password_reset_email(email, username, token):
@@ -801,7 +810,7 @@ def send_password_reset_email(email, username, token):
     # Verificar se emails estão habilitados
     from src.utils.notificacoes_email import is_email_enabled, resolve_base_url
     if not is_email_enabled():
-        print("[INFO] Envio de emails desabilitado. Email de recuperação não será enviado.")
+        # print("[INFO] Envio de emails desabilitado. Email de recuperação não será enviado.")
         return True  # Retorna True para não quebrar o fluxo da aplicação
     
     try:
@@ -817,7 +826,7 @@ def send_password_reset_email(email, username, token):
         
         # Verificar se as configurações estão disponíveis
         if not sender_email or not sender_password:
-            print("[ERROR] Configurações de email não encontradas no .env")
+            # print("[ERROR] Configurações de email não encontradas no .env")
             return False
         
         # Criar mensagem
@@ -852,11 +861,11 @@ def send_password_reset_email(email, username, token):
         server.sendmail(sender_email, email, text)
         server.quit()
         
-        print(f"[DEBUG] Email de recuperação enviado para {email}")
+        # print(f"[DEBUG] Email de recuperação enviado para {email}")
         return True
         
     except Exception as e:
-        print(f"[ERROR] Erro ao enviar email: {e}")
+        # print(f"[ERROR] Erro ao enviar email: {e}")
         return False
 
 @user_bp.route("/verify-email", methods=["GET", "POST"])
@@ -919,7 +928,7 @@ def verify_email():
         }), 200
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao verificar email: {e}")
+        # print(f"[ERROR] Erro ao verificar email: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/profile", methods=["GET"])
@@ -943,7 +952,7 @@ def get_profile():
             }
         })
     except Exception as e:
-        print(f"[ERROR] Erro ao buscar perfil: {e}")
+        # print(f"[ERROR] Erro ao buscar perfil: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/profile", methods=["PUT"])
@@ -998,7 +1007,7 @@ def update_profile():
         })
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao atualizar perfil: {e}")
+        # print(f"[ERROR] Erro ao atualizar perfil: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/change-password", methods=["PUT"])
@@ -1042,7 +1051,7 @@ def change_password():
         })
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao alterar senha: {e}")
+        # print(f"[ERROR] Erro ao alterar senha: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 
 @user_bp.route("/first-login-change-password", methods=["PUT"])
@@ -1092,6 +1101,6 @@ def first_login_change_password():
         })
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Erro ao alterar senha no primeiro login: {e}")
+        # print(f"[ERROR] Erro ao alterar senha no primeiro login: {e}")
         return jsonify({"error": "Erro interno do servidor"}), 500
 

@@ -1,4 +1,15 @@
 // Dashboard JavaScript
+// Mute debug logs in production
+(function(){
+  const MUTE_DEBUG = true;
+  if (MUTE_DEBUG && typeof console !== 'undefined') {
+    const noop = function(){};
+    try { console.log = noop; } catch(_) {}
+    try { console.debug = noop; } catch(_) {}
+    try { console.info = noop; } catch(_) {}
+    try { console.warn = noop; } catch(_) {}
+  }
+})();
 window.Dashboard = {
     charts: {},
 

@@ -21,47 +21,47 @@ def validate_email(email):
 def get_funcionarios():
     """Retorna lista de funcionários do usuário logado"""
     import logging
-    logging.basicConfig(level=logging.DEBUG)
+    # logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     
     try:
-        logger.info("[FUNCIONARIOS] Iniciando busca de funcionários")
+        # logger.info("[FUNCIONARIOS] Iniciando busca de funcionários")
         
         current_user = get_current_user()
-        logger.info(f"[FUNCIONARIOS] Current user obtido: {current_user.id if current_user else 'None'}")
+        # logger.info(f"[FUNCIONARIOS] Current user obtido: {current_user.id if current_user else 'None'}")
         
         if not current_user:
-            logger.error("[FUNCIONARIOS] Usuário não encontrado")
+            # logger.error("[FUNCIONARIOS] Usuário não encontrado")
             return jsonify({
                 'success': False,
                 'message': 'Usuário não encontrado'
             }), 401
         
-        logger.info(f"[FUNCIONARIOS] Buscando funcionários para user_id: {current_user.id}")
+        # logger.info(f"[FUNCIONARIOS] Buscando funcionários para user_id: {current_user.id}")
         funcionarios = Funcionario.query.filter_by(user_id=current_user.id).all()
-        logger.info(f"[FUNCIONARIOS] Encontrados {len(funcionarios)} funcionários")
+        # logger.info(f"[FUNCIONARIOS] Encontrados {len(funcionarios)} funcionários")
         
         funcionarios_dict = []
         for i, funcionario in enumerate(funcionarios):
             try:
-                logger.info(f"[FUNCIONARIOS] Convertendo funcionário {i+1}: ID={funcionario.id}, Nome={funcionario.nome}")
+                # logger.info(f"[FUNCIONARIOS] Convertendo funcionário {i+1}: ID={funcionario.id}, Nome={funcionario.nome}")
                 func_dict = funcionario.to_dict()
                 funcionarios_dict.append(func_dict)
-                logger.info(f"[FUNCIONARIOS] Funcionário {i+1} convertido com sucesso")
+                # logger.info(f"[FUNCIONARIOS] Funcionário {i+1} convertido com sucesso")
             except Exception as conv_error:
-                logger.error(f"[FUNCIONARIOS] Erro ao converter funcionário {i+1}: {str(conv_error)}")
+                # logger.error(f"[FUNCIONARIOS] Erro ao converter funcionário {i+1}: {str(conv_error)}")
                 raise conv_error
         
-        logger.info(f"[FUNCIONARIOS] Retornando {len(funcionarios_dict)} funcionários")
+        # logger.info(f"[FUNCIONARIOS] Retornando {len(funcionarios_dict)} funcionários")
         return jsonify({
             'success': True,
             'funcionarios': funcionarios_dict
         })
     except Exception as e:
-        logger.error(f"[FUNCIONARIOS] Erro geral: {str(e)}")
-        logger.error(f"[FUNCIONARIOS] Tipo do erro: {type(e).__name__}")
+        # logger.error(f"[FUNCIONARIOS] Erro geral: {str(e)}")
+        # logger.error(f"[FUNCIONARIOS] Tipo do erro: {type(e).__name__}")
         import traceback
-        logger.error(f"[FUNCIONARIOS] Traceback: {traceback.format_exc()}")
+        # logger.error(f"[FUNCIONARIOS] Traceback: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'Erro ao buscar funcionários: {str(e)}'
@@ -380,17 +380,17 @@ def transfer_appointments(funcionario_id):
 def get_medicos():
     """Listar todos os médicos/profissionais de saúde"""
     if 'user_id' not in session:
-        print("[ERROR] /medicos - Usuário não autenticado")
+        # print("[ERROR] /medicos - Usuário não autenticado")
         return jsonify({'error': 'Usuário não autenticado'}), 401
     
     try:
         user_id = session.get('user_id')
-        print(f"[DEBUG] /medicos - Iniciando busca de funcionários para user_id: {user_id}")
+        # print(f"[DEBUG] /medicos - Iniciando busca de funcionários para user_id: {user_id}")
         
         # CORREÇÃO: Buscar APENAS os funcionários do usuário atual (isolamento de dados)
         funcionarios = Funcionario.query.filter_by(user_id=user_id).join(Especialidade, Funcionario.especialidade_id == Especialidade.id, isouter=True).all()
         
-        print(f"[DEBUG] /medicos - Encontrados {len(funcionarios)} funcionários para user_id: {user_id}")
+        # print(f"[DEBUG] /medicos - Encontrados {len(funcionarios)} funcionários para user_id: {user_id}")
         
         # Retornar apenas os funcionários do usuário atual
         medicos = []
@@ -402,15 +402,15 @@ def get_medicos():
                 'especialidade': especialidade_nome
             }
             medicos.append(medico_data)
-            print(f"[DEBUG] /medicos - Funcionário: ID={funcionario.id}, Nome='{funcionario.nome}', Especialidade='{especialidade_nome}', User_ID={funcionario.user_id}")
+            # print(f"[DEBUG] /medicos - Funcionário: ID={funcionario.id}, Nome='{funcionario.nome}', Especialidade='{especialidade_nome}', User_ID={funcionario.user_id}")
         
-        print(f"[DEBUG] /medicos - Retornando {len(medicos)} médicos para user_id: {user_id}")
+        # print(f"[DEBUG] /medicos - Retornando {len(medicos)} médicos para user_id: {user_id}")
         return jsonify(medicos)
     
     except Exception as e:
-        print(f"[ERROR] /medicos - Erro ao buscar médicos: {str(e)}")
+        # print(f"[ERROR] /medicos - Erro ao buscar médicos: {str(e)}")
         import traceback
-        print(f"[ERROR] /medicos - Traceback: {traceback.format_exc()}")
+        # print(f"[ERROR] /medicos - Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @funcionarios_bp.route('/psicologos', methods=['GET'])
