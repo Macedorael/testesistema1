@@ -12,6 +12,60 @@
     // Do NOT mute console.error to keep failures visible
   }
 })();
+// Global redirect to login when API returns 401 or explicit "Login necessário"
+(function(){
+  if (window.__APP_FETCH_WRAPPED__) return;
+
+  function isPatientContext() {
+    const p = (window.location && window.location.pathname) || '';
+    return p.includes('paciente-') || p.includes('/paciente/');
+  }
+
+  function redirectToLogin() {
+    const target = isPatientContext()
+      ? (window.APP_PATIENT_LOGIN_PAGE || '/entrar-paciente.html')
+      : (window.APP_LOGIN_PAGE || '/entrar.html');
+    try {
+      window.location.href = target;
+    } catch (_) {
+      window.location.assign(target);
+    }
+  }
+
+  const originalFetch = window.fetch;
+  window.fetch = async function(input, init) {
+    const res = await originalFetch(input, init);
+    try {
+      if (res && res.status === 401) {
+        const ct = (res.headers && res.headers.get && res.headers.get('content-type')) || '';
+        if (ct.includes('application/json')) {
+          const clone = res.clone();
+          let data = null;
+          try { data = await clone.json(); } catch (_) {}
+          const msg = (data && (data.error || data.message) ? String(data.error || data.message).toLowerCase() : '');
+          if (
+            msg.includes('login necessário') ||
+            msg.includes('login necessario') ||
+            msg.includes('unauthorized') ||
+            msg.includes('não autorizado') ||
+            msg.includes('nao autorizado')
+          ) {
+            redirectToLogin();
+          } else {
+            redirectToLogin();
+          }
+        } else {
+          redirectToLogin();
+        }
+      }
+    } catch (_) {
+      redirectToLogin();
+    }
+    return res;
+  };
+
+  window.__APP_FETCH_WRAPPED__ = true;
+})();
 class App {
     constructor() {
         this.currentPage = 'dashboard';
